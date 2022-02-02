@@ -11,7 +11,6 @@
     <Compile Include="FileService.fs" />
     <Compile Include="PlaylistService.fs" />
     <Compile Include="LikedTracksService.fs" />
-    <Compile Include="HistoryTracksService.fs" />
     <Compile Include="PlaylistsService.fs" />
     <Compile Include="SpotifyService.fs" />
     <Compile Include="PlaylistGenerator.fs" />

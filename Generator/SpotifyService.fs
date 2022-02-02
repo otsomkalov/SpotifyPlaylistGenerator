@@ -1,6 +1,7 @@
 ﻿module SpotifyService
 
 open System.Collections.Generic
+open System.IO
 open System.Threading.Tasks
 open SpotifyAPI.Web
 
@@ -10,6 +11,8 @@ let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: s
             tracksIds
             |> List<string>
             |> PlaylistReplaceItemsRequest
+
+        printfn "Saving tracks to target playlist"
 
         let! replaceItemsResult = client.Playlists.ReplaceItems(playlistId, replaceItemsRequest)
 
@@ -27,6 +30,8 @@ let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (trac
             |> List<string>
             |> PlaylistAddItemsRequest
 
+        printfn "Saving tracks to history playlist"
+
         return!
             try
                 task {
@@ -39,5 +44,23 @@ let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (trac
                 Error("Error during saving tracks to history playlist")
                 |> Task.FromResult
     }
+
+let listTracksIdsFromSpotify listTracksIdsFromSpotifyFunc fileName =
+    if File.Exists fileName then
+        printfn $"Reading tracks ids from {fileName}"
+
+        FileService.readIdsFromFile fileName
+    else
+        task {
+            printfn "Downloading tracks ids from Spotify"
+
+            let! tracksIds = listTracksIdsFromSpotifyFunc
+
+            printfn "Saving tracks ids to file..."
+
+            do! FileService.saveIdsToFile fileName tracksIds
+
+            return tracksIds
+        }
 
 let idToSpotifyId id = $"spotify:track:{id}"

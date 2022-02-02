@@ -1,5 +1,6 @@
 ﻿module PlaylistService
 
+open System.IO
 open System.Threading.Tasks
 open SpotifyAPI.Web
 
@@ -26,3 +27,21 @@ let listTracksIdsFromSpotifyPlaylist client playlistId =
             |> Seq.map (fun x -> x :?> FullTrack)
             |> Seq.map (fun x -> x.Id)
     }
+
+let listTracksIds fileName listTracksIdsFunc =
+    if File.Exists fileName then
+        printfn $"Reading tracks ids from {fileName}"
+
+        FileService.readIdsFromFile fileName
+    else
+        task {
+            printfn "Downloading tracks ids from Spotify"
+
+            let! tracksIds = listTracksIdsFunc
+
+            printfn "Saving tracks ids to file..."
+
+            do! FileService.saveIdsToFile fileName tracksIds
+
+            return tracksIds
+        }

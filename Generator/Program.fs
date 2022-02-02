@@ -2,6 +2,8 @@
 open SpotifyAPI.Web
 open Result
 
+printfn "Initialization..."
+
 [<CLIMutable>]
 type Settings =
     { Token: string
@@ -16,13 +18,18 @@ let configuration =
 
 let settings = configuration.Get<Settings>()
 
+printfn "Initialization..."
+
 let client = SpotifyClient(settings.Token)
 
 let listLikedTracksIds =
-    LikedTracksService.listLikedTracksIds client
+    client
+    |> LikedTracksService.listLikedTracksIdsFromSpotify
+    |> PlaylistService.listTracksIds "Liked.json"
 
 let listHistoryTracksIds =
-    HistoryTracksService.listHistoryTracksIds client settings.HistoryPlaylistId
+    PlaylistService.listTracksIdsFromSpotifyPlaylist client settings.HistoryPlaylistId
+    |> PlaylistService.listTracksIds "History.json"
 
 let listPlaylistsTracksIds =
     PlaylistsService.listPlaylistsTracksIds client settings.PlaylistsIds
@@ -37,7 +44,7 @@ let saveTracks =
     saveTracksToTargetPlaylist
     >>= saveTracksToHistoryPlaylist
 
-let enumerableResultAsyncFunc =
+let generatePlaylistResult =
     PlaylistGenerator.generatePlaylist
         listLikedTracksIds
         listHistoryTracksIds
@@ -45,3 +52,7 @@ let enumerableResultAsyncFunc =
         saveTracks
     |> Async.AwaitTask
     |> Async.RunSynchronously
+
+match generatePlaylistResult with
+| Ok _ -> printfn "Playlist successfully generated"
+| Error error -> eprintfn $"{error}"
