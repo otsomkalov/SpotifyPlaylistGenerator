@@ -3,22 +3,22 @@
 open System.Threading.Tasks
 open SpotifyAPI.Web
 
-let rec private listLikedTracksFromSpotify (client: ISpotifyClient) (offset: int) =
+let rec private listLikedTracksIdsFromSpotify' (client: ISpotifyClient) (offset: int) =
     task {
         let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
 
-        let! nextTracks =
+        let! nextTracksIds =
             if tracks.Next = null then
                 Seq.empty |> Task.FromResult
             else
-                listLikedTracksFromSpotify client (offset + 50)
+                listLikedTracksIdsFromSpotify' client (offset + 50)
 
-        return Seq.append nextTracks tracks.Items
+        let currentTracksIds =
+            tracks.Items
+            |> Seq.map (fun x -> x.Track.Id)
+
+        return Seq.append nextTracksIds currentTracksIds
     }
 
 let listLikedTracksIdsFromSpotify client =
-    task {
-        let! tracks = listLikedTracksFromSpotify client 0
-
-        return tracks |> Seq.map (fun x -> x.Track.Id)
-    }
+    listLikedTracksIdsFromSpotify' client 0
