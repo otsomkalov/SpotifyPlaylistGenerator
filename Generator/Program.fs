@@ -40,16 +40,19 @@ let saveTracksToTargetPlaylist =
 let saveTracksToHistoryPlaylist =
     SpotifyService.saveTracksToHistoryPlaylist client settings.HistoryPlaylistId
 
-let saveTracks =
+let importTracksToSpotify =
     saveTracksToTargetPlaylist
     >>= saveTracksToHistoryPlaylist
+
+let updateHistoryTracksIdsFile = FileService.saveIdsToFile "History.json"
 
 let generatePlaylistResult =
     PlaylistGenerator.generatePlaylist
         listLikedTracksIds
         listHistoryTracksIds
         listPlaylistsTracksIds
-        saveTracks
+        importTracksToSpotify
+        updateHistoryTracksIdsFile
     |> Async.AwaitTask
     |> Async.RunSynchronously
 

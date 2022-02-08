@@ -1,6 +1,8 @@
 ﻿module PlaylistGenerator
 
-let generatePlaylist listLikedTracksIds listHistoryTracksIds listPlaylistsTracksIds saveTracks =
+open System.Threading.Tasks
+
+let generatePlaylist listLikedTracksIds listHistoryTracksIds listPlaylistsTracksIds importTracksToSpotify updateHistoryTracksIdsFile =
     task {
         let! likedTracksIds = listLikedTracksIds
         let! historyTracksIds = listHistoryTracksIds
@@ -15,7 +17,23 @@ let generatePlaylist listLikedTracksIds listHistoryTracksIds listPlaylistsTracks
             |> Seq.except tracksIdsToExclude
             |> Seq.shuffle
             |> Seq.take 100
+
+        let spotifyTracksIdsToImport =
+            tracksIdsToImport
             |> Seq.map SpotifyService.idToSpotifyId
 
-        return! saveTracks tracksIdsToImport
+        let! importTracksResult = importTracksToSpotify spotifyTracksIdsToImport
+
+        return!
+            match importTracksResult with
+            | Error e -> Error e |> Task.FromResult
+            | Ok _ ->
+                task {
+                    let newHistoryTracks =
+                        Seq.append historyTracksIds tracksIdsToImport
+
+                    do! updateHistoryTracksIdsFile newHistoryTracks
+
+                    return Ok()
+                }
     }
