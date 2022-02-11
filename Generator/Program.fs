@@ -18,14 +18,11 @@ let configuration =
 
 let settings = configuration.Get<Settings>()
 
-printfn "Initialization..."
-
 let client = SpotifyClient(settings.Token)
 
 let listLikedTracksIds =
     client
     |> LikedTracksService.listLikedTracksIdsFromSpotify
-    |> PlaylistService.listTracksIds "Liked.json"
 
 let listHistoryTracksIds =
     PlaylistService.listTracksIdsFromSpotifyPlaylist client settings.HistoryPlaylistId

@@ -21,6 +21,7 @@ let generatePlaylist listLikedTracksIds listHistoryTracksIds listPlaylistsTracks
         let spotifyTracksIdsToImport =
             tracksIdsToImport
             |> Seq.map SpotifyService.idToSpotifyId
+            |> List.ofSeq
 
         let! importTracksResult = importTracksToSpotify spotifyTracksIdsToImport
 
