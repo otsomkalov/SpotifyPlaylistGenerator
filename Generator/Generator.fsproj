@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Result.fs" />
+    <Compile Include="Spotify.fs" />
+    <Compile Include="Option.fs" />
     <Compile Include="Seq.fs" />
     <Compile Include="FileService.fs" />
     <Compile Include="PlaylistService.fs" />

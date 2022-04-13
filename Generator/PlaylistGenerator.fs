@@ -1,40 +1,44 @@
 ﻿module PlaylistGenerator
 
 open System.Threading.Tasks
+open Spotify
 
-let generatePlaylist listLikedTracksIds listHistoryTracksIds listPlaylistsTracksIds importTracksToSpotify updateHistoryTracksIdsFile =
-    task {
-        let! likedTracksIds = listLikedTracksIds
-        let! historyTracksIds = listHistoryTracksIds
-        let! playlistsTracksIds = listPlaylistsTracksIds
+type ListLikedTracksIds = Task<RawTrackId seq>
+type HistoryTracksIds = RawTrackId seq
+type ListPlaylistsTracksIds = Task<RawTrackId seq>
+type SaveTracksIdsToTargetPlaylist = SpotifyTrackId seq -> Task<SpotifyTrackId seq option>
+type SaveTracksIdsToHistoryPlaylist = SpotifyTrackId seq -> Task<SpotifyTrackId seq option>
 
-        let tracksIdsToExclude =
-            Seq.append likedTracksIds historyTracksIds
-            |> Seq.distinct
+type UpdateHistoryTracksIdsFile = RawTrackId seq -> SpotifyTrackId seq -> Task<unit option>
 
-        let tracksIdsToImport =
-            playlistsTracksIds
-            |> Seq.except tracksIdsToExclude
-            |> Seq.shuffle
-            |> Seq.take 100
+type SaveTracks = SpotifyTrackId seq -> Task<unit option>
 
-        let spotifyTracksIdsToImport =
-            tracksIdsToImport
-            |> Seq.map SpotifyService.idToSpotifyId
-            |> List.ofSeq
+type GeneratePlaylist =
+    ListLikedTracksIds
+        -> HistoryTracksIds
+        -> ListPlaylistsTracksIds
+        -> SaveTracks
+        -> Task<unit option>
 
-        let! importTracksResult = importTracksToSpotify spotifyTracksIdsToImport
+let generatePlaylist: GeneratePlaylist =
+    fun listLikedTracksIds historyTracksIds listPlaylistsTracksIds saveTracks ->
+        task {
+            let! likedTracksIds = listLikedTracksIds
+            let! playlistsTracksIds = listPlaylistsTracksIds
 
-        return!
-            match importTracksResult with
-            | Error e -> Error e |> Task.FromResult
-            | Ok _ ->
-                task {
-                    let newHistoryTracks =
-                        Seq.append historyTracksIds tracksIdsToImport
+            let tracksIdsToExclude =
+                Seq.append likedTracksIds historyTracksIds
+                |> Seq.distinct
 
-                    do! updateHistoryTracksIdsFile newHistoryTracks
+            let tracksIdsToImport =
+                playlistsTracksIds
+                |> Seq.except tracksIdsToExclude
+                |> Seq.shuffle
+                |> Seq.take 20
 
-                    return Ok()
-                }
-    }
+            let spotifyTracksIdsToImport =
+                tracksIdsToImport
+                |> Seq.map SpotifyTrackId.create
+
+            return! spotifyTracksIdsToImport |> saveTracks
+        }

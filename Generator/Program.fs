@@ -1,6 +1,8 @@
-﻿open Microsoft.Extensions.Configuration
+﻿open System.Threading.Tasks
+open Microsoft.Extensions.Configuration
+open Microsoft.FSharp.Control
 open SpotifyAPI.Web
-open Result
+open Option
 
 printfn "Initialization..."
 
@@ -37,22 +39,24 @@ let saveTracksToTargetPlaylist =
 let saveTracksToHistoryPlaylist =
     SpotifyService.saveTracksToHistoryPlaylist client settings.HistoryPlaylistId
 
-let importTracksToSpotify =
-    saveTracksToTargetPlaylist
-    >>= saveTracksToHistoryPlaylist
-
 let updateHistoryTracksIdsFile = FileService.saveIdsToFile "History.json"
+
+let historyTracksIds = listHistoryTracksIds |> Async.AwaitTask |> Async.RunSynchronously
+
+let saveTracks =
+    saveTracksToTargetPlaylist
+    >== saveTracksToHistoryPlaylist
+    >== updateHistoryTracksIdsFile historyTracksIds
 
 let generatePlaylistResult =
     PlaylistGenerator.generatePlaylist
         listLikedTracksIds
-        listHistoryTracksIds
+        historyTracksIds
         listPlaylistsTracksIds
-        importTracksToSpotify
-        updateHistoryTracksIdsFile
+        saveTracks
     |> Async.AwaitTask
     |> Async.RunSynchronously
 
 match generatePlaylistResult with
-| Ok _ -> printfn "Playlist successfully generated"
-| Error error -> eprintfn $"{error}"
+| Some() -> printfn "Playlist successfully generated"
+| None -> eprintfn "There was an error during playlist generation"

@@ -2,6 +2,7 @@
 
 open System.IO
 open System.Threading.Tasks
+open Spotify
 open SpotifyAPI.Web
 
 let rec private listTracksIdsFromSpotifyPlaylist' (client: ISpotifyClient) playlistId (offset: int) =
@@ -18,6 +19,7 @@ let rec private listTracksIdsFromSpotifyPlaylist' (client: ISpotifyClient) playl
             tracks.Items
             |> Seq.map (fun x -> x.Track :?> FullTrack)
             |> Seq.map (fun x -> x.Id)
+            |> Seq.map RawTrackId.create
 
         return Seq.append nextTracksIds currentTracksIds
     }

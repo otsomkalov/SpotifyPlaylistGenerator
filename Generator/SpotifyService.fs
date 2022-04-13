@@ -3,12 +3,14 @@
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
+open Spotify
 open SpotifyAPI.Web
 
-let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: string seq) =
+let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: SpotifyTrackId seq) =
     task {
         let replaceItemsRequest =
             tracksIds
+            |> Seq.map SpotifyTrackId.value
             |> List<string>
             |> PlaylistReplaceItemsRequest
 
@@ -16,17 +18,14 @@ let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: s
 
         let! replaceItemsResult = client.Playlists.ReplaceItems(playlistId, replaceItemsRequest)
 
-        return
-            if replaceItemsResult then
-                Ok(tracksIds)
-            else
-                Error("Error during saving tracks to target playlist")
+        return if replaceItemsResult then Some(tracksIds) else None
     }
 
-let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (tracksIds: string seq) =
+let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (tracksIds: SpotifyTrackId seq) =
     task {
         let addItemsRequest =
             tracksIds
+            |> Seq.map SpotifyTrackId.value
             |> List<string>
             |> PlaylistAddItemsRequest
 
@@ -37,12 +36,11 @@ let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (trac
                 task {
                     let! _ = client.Playlists.AddItems(historyPlaylistId, addItemsRequest)
 
-                    return Ok()
+                    return Some(tracksIds)
                 }
             with
             | _ ->
-                Error("Error during saving tracks to history playlist")
-                |> Task.FromResult
+                None |> Task.FromResult
     }
 
 let listTracksIdsFromSpotify listTracksIdsFromSpotifyFunc fileName =
@@ -62,5 +60,3 @@ let listTracksIdsFromSpotify listTracksIdsFromSpotifyFunc fileName =
 
             return tracksIds
         }
-
-let idToSpotifyId id = $"spotify:track:{id}"

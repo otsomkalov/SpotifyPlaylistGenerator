@@ -1,6 +1,7 @@
 ﻿module LikedTracksService
 
 open System.Threading.Tasks
+open Spotify
 open SpotifyAPI.Web
 
 let rec private listLikedTracksIdsFromSpotify' (client: ISpotifyClient) (offset: int) =
@@ -16,9 +17,9 @@ let rec private listLikedTracksIdsFromSpotify' (client: ISpotifyClient) (offset:
         let currentTracksIds =
             tracks.Items
             |> Seq.map (fun x -> x.Track.Id)
+            |> Seq.map RawTrackId.create
 
         return Seq.append nextTracksIds currentTracksIds
     }
 
-let listLikedTracksIdsFromSpotify client =
-    listLikedTracksIdsFromSpotify' client 0
+let listLikedTracksIdsFromSpotify client = listLikedTracksIdsFromSpotify' client 0
