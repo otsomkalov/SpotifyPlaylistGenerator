@@ -4,28 +4,37 @@ open System.IO
 open System.Text.Json
 open Spotify
 
-let readIdsFromFile filePath =
+let saveIdsToFile filePath ids =
+    task {
+        let rawIds = ids |> Seq.map RawTrackId.value
+        let json = JsonSerializer.Serialize(rawIds)
+
+        do! File.WriteAllTextAsync(filePath, json)
+    }
+
+let private readIdsFromFile filePath =
     task {
         let! json = File.ReadAllTextAsync(filePath)
 
-        return
+        let data =
             JsonSerializer.Deserialize<string seq>(json)
             |> Seq.map RawTrackId.create
+
+        return data
     }
 
-let saveIdsToFile filePath oldIds newIds =
+let private refreshCachedIds filePath loadIdsFunc =
     task {
-        let oldStringIds = oldIds |> Seq.map RawTrackId.value
+        let! ids = loadIdsFunc
 
-        let newStringIds =
-            newIds
-            |> Seq.map SpotifyTrackId.rawValue
-            |> Seq.map RawTrackId.value
+        do! saveIdsToFile filePath ids
 
-        let ids = Seq.append oldStringIds newStringIds
-
-        let json = JsonSerializer.Serialize(ids)
-        do! File.WriteAllTextAsync(filePath, json)
-
-        return Some()
+        return ids
     }
+
+let loadIdsFromFile fileName loadIdsFunc refreshCache =
+    match (refreshCache, File.Exists fileName) with
+    | true, true -> refreshCachedIds fileName loadIdsFunc
+    | true, false -> refreshCachedIds fileName loadIdsFunc
+    | false, true -> readIdsFromFile fileName
+    | false, false -> refreshCachedIds fileName loadIdsFunc
