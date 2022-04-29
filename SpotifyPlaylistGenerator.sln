@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "Generator\Generator.fsproj", "{39F8F3AC-F2CE-4B71-A9BD-51D53F7A28F4}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "Generator\Generator.fsproj", "{C8101F02-82B4-42F7-9B9C-C83B01AF6986}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,9 +14,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{39F8F3AC-F2CE-4B71-A9BD-51D53F7A28F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{39F8F3AC-F2CE-4B71-A9BD-51D53F7A28F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{39F8F3AC-F2CE-4B71-A9BD-51D53F7A28F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{39F8F3AC-F2CE-4B71-A9BD-51D53F7A28F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8101F02-82B4-42F7-9B9C-C83B01AF6986}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8101F02-82B4-42F7-9B9C-C83B01AF6986}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8101F02-82B4-42F7-9B9C-C83B01AF6986}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8101F02-82B4-42F7-9B9C-C83B01AF6986}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

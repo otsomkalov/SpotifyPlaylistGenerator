@@ -1,6 +1,6 @@
 ﻿module PlaylistGenerator
 
-open Spotify
+open Generator
 
 type LikedTracksIds = RawTrackId list
 type HistoryTracksIds = RawTrackId list
@@ -10,7 +10,8 @@ type GeneratePlaylist = LikedTracksIds -> HistoryTracksIds -> PlaylistsTracksIds
 
 let generatePlaylist: GeneratePlaylist =
     fun likedTracksIds historyTracksIds playlistsTracksIds ->
-        let tracksIdsToExclude = List.append likedTracksIds historyTracksIds
+        let tracksIdsToExclude =
+            List.append likedTracksIds historyTracksIds
 
         playlistsTracksIds
         |> List.except tracksIdsToExclude

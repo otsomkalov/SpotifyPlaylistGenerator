@@ -1,61 +1,49 @@
-﻿open Microsoft.Extensions.Configuration
-open Microsoft.FSharp.Control
-open Spotify
+namespace Generator
+
+open System
+open Generator
+open Generator.Services
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Options
 open SpotifyAPI.Web
 
-printfn "Initialization..."
+module Program =
 
-[<CLIMutable>]
-type Settings =
-    { Token: string
-      HistoryPlaylistsIds: string list
-      TargetPlaylistId: string
-      TargetHistoryPlaylistId: string
-      RefreshCache: bool
-      PlaylistsIds: string list }
+    let private configureSpotifyClient (serviceProvider: IServiceProvider) =
+        let settings =
+            serviceProvider
+                .GetRequiredService<IOptions<Settings>>()
+                .Value
 
-let configuration =
-    ConfigurationBuilder()
-        .AddJsonFile("appsettings.json")
-        .Build()
+        SpotifyClient(settings.Token) :> ISpotifyClient
 
-let settings = configuration.Get<Settings>()
+    let private configureServices (hostBuilderContext: HostBuilderContext) (services: IServiceCollection) =
+        let configuration =
+            hostBuilderContext.Configuration
 
-let client = SpotifyClient(settings.Token)
+        services.Configure<Settings>(configuration)
 
-let executeAsync =
-    task {
-        let! likedTracksIds =
-            FileService.loadIdsFromFile "LikedTracks.json" (LikedTracksService.listLikedTracksIdsFromSpotify client) settings.RefreshCache
+        services.AddSingleton<ISpotifyClient>(configureSpotifyClient)
 
-        let! historyTracksIds = PlaylistsService.listPlaylistsTracksIds client settings.HistoryPlaylistsIds settings.RefreshCache
+        services
+            .AddSingleton<FileService>()
+            .AddSingleton<TracksIdsService>()
+            .AddSingleton<PlaylistService>()
+            .AddSingleton<LikedTracksService>()
+            .AddSingleton<HistoryPlaylistsService>()
+            .AddSingleton<TargetPlaylistService>()
 
-        let! playlistsTracksIds = PlaylistsService.listPlaylistsTracksIds client settings.PlaylistsIds settings.RefreshCache
+        services.AddHostedService<Worker>()
 
-        let saveTracksToTargetPlaylist =
-            SpotifyService.saveTracksToTargetPlaylist client settings.TargetPlaylistId
+        ()
 
-        let saveTracksToHistoryPlaylist =
-            SpotifyService.saveTracksToHistoryPlaylist client settings.TargetHistoryPlaylistId
+    [<EntryPoint>]
+    let main args =
+        Host
+            .CreateDefaultBuilder(args)
+            .ConfigureServices(configureServices)
+            .Build()
+            .Run()
 
-        let updateHistoryTracksIdsFile =
-            FileService.saveIdsToFile $"{settings.TargetHistoryPlaylistId}.json"
-
-        let tracksIdsToImport =
-            PlaylistGenerator.generatePlaylist likedTracksIds historyTracksIds playlistsTracksIds
-
-        do! saveTracksToTargetPlaylist tracksIdsToImport
-        do! saveTracksToHistoryPlaylist tracksIdsToImport
-
-        let newHistoryTracksIds =
-            tracksIdsToImport
-            |> List.map SpotifyTrackId.rawValue
-            |> List.append historyTracksIds
-
-        do! updateHistoryTracksIdsFile newHistoryTracksIds
-    }
-
-let generatePlaylistResult =
-    executeAsync
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
+        0 // exit code
