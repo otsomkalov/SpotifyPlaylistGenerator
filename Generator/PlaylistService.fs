@@ -10,17 +10,18 @@ let rec private listTracksIdsFromSpotifyPlaylist' (client: ISpotifyClient) playl
 
         let! nextTracksIds =
             if tracks.Next = null then
-                Seq.empty |> Task.FromResult
+                [] |> Task.FromResult
             else
                 listTracksIdsFromSpotifyPlaylist' client playlistId (offset + 100)
 
         let currentTracksIds =
             tracks.Items
-            |> Seq.map (fun x -> x.Track :?> FullTrack)
-            |> Seq.map (fun x -> x.Id)
-            |> Seq.map RawTrackId.create
+            |> List.ofSeq
+            |> List.map (fun x -> x.Track :?> FullTrack)
+            |> List.map (fun x -> x.Id)
+            |> List.map RawTrackId.create
 
-        return Seq.append nextTracksIds currentTracksIds
+        return List.append nextTracksIds currentTracksIds
     }
 
 let listTracksIdsFromSpotifyPlaylist client playlistId =

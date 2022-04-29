@@ -6,7 +6,7 @@ open Spotify
 
 let saveIdsToFile filePath ids =
     task {
-        let rawIds = ids |> Seq.map RawTrackId.value
+        let rawIds = ids |> List.map RawTrackId.value
         let json = JsonSerializer.Serialize(rawIds)
 
         do! File.WriteAllTextAsync(filePath, json)
@@ -17,8 +17,8 @@ let private readIdsFromFile filePath =
         let! json = File.ReadAllTextAsync(filePath)
 
         let data =
-            JsonSerializer.Deserialize<string seq>(json)
-            |> Seq.map RawTrackId.create
+            JsonSerializer.Deserialize<string list>(json)
+            |> List.map RawTrackId.create
 
         return data
     }

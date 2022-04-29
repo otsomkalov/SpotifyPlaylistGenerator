@@ -11,8 +11,8 @@ let listPlaylistsTracksIds client playlistsIds refreshCache =
 
         let! playlistsTracks =
             playlistsIds
-            |> Seq.map (tryLoadPlaylist client refreshCache)
+            |> List.map (tryLoadPlaylist client refreshCache)
             |> Task.WhenAll
 
-        return playlistsTracks |> Seq.concat
+        return playlistsTracks |> List.concat
     }

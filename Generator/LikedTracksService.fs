@@ -10,16 +10,17 @@ let rec private listLikedTracksIdsFromSpotify' (client: ISpotifyClient) (offset:
 
         let! nextTracksIds =
             if tracks.Next = null then
-                Seq.empty |> Task.FromResult
+                [] |> Task.FromResult
             else
                 listLikedTracksIdsFromSpotify' client (offset + 50)
 
         let currentTracksIds =
             tracks.Items
-            |> Seq.map (fun x -> x.Track.Id)
-            |> Seq.map RawTrackId.create
+            |> List.ofSeq
+            |> List.map (fun x -> x.Track.Id)
+            |> List.map RawTrackId.create
 
-        return Seq.append nextTracksIds currentTracksIds
+        return List.append nextTracksIds currentTracksIds
     }
 
 let listLikedTracksIdsFromSpotify client = listLikedTracksIdsFromSpotify' client 0

@@ -4,11 +4,11 @@ open System.Collections.Generic
 open Spotify
 open SpotifyAPI.Web
 
-let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: SpotifyTrackId seq) =
+let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId tracksIds =
     task {
         let replaceItemsRequest =
             tracksIds
-            |> Seq.map SpotifyTrackId.value
+            |> List.map SpotifyTrackId.value
             |> List<string>
             |> PlaylistReplaceItemsRequest
 
@@ -19,11 +19,11 @@ let saveTracksToTargetPlaylist (client: ISpotifyClient) playlistId (tracksIds: S
         return ()
     }
 
-let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId (tracksIds: SpotifyTrackId seq) =
+let saveTracksToHistoryPlaylist (client: ISpotifyClient) historyPlaylistId tracksIds =
     task {
         let addItemsRequest =
             tracksIds
-            |> Seq.map SpotifyTrackId.value
+            |> List.map SpotifyTrackId.value
             |> List<string>
             |> PlaylistAddItemsRequest
 

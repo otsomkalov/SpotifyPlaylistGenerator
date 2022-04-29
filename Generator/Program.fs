@@ -8,11 +8,11 @@ printfn "Initialization..."
 [<CLIMutable>]
 type Settings =
     { Token: string
-      HistoryPlaylistsIds: string seq
+      HistoryPlaylistsIds: string list
       TargetPlaylistId: string
       TargetHistoryPlaylistId: string
       RefreshCache: bool
-      PlaylistsIds: string seq }
+      PlaylistsIds: string list }
 
 let configuration =
     ConfigurationBuilder()
@@ -49,8 +49,8 @@ let executeAsync =
 
         let newHistoryTracksIds =
             tracksIdsToImport
-            |> Seq.map SpotifyTrackId.rawValue
-            |> Seq.append historyTracksIds
+            |> List.map SpotifyTrackId.rawValue
+            |> List.append historyTracksIds
 
         do! updateHistoryTracksIdsFile newHistoryTracksIds
     }

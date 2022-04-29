@@ -8,7 +8,7 @@
   <ItemGroup>
     <Compile Include="Spotify.fs" />
     <Compile Include="Option.fs" />
-    <Compile Include="Seq.fs" />
+    <Compile Include="List.fs" />
     <Compile Include="FileService.fs" />
     <Compile Include="PlaylistService.fs" />
     <Compile Include="LikedTracksService.fs" />
