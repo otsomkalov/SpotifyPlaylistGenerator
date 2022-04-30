@@ -1,26 +1,22 @@
-namespace Generator
+﻿namespace Generator.Services
 
-open System.Threading
 open Generator
-open Generator.Services
 open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
 
-type Worker
+type GeneratorService
     (
-        _logger: ILogger<Worker>,
         _likedTracksService: LikedTracksService,
         _historyPlaylistsService: HistoryPlaylistsService,
         _targetPlaylistService: TargetPlaylistService,
-        _hostApplicationLifetime: IHostApplicationLifetime
+        _hostApplicationLifetime: IHostApplicationLifetime,
+        _spotifyClientProvider: SpotifyClientProvider,
+        _playlistsService: PlaylistsService
     ) =
-    inherit BackgroundService()
-
-    let runServiceAsync =
+    member _.generatePlaylist() =
         task {
             let! likedTracksIds = _likedTracksService.listIdsAsync
             let! historyTracksIds = _historyPlaylistsService.listTracksIdsAsync
-            let! playlistsTracksIds = _targetPlaylistService.listPlaylistsTracksIds
+            let! playlistsTracksIds = _playlistsService.listPlaylistsTracksIds
 
             let tracksIdsToImport =
                 PlaylistGenerator.generatePlaylist likedTracksIds historyTracksIds playlistsTracksIds
@@ -34,14 +30,4 @@ type Worker
                 |> List.append historyTracksIds
 
             do! _historyPlaylistsService.updateCachedAsync newHistoryTracksIds
-        }
-
-    override _.ExecuteAsync(_: CancellationToken) =
-        task {
-            try
-                do! runServiceAsync
-            with
-            | e -> _logger.LogError(e, "Error during generator execution:")
-
-            _hostApplicationLifetime.StopApplication()
         }

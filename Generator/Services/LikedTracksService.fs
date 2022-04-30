@@ -2,12 +2,13 @@
 
 open System.Threading.Tasks
 open Generator
+open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
 
-type LikedTracksService(_client: ISpotifyClient, _idsService: TracksIdsService) =
+type LikedTracksService(_spotifyClientProvider: SpotifyClientProvider, _idsService: TracksIdsService, _logger: ILogger<LikedTracksService>) =
     let rec downloadIdsAsync (offset: int) =
         task {
-            let! tracks = _client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+            let! tracks = _spotifyClientProvider.Client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
 
             let! nextTracksIds =
                 if tracks.Next = null then
@@ -25,4 +26,6 @@ type LikedTracksService(_client: ISpotifyClient, _idsService: TracksIdsService) 
         }
 
     member _.listIdsAsync =
+        _logger.LogInformation("Listing liked tracks ids")
+
         _idsService.readOrDownloadAsync "LikedTracks.json" (downloadIdsAsync 0)

@@ -2,12 +2,14 @@
 
 open System.Threading.Tasks
 open Generator
+open Generator.Settings
+open Microsoft.Extensions.Options
 open SpotifyAPI.Web
 
-type PlaylistService(_client: ISpotifyClient, _idsService: TracksIdsService) =
+type PlaylistService(_spotifyClientProvider: SpotifyClientProvider, _idsService: TracksIdsService) =
     let rec downloadTracksIdsAsync' playlistId (offset: int) =
         task {
-            let! tracks = _client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+            let! tracks = _spotifyClientProvider.Client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
 
             let! nextTracksIds =
                 if tracks.Next = null then
@@ -25,13 +27,12 @@ type PlaylistService(_client: ISpotifyClient, _idsService: TracksIdsService) =
             return List.append nextTracksIds currentTracksIds
         }
 
-    let downloadTracksIdsAsync playlistId =
-        downloadTracksIdsAsync' playlistId 0
+    let downloadTracksIdsAsync playlistId = downloadTracksIdsAsync' playlistId 0
 
     let readOrDownloadTracksIdsAsync playlistId =
         _idsService.readOrDownloadAsync $"{playlistId}.json" (downloadTracksIdsAsync playlistId)
 
-    member _.listTracksIdsAsync playlistsIds =
+    member this.listTracksIdsAsync playlistsIds =
         task {
             let! playlistsTracks =
                 playlistsIds

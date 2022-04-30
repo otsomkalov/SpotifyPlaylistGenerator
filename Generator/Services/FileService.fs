@@ -3,8 +3,9 @@
 open System.IO
 open System.Text.Json
 open Generator
+open Microsoft.Extensions.Logging
 
-type FileService() =
+type FileService(_logger: ILogger<FileService>) =
     member _.saveIdsAsync fileName ids =
         task {
             let rawIds =

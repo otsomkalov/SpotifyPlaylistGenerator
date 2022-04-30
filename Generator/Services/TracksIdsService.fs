@@ -1,6 +1,6 @@
 ﻿namespace Generator.Services
 
-open Generator
+open Generator.Settings
 open Microsoft.Extensions.Options
 
 type TracksIdsService(_fileService: FileService, _options: IOptions<Settings>) =

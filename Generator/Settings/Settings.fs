@@ -1,4 +1,4 @@
-﻿namespace Generator
+﻿namespace Generator.Settings
 
 open System.Collections.Generic
 
