@@ -50,7 +50,7 @@ type Worker
   let runAsync () =
     task {
       let receiveMessageRequest =
-        ReceiveMessageRequest(_amazonSettings.QueueUrl)
+        ReceiveMessageRequest(_amazonSettings.QueueUrl, WaitTimeSeconds = 20)
 
       receiveMessageRequest.MessageAttributeNames <- [ MessageAttributeNames.Type ] |> List<string>
 

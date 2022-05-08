@@ -28,7 +28,7 @@ type SQSService(_sqs: IAmazonSQS, _amazonOptions: IOptions<AmazonSettings>, _log
   let rec cleanupQueueAsync () =
     task {
       let! receiveMessagesResponse =
-        ReceiveMessageRequest(_amazonSettings.QueueUrl, MaxNumberOfMessages = 10)
+        ReceiveMessageRequest(_amazonSettings.QueueUrl, MaxNumberOfMessages = 10, WaitTimeSeconds = 20)
         |> _sqs.ReceiveMessageAsync
 
       return!

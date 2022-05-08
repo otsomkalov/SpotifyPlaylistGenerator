@@ -80,6 +80,10 @@ type GenerateCommandHandler
 
       do! _sqsService.SendMessageAsync queueMessage MessageTypes.GeneratePlaylist
 
+      (ChatId(message.From.Id), "Your playlist generation requests is queued")
+      |> _bot.SendTextMessageAsync
+      |> ignore
+
       return ()
     }
 

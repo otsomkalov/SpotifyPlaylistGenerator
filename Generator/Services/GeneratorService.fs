@@ -29,6 +29,12 @@ type GeneratorService
       let queueMessage =
         JsonSerializer.Deserialize<GeneratePlaylistMessage>(messageBody)
 
+      _logger.LogInformation("Received message to generate playlist for Spotify user with id {SpotifyUserId}", queueMessage.SpotifyId)
+
+      (ChatId(queueMessage.TelegramId), "Generating playlist...")
+      |> _bot.SendTextMessageAsync
+      |> ignore
+
       let! likedTracksIds = _likedTracksService.ListIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! historyTracksIds = _historyPlaylistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
