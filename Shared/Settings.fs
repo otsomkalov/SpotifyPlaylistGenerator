@@ -17,7 +17,7 @@ module TelegramSettings =
 
 type TelegramSettings() =
   member val Token = "" with get, set
-  member val BotUri = "" with get, set
+  member val BotUrl = "" with get, set
 
 module DatabaseSettings =
   [<Literal>]

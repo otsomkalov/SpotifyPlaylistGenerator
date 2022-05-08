@@ -54,5 +54,5 @@ type CallbackController
       (spotifyUserProfile.Id, spotifyClient)
       |> _spotifyClientProvider.SetClient
 
-      return this.RedirectPermanent($"{_telegramSettings.BotUri}?start={spotifyUserProfile.Id}")
+      return this.RedirectPermanent($"{_telegramSettings.BotUrl}?start={spotifyUserProfile.Id}")
     }
