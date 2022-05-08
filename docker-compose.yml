@@ -11,6 +11,8 @@ services:
     depends_on:
       - telegram-bot-api
       - spotify-playlist-generator-database
+    ports:
+      - "65400:80"
     environment:
       Telegram:Token:
       Telegram:ApiUrl:
