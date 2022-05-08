@@ -1,43 +1,46 @@
 ﻿namespace Generator.Services
 
 open System.Threading.Tasks
-open Generator
-open Generator.Settings
-open Microsoft.Extensions.Options
+open Generator.Domain
 open SpotifyAPI.Web
+open Shared.Services
 
 type PlaylistService(_spotifyClientProvider: SpotifyClientProvider, _idsService: TracksIdsService) =
-    let rec downloadTracksIdsAsync' playlistId (offset: int) =
-        task {
-            let! tracks = _spotifyClientProvider.Client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+  let rec downloadTracksIdsAsync' (userId: int64) playlistId (offset: int) =
+    task {
+      let client =
+        _spotifyClientProvider.GetClient userId
 
-            let! nextTracksIds =
-                if tracks.Next = null then
-                    [] |> Task.FromResult
-                else
-                    downloadTracksIdsAsync' playlistId (offset + 100)
+      let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
 
-            let currentTracksIds =
-                tracks.Items
-                |> List.ofSeq
-                |> List.map (fun x -> x.Track :?> FullTrack)
-                |> List.map (fun x -> x.Id)
-                |> List.map RawTrackId.create
+      let! nextTracksIds =
+        if tracks.Next = null then
+          [] |> Task.FromResult
+        else
+          downloadTracksIdsAsync' userId playlistId (offset + 100)
 
-            return List.append nextTracksIds currentTracksIds
-        }
+      let currentTracksIds =
+        tracks.Items
+        |> List.ofSeq
+        |> List.map (fun x -> x.Track :?> FullTrack)
+        |> List.map (fun x -> x.Id)
+        |> List.map RawTrackId.create
 
-    let downloadTracksIdsAsync playlistId = downloadTracksIdsAsync' playlistId 0
+      return List.append nextTracksIds currentTracksIds
+    }
 
-    let readOrDownloadTracksIdsAsync playlistId =
-        _idsService.readOrDownloadAsync $"{playlistId}.json" (downloadTracksIdsAsync playlistId)
+  let downloadTracksIdsAsync userId playlistId =
+    downloadTracksIdsAsync' userId playlistId 0
 
-    member this.listTracksIdsAsync playlistsIds =
-        task {
-            let! playlistsTracks =
-                playlistsIds
-                |> Seq.map readOrDownloadTracksIdsAsync
-                |> Task.WhenAll
+  let readOrDownloadTracksIdsAsync userId refreshCache playlistId =
+    _idsService.ReadOrDownloadAsync $"{playlistId}.json" (downloadTracksIdsAsync userId playlistId) refreshCache
 
-            return playlistsTracks |> List.concat
-        }
+  member this.ListTracksIdsAsync userId playlistsIds refreshCache =
+    task {
+      let! playlistsTracks =
+        playlistsIds
+        |> Seq.map (readOrDownloadTracksIdsAsync userId refreshCache)
+        |> Task.WhenAll
+
+      return playlistsTracks |> List.concat |> List.distinct
+    }

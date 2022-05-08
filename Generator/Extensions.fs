@@ -1,8 +1,9 @@
-﻿module List
+﻿module Generator.Extensions
 
 open System
 
-let shuffle sequence =
+module List =
+  let shuffle sequence =
     let random = Random()
 
     sequence |> List.sortBy (fun _ -> random.Next())

@@ -1,23 +1,19 @@
 ﻿namespace Generator.Services
 
-open Generator.Settings
-open Microsoft.Extensions.Options
 
-type TracksIdsService(_fileService: FileService, _options: IOptions<Settings>) =
-    let _settings = _options.Value
+type TracksIdsService(_fileService: FileService) =
+  let refreshCachedAsync filePath loadIdsFunc =
+    task {
+      let! ids = loadIdsFunc
 
-    let refreshCachedAsync filePath loadIdsFunc =
-        task {
-            let! ids = loadIdsFunc
+      do! _fileService.SaveIdsAsync filePath ids
 
-            do! _fileService.saveIdsAsync filePath ids
+      return ids
+    }
 
-            return ids
-        }
-
-    member _.readOrDownloadAsync idsFileName downloadIdsFunc =
-        match (_settings.RefreshCache, _fileService.exists idsFileName) with
-        | true, true -> refreshCachedAsync idsFileName downloadIdsFunc
-        | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
-        | false, true -> _fileService.readIdsAsync idsFileName
-        | false, false -> refreshCachedAsync idsFileName downloadIdsFunc
+  member _.ReadOrDownloadAsync idsFileName downloadIdsFunc refreshCache =
+    match (refreshCache, _fileService.Exists idsFileName) with
+    | true, true -> refreshCachedAsync idsFileName downloadIdsFunc
+    | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
+    | false, true -> _fileService.ReadIdsAsync idsFileName
+    | false, false -> refreshCachedAsync idsFileName downloadIdsFunc

@@ -1,45 +1,89 @@
 ﻿namespace Generator.Services
 
 open System.Collections.Generic
-open Generator.Settings
-open Generator
+open System.Linq
+open EntityFrameworkCore.FSharp
+open Generator.Domain
+open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Logging
-open Microsoft.Extensions.Options
+open Shared.Data
+open Shared.Services
 open SpotifyAPI.Web
+open EntityFrameworkCore.FSharp.DbContextHelpers
 
 type HistoryPlaylistsService
-    (
-        _options: IOptions<Settings>,
-        _playlistService: PlaylistService,
-        _spotifyClientProvider: SpotifyClientProvider,
-        _fileService: FileService,
-        _logger: ILogger<HistoryPlaylistsService>
-    ) =
-    let _settings = _options.Value
+  (
+    _playlistService: PlaylistService,
+    _spotifyClientProvider: SpotifyClientProvider,
+    _fileService: FileService,
+    _logger: ILogger<HistoryPlaylistsService>,
+    _context: AppDbContext
+  ) =
 
-    member _.listTracksIdsAsync =
-        _logger.LogInformation("Listing history playlists tracks ids")
+  member _.ListTracksIdsAsync userId refreshCache =
+    task {
+      _logger.LogInformation("Listing history playlists tracks ids")
 
-        _playlistService.listTracksIdsAsync _settings.HistoryPlaylistsIds
+      let! historyPlaylistsUrls =
+        _context
+          .Playlists
+          .AsNoTracking()
+          .Where(fun p ->
+            p.UserId = userId
+            && p.PlaylistType = PlaylistType.History)
+          .Select(fun p -> p.Url)
+          .ToListAsync()
 
-    member _.updateAsync tracksIds =
-        task {
-            _logger.LogInformation("Adding new tracks to history playlist")
+      let! tracksIds = _playlistService.ListTracksIdsAsync userId historyPlaylistsUrls refreshCache
 
-            let addItemsRequest =
-                tracksIds
-                |> List.map SpotifyTrackId.value
-                |> List<string>
-                |> PlaylistAddItemsRequest
+      _logger.LogInformation("History playlists tracks count: {HistoryPlaylistsTracksCount}", tracksIds.Length)
 
-            printfn "Saving tracks to history playlist"
+      return tracksIds
+    }
 
-            let! _ = _spotifyClientProvider.Client.Playlists.AddItems(_settings.TargetHistoryPlaylistId, addItemsRequest)
+  member _.UpdateAsync (userId: int64) tracksIds =
+    task {
+      _logger.LogInformation("Adding new tracks to history playlist")
 
-            return ()
-        }
+      let addItemsRequest =
+        tracksIds
+        |> List.map SpotifyTrackId.value
+        |> List<string>
+        |> PlaylistAddItemsRequest
 
-    member _.updateCachedAsync =
-        _logger.LogInformation("Updating history playlist cache file")
+      printfn "Saving tracks to history playlist"
 
-        _fileService.saveIdsAsync $"{_settings.TargetHistoryPlaylistId}.json"
+      let client =
+        _spotifyClientProvider.GetClient userId
+
+      let! targetHistoryPlaylistId =
+        _context
+          .Playlists
+          .AsNoTracking()
+          .Where(fun p ->
+            p.UserId = userId
+            && p.PlaylistType = PlaylistType.TargetHistory)
+          .Select(fun p -> p.Url)
+          .FirstOrDefaultAsync()
+
+      let! _ = client.Playlists.AddItems(targetHistoryPlaylistId, addItemsRequest)
+
+      return ()
+    }
+
+  member _.UpdateCachedAsync userId tracksIds =
+    task {
+      _logger.LogInformation("Updating history playlist cache file")
+
+      let! targetHistoryPlaylistId =
+        _context
+          .Playlists
+          .AsNoTracking()
+          .Where(fun p ->
+            p.UserId = userId
+            && p.PlaylistType = PlaylistType.TargetHistory)
+          .Select(fun p -> p.Url)
+          .FirstOrDefaultAsync()
+
+      return! _fileService.SaveIdsAsync $"{targetHistoryPlaylistId}.json" tracksIds
+    }

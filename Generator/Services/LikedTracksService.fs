@@ -1,31 +1,41 @@
 ﻿namespace Generator.Services
 
 open System.Threading.Tasks
-open Generator
+open Generator.Domain
 open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
+open Shared.Services
 
 type LikedTracksService(_spotifyClientProvider: SpotifyClientProvider, _idsService: TracksIdsService, _logger: ILogger<LikedTracksService>) =
-    let rec downloadIdsAsync (offset: int) =
-        task {
-            let! tracks = _spotifyClientProvider.Client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+  let rec downloadIdsAsync' (userId: int64) (offset: int) =
+    task {
+      let client =
+        _spotifyClientProvider.GetClient(userId)
 
-            let! nextTracksIds =
-                if tracks.Next = null then
-                    [] |> Task.FromResult
-                else
-                    downloadIdsAsync (offset + 50)
+      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
 
-            let currentTracksIds =
-                tracks.Items
-                |> List.ofSeq
-                |> List.map (fun x -> x.Track.Id)
-                |> List.map RawTrackId.create
+      let! nextTracksIds =
+        if tracks.Next = null then
+          [] |> Task.FromResult
+        else
+          downloadIdsAsync' userId (offset + 50)
 
-            return List.append nextTracksIds currentTracksIds
-        }
+      let currentTracksIds =
+        tracks.Items
+        |> List.ofSeq
+        |> List.map (fun x -> x.Track.Id)
+        |> List.map RawTrackId.create
 
-    member _.listIdsAsync =
-        _logger.LogInformation("Listing liked tracks ids")
+      return List.append nextTracksIds currentTracksIds
+    }
 
-        _idsService.readOrDownloadAsync "LikedTracks.json" (downloadIdsAsync 0)
+  member _.ListIdsAsync userId refreshCache =
+    task {
+      _logger.LogInformation("Listing liked tracks ids")
+
+      let! tracksIds = _idsService.ReadOrDownloadAsync "LikedTracks.json" (downloadIdsAsync' userId 0) refreshCache
+
+      _logger.LogInformation("Liked tracks count: {LikedTracksIdsCount}", tracksIds.Length)
+
+      return tracksIds
+    }

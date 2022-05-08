@@ -1,33 +1,66 @@
 ﻿namespace Generator.Services
 
-open Generator
-open Microsoft.Extensions.Hosting
+open System.Text.Json
+open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Options
+open Shared.Services
+open Shared.QueueMessages
+open Generator.Extensions
+open Generator.Domain
+open Shared.Settings
+open Telegram.Bot
+open Telegram.Bot.Types
 
 type GeneratorService
-    (
-        _likedTracksService: LikedTracksService,
-        _historyPlaylistsService: HistoryPlaylistsService,
-        _targetPlaylistService: TargetPlaylistService,
-        _hostApplicationLifetime: IHostApplicationLifetime,
-        _spotifyClientProvider: SpotifyClientProvider,
-        _playlistsService: PlaylistsService
-    ) =
-    member _.generatePlaylist() =
-        task {
-            let! likedTracksIds = _likedTracksService.listIdsAsync
-            let! historyTracksIds = _historyPlaylistsService.listTracksIdsAsync
-            let! playlistsTracksIds = _playlistsService.listPlaylistsTracksIds
+  (
+    _likedTracksService: LikedTracksService,
+    _historyPlaylistsService: HistoryPlaylistsService,
+    _targetPlaylistService: TargetPlaylistService,
+    _spotifyClientProvider: SpotifyClientProvider,
+    _playlistsService: PlaylistsService,
+    _logger: ILogger<GeneratorService>,
+    _amazonOptions: IOptions<AmazonSettings>,
+    _bot: ITelegramBotClient
+  ) =
+  let _amazonSettings = _amazonOptions.Value
 
-            let tracksIdsToImport =
-                PlaylistGenerator.generatePlaylist likedTracksIds historyTracksIds playlistsTracksIds
+  member this.GeneratePlaylistAsync(messageBody: string) =
+    task {
+      let queueMessage =
+        JsonSerializer.Deserialize<GeneratePlaylistMessage>(messageBody)
 
-            do! _targetPlaylistService.saveTracksAsync tracksIdsToImport
-            do! _historyPlaylistsService.updateAsync tracksIdsToImport
+      let! likedTracksIds = _likedTracksService.ListIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
+      let! historyTracksIds = _historyPlaylistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
+      let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
 
-            let newHistoryTracksIds =
-                tracksIdsToImport
-                |> List.map SpotifyTrackId.rawValue
-                |> List.append historyTracksIds
+      let tracksIdsToExclude =
+        List.append likedTracksIds historyTracksIds
 
-            do! _historyPlaylistsService.updateCachedAsync newHistoryTracksIds
-        }
+      _logger.LogInformation("Tracks to exclude count: {TracksToExcludeCount}", tracksIdsToExclude.Length)
+
+      let potentialTracks =
+        playlistsTracksIds
+        |> List.except tracksIdsToExclude
+
+      _logger.LogInformation("Potential tracks count: {PotentialTracksCount}", potentialTracks.Length)
+
+      let tracksIdsToImport =
+        potentialTracks
+        |> List.shuffle
+        |> List.take 20
+        |> List.map SpotifyTrackId.create
+
+      do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
+      do! _historyPlaylistsService.UpdateAsync queueMessage.TelegramId tracksIdsToImport
+
+      let newHistoryTracksIds =
+        tracksIdsToImport
+        |> List.map SpotifyTrackId.rawValue
+        |> List.append historyTracksIds
+
+      do! _historyPlaylistsService.UpdateCachedAsync queueMessage.TelegramId newHistoryTracksIds
+
+      (ChatId(queueMessage.TelegramId), "Playlist generated!")
+      |> _bot.SendTextMessageAsync
+      |> ignore
+    }
