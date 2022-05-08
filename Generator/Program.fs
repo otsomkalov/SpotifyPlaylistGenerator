@@ -27,6 +27,8 @@ module Program =
       .AddSingleton<SQSService>()
       .AddSingleton<AccountsService>()
 
+    services.AddApplicationInsightsTelemetryWorkerService()
+
     services.AddHostedService<Worker>()
 
     ()

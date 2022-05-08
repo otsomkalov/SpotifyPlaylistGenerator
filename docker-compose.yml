@@ -22,6 +22,7 @@ services:
       AWS_ACCESS_KEY_ID:
       AWS_SECRET_ACCESS_KEY:
       Amazon:QueueUrl:
+      Database:ConnectionString:
   spotify-playlist-generator-worker:
     container_name: spotify-playlist-generator-worker
     image: spotify-playlist-generator-worker:latest
@@ -41,6 +42,7 @@ services:
       AWS_ACCESS_KEY_ID:
       AWS_SECRET_ACCESS_KEY:
       Amazon:QueueUrl:
+      Database:ConnectionString:
   spotify-playlist-generator-database:
     container_name: spotify-playlist-generator-database
     image: postgres:latest

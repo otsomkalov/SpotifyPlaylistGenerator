@@ -39,8 +39,9 @@ module Program =
 
       .AddScoped<MessageService>()
 
-    services.AddControllers().AddNewtonsoftJson()
+    services.AddApplicationInsightsTelemetry()
 
+    services.AddControllers().AddNewtonsoftJson()
 
   [<EntryPoint>]
   let main args =
