@@ -50,5 +50,7 @@ let addServices (services: IServiceCollection) =
   services.AddSingleton<IAmazonSQS>(configureSQS)
   services.AddSingleton<ITelegramBotClient>(configureTelegramBotClient)
 
+  services.AddApplicationInsightsTelemetry()
+
 let addDbContext (lifetime: ServiceLifetime) (services: IServiceCollection) =
   services.AddDbContext<AppDbContext>(configureDbContext, lifetime)

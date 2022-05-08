@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    <PackageReference Update="FSharp.Core" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>
