@@ -11,7 +11,6 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Shared
-open Shared1
 
 module Program =
 

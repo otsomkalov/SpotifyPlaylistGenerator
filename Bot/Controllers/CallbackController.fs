@@ -45,7 +45,9 @@ type CallbackController
       let! spotifyUserProfile = spotifyClient.UserProfile.Current()
 
       let loginMessage =
-        SpotifyLoginMessage(SpotifyId = spotifyUserProfile.Id, TokenResponse = tokenResponse)
+        SpotifyLogin
+          { SpotifyId = spotifyUserProfile.Id
+            TokenResponse = tokenResponse }
 
       do! _sqsService.SendMessageAsync loginMessage MessageTypes.SpotifyLogin
 

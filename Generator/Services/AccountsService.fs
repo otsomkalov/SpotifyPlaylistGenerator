@@ -10,10 +10,8 @@ type AccountsService(_spotifyClientProvider: SpotifyClientProvider) =
       let linkAccountsMessage =
         JsonSerializer.Deserialize<LinkAccountsMessage>(message)
 
-      let linkAccountsMessage' = linkAccountsMessage :> IMessage
-
       let spotifyClient =
-        _spotifyClientProvider.GetClient linkAccountsMessage'.SpotifyId
+        _spotifyClientProvider.GetClient linkAccountsMessage.SpotifyId
 
       _spotifyClientProvider.SetClient(linkAccountsMessage.TelegramId, spotifyClient)
 

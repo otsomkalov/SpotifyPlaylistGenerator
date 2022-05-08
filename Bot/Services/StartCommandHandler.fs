@@ -27,7 +27,9 @@ type StartCommandHandler
       |> _spotifyClientProvider.SetClient
 
       let linkAccountsMessage =
-        LinkAccountsMessage(SpotifyId = data, TelegramId = message.From.Id)
+        LinkAccounts
+          { SpotifyId = data
+            TelegramId = message.From.Id }
 
       do! _sqsService.SendMessageAsync linkAccountsMessage MessageTypes.LinkAccounts
 

@@ -73,7 +73,10 @@ type GenerateCommandHandler
   let handleCommandDataAsync (message: Message) refreshCache =
     task {
       let queueMessage =
-        GeneratePlaylistMessage(SpotifyId = _spotifyIdProvider.Get(message.From.Id), RefreshCache = refreshCache, TelegramId = 1)
+        GeneratePlaylist
+          { SpotifyId = _spotifyIdProvider.Get(message.From.Id)
+            RefreshCache = refreshCache
+            TelegramId = 1 }
 
       do! _sqsService.SendMessageAsync queueMessage MessageTypes.GeneratePlaylist
 
@@ -83,7 +86,10 @@ type GenerateCommandHandler
   let handleEmptyCommandAsync (message: Message) =
     task {
       let queueMessage =
-        GeneratePlaylistMessage(SpotifyId = _spotifyIdProvider.Get(message.From.Id), TelegramId = message.From.Id, RefreshCache = false)
+        GeneratePlaylist
+          { SpotifyId = _spotifyIdProvider.Get(message.From.Id)
+            TelegramId = message.From.Id
+            RefreshCache = false }
 
       do! _sqsService.SendMessageAsync queueMessage MessageTypes.GeneratePlaylist
 

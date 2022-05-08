@@ -11,7 +11,7 @@ open Shared.Settings
 type SQSService(_sqs: IAmazonSQS, _amazonOptions: IOptions<AmazonSettings>) =
   let _amazonSettings = _amazonOptions.Value
 
-  let createRequest messageBody messageType groupId =
+  let createRequest messageType groupId messageBody =
     let sendMessageRequest =
       SendMessageRequest(_amazonSettings.QueueUrl, messageBody, MessageGroupId = groupId)
 
@@ -22,15 +22,13 @@ type SQSService(_sqs: IAmazonSQS, _amazonOptions: IOptions<AmazonSettings>) =
 
     sendMessageRequest
 
-  member this.SendMessageAsync (content: IMessage) messageType =
+  member this.SendMessageAsync (content: QueueMessage) messageType =
     task {
-      let messageBody =
-        JsonSerializer.Serialize content
-
-      let sendMessageRequest =
-        createRequest messageBody messageType content.SpotifyId
-
-      let! _ = _sqs.SendMessageAsync(sendMessageRequest)
+      content
+      |> JsonSerializer.Serialize
+      |> createRequest messageType content.SpotifyId
+      |> _sqs.SendMessageAsync
+      |> ignore
 
       return ()
     }

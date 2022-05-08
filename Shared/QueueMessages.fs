@@ -1,32 +1,32 @@
 ﻿namespace Shared.QueueMessages
 
+open System.Text.Json.Serialization
 open Microsoft.FSharp.Core
 open SpotifyAPI.Web
 
-type IMessage =
-  abstract member SpotifyId: string with get, set
+type GeneratePlaylistMessage =
+  { TelegramId: int64
+    RefreshCache: bool
+    SpotifyId: string }
 
-type GeneratePlaylistMessage() =
-  interface IMessage with
-    member val SpotifyId = "" with get, set
+type SpotifyLoginMessage =
+  { SpotifyId: string
+    TokenResponse: AuthorizationCodeTokenResponse }
 
-  member val TelegramId = 0L with get, set
-  member val RefreshCache = false with get, set
-  member val SpotifyId = "" with get, set
+type LinkAccountsMessage =
+  { SpotifyId: string
+    TelegramId: int64 }
 
-type SpotifyLoginMessage() =
-  interface IMessage with
-    member val SpotifyId = "" with get, set
-
-  member val SpotifyId = "" with get, set
-  member val TokenResponse: AuthorizationCodeTokenResponse = null with get, set
-
-type LinkAccountsMessage() =
-  interface IMessage with
-    member val SpotifyId = "" with get, set
-
-  member val SpotifyId = "" with get, set
-  member val TelegramId = 0L with get, set
+[<JsonFSharpConverter(unionEncoding = (JsonUnionEncoding.Untagged ||| JsonUnionEncoding.UnwrapRecordCases))>]
+type QueueMessage =
+  | GeneratePlaylist of GeneratePlaylistMessage
+  | SpotifyLogin of SpotifyLoginMessage
+  | LinkAccounts of LinkAccountsMessage
+  member this.SpotifyId =
+    match this with
+    | GeneratePlaylist m -> m.SpotifyId
+    | LinkAccounts m -> m.SpotifyId
+    | SpotifyLogin m -> m.SpotifyId
 
 module MessageTypes =
   [<Literal>]
