@@ -1,30 +1,39 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <UserSecretsId>dotnet-Generator-D9CF3DE2-A7E4-4383-A94A-C45616009C34</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <RootNamespace>Generator</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Extensions\List.fs" />
-    <Compile Include="Domain\Spotify.fs" />
-    <Compile Include="Logic\PlaylistGenerator.fs" />
-    <Compile Include="Settings\Settings.fs" />
-    <Compile Include="Settings\SpotifySettings.fs" />
-    <Compile Include="Services\SpotifyClientProvider.fs" />
-    <Compile Include="Services\FileService.fs" />
-    <Compile Include="Services\TracksIdsService.fs" />
-    <Compile Include="Services\PlaylistService.fs" />
-    <Compile Include="Services\PlaylistsService.fs" />
-    <Compile Include="Services\LikedTracksService.fs" />
-    <Compile Include="Services\HistoryPlaylistsService.fs" />
-    <Compile Include="Services\TargetPlaylistService.fs" />
-    <Compile Include="Services\GeneratorService.fs" />
-    <Compile Include="CallbackController.fs" />
-    <Compile Include="Program.fs" />
-    
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1"/>
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.20.0"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.2.2" />
+    <Compile Include="Extensions.fs"/>
+    <Compile Include="Domain.fs"/>
+    <Compile Include="Migrations/*.fs"/>
+    <Compile Include="Services\FileService.fs"/>
+    <Compile Include="Services\TracksIdsService.fs"/>
+    <Compile Include="Services\PlaylistService.fs"/>
+    <Compile Include="Services\HistoryPlaylistsService.fs"/>
+    <Compile Include="Services\LikedTracksService.fs"/>
+    <Compile Include="Services\PlaylistsService.fs"/>
+    <Compile Include="Services\TargetPlaylistService.fs"/>
+    <Compile Include="Services\GeneratorService.fs"/>
+    <Compile Include="Services\SpotifyLoginService.fs"/>
+    <Compile Include="Services\SQSService.fs"/>
+    <Compile Include="Services\AccountsService.fs"/>
+    <Compile Include="Worker.fs"/>
+    <Compile Include="Program.fs"/>
+    <Content Include=".dockerignore"/>
+    <Content Include="Dockerfile"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.fsproj"/>
   </ItemGroup>
 </Project>

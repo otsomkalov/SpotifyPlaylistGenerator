@@ -1,71 +1,44 @@
-namespace Generator
+﻿namespace Generator
 
-open System
-open System.Collections.Generic
-open System.Diagnostics
-open Generator.Settings
-open Microsoft.AspNetCore.Builder
-open Microsoft.Extensions.DependencyInjection
+#nowarn "20"
+
 open Generator.Services
-open Microsoft.Extensions.Configuration
-open SpotifyAPI.Web
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+open Shared
 
 module Program =
-    let configureServices (configuration: IConfiguration) (services: IServiceCollection) =
-        services.Configure<Settings>(configuration)
-        services.Configure<SpotifySettings>(configuration.GetSection(SpotifySettings.SectionName))
+  let configureServices (context: HostBuilderContext) (services: IServiceCollection) =
+    services
+    |> Startup.addSettings context.Configuration
+    |> Startup.addServices
+    |> Startup.addDbContext ServiceLifetime.Singleton
 
-        services
-            .AddSingleton<SpotifyClientProvider>()
-            .AddSingleton<FileService>()
-            .AddSingleton<TracksIdsService>()
-            .AddSingleton<PlaylistService>()
-            .AddSingleton<PlaylistsService>()
-            .AddSingleton<LikedTracksService>()
-            .AddSingleton<HistoryPlaylistsService>()
-            .AddSingleton<TargetPlaylistService>()
+    services
+      .AddSingleton<FileService>()
+      .AddSingleton<TracksIdsService>()
+      .AddSingleton<PlaylistService>()
+      .AddSingleton<HistoryPlaylistsService>()
+      .AddSingleton<LikedTracksService>()
+      .AddSingleton<PlaylistsService>()
+      .AddSingleton<TargetPlaylistService>()
+      .AddSingleton<GeneratorService>()
+      .AddSingleton<SpotifyLoginService>()
+      .AddSingleton<SQSService>()
+      .AddSingleton<AccountsService>()
 
-        services.AddControllers()
+    services.AddApplicationInsightsTelemetryWorkerService()
 
-    let openSpotifyLoginPage (spotifySettings: SpotifySettings) =
-        let loginRequest =
-            (Uri(spotifySettings.CallbackUrl), spotifySettings.ClientId, LoginRequest.ResponseType.Code)
-            |> LoginRequest
+    services.AddHostedService<Worker>()
 
-        loginRequest.Scope <-
-            [ Scopes.PlaylistModifyPrivate
-              Scopes.PlaylistModifyPublic
-              Scopes.UserLibraryRead ]
-            |> List<string>
+    ()
 
-        let cleanedUri =
-            loginRequest.ToUri().ToString().Replace("&", "^&")
+  [<EntryPoint>]
+  let main args =
+    Host
+      .CreateDefaultBuilder(args)
+      .ConfigureServices(configureServices)
+      .Build()
+      .Run()
 
-        ("cmd", $"/c start {cleanedUri}") |> Process.Start
-
-        ()
-
-    [<EntryPoint>]
-    let main args =
-        let builder =
-            WebApplication.CreateBuilder(args)
-
-        let services = builder.Services
-        let configuration = builder.Configuration
-
-        configureServices configuration services
-
-        let app = builder.Build()
-
-        app.MapControllers()
-
-        let spotifySettings =
-            configuration
-                .GetSection(SpotifySettings.SectionName)
-                .Get<SpotifySettings>()
-
-        openSpotifyLoginPage spotifySettings
-
-        app.Run()
-
-        0 // exit code
+    0 // exit code
