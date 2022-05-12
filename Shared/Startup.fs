@@ -46,9 +46,7 @@ let addSettings (configuration: IConfiguration) (services: IServiceCollection) =
 
 let addServices (services: IServiceCollection) =
   services.AddSingleton<SpotifyClientProvider>()
+  services.AddDbContext<AppDbContext>(configureDbContext)
 
   services.AddSingleton<IAmazonSQS>(configureSQS)
   services.AddSingleton<ITelegramBotClient>(configureTelegramBotClient)
-
-let addDbContext (lifetime: ServiceLifetime) (services: IServiceCollection) =
-  services.AddDbContext<AppDbContext>(configureDbContext, lifetime)

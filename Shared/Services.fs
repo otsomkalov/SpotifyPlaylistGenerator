@@ -10,13 +10,13 @@ type SpotifyClientProvider() =
   let _clientsByTelegramId =
     Dictionary<int64, ISpotifyClient>()
 
-  member this.GetClient telegramId =
+  member this.Get telegramId =
     if _clientsByTelegramId.ContainsKey(telegramId) then
       _clientsByTelegramId[telegramId]
     else
       null
 
-  member this.GetClient spotifyId =
+  member this.Get spotifyId =
     if _clientsBySpotifyId.ContainsKey(spotifyId) then
       _clientsBySpotifyId[spotifyId]
     else

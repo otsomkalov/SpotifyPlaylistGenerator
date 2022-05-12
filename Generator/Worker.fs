@@ -6,13 +6,14 @@ open System.Threading
 open System.Threading.Tasks
 open Amazon.SQS
 open Amazon.SQS.Model
-open Generator.Services
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Shared.QueueMessages
 open Shared.Settings
 open Telegram.Bot
+open Generator.Worker.Services
 
 type Worker
   (
@@ -20,25 +21,16 @@ type Worker
     _sqs: IAmazonSQS,
     _bot: ITelegramBotClient,
     _amazonOptions: IOptions<AmazonSettings>,
-    _generatorService: GeneratorService,
-    _loginService: SpotifyLoginService,
-    _sqsService: SQSService,
-    _accountsService: AccountsService
+    _serviceScopeFactory: IServiceScopeFactory
   ) =
   inherit BackgroundService()
   let _amazonSettings = _amazonOptions.Value
+  let serviceScope = _serviceScopeFactory.CreateScope()
+  let _generatorService = serviceScope.ServiceProvider.GetRequiredService<GeneratorService>()
 
   let processMessageAsync (message: Message) =
     task {
-      let processMessageBodyFunction =
-        match message.MessageAttributes[MessageAttributeNames.Type]
-          .StringValue
-          with
-        | MessageTypes.SpotifyLogin -> _loginService.SaveLoginAsync
-        | MessageTypes.GeneratePlaylist -> _generatorService.GeneratePlaylistAsync
-        | MessageTypes.LinkAccounts -> _accountsService.LinkAsync
-
-      do! processMessageBodyFunction message.Body
+      do! _generatorService.GeneratePlaylistAsync message.Body
 
       let! _ =
         (_amazonSettings.QueueUrl, message.ReceiptHandle)
@@ -67,8 +59,6 @@ type Worker
 
   override _.ExecuteAsync(ct: CancellationToken) =
     task {
-      do! _sqsService.CleanupQueueAsync()
-
       while not ct.IsCancellationRequested do
         try
           do! runAsync ()

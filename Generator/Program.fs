@@ -1,44 +1,66 @@
-﻿namespace Generator
+namespace Generator
 
 #nowarn "20"
 
-open Generator.Services
+open Generator.Bot.Services
+open Generator.Bot.Services.Playlist
+open Generator.Worker.Services
+open Microsoft.AspNetCore.Builder
+open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Shared
 
 module Program =
-  let configureServices (context: HostBuilderContext) (services: IServiceCollection) =
+
+  let configureServices (services: IServiceCollection) (configuration: IConfiguration) =
     services
-    |> Startup.addSettings context.Configuration
+    |> Startup.addSettings configuration
     |> Startup.addServices
-    |> Startup.addDbContext ServiceLifetime.Singleton
 
     services
-      .AddSingleton<FileService>()
-      .AddSingleton<TracksIdsService>()
-      .AddSingleton<PlaylistService>()
-      .AddSingleton<HistoryPlaylistsService>()
-      .AddSingleton<LikedTracksService>()
-      .AddSingleton<PlaylistsService>()
-      .AddSingleton<TargetPlaylistService>()
-      .AddSingleton<GeneratorService>()
-      .AddSingleton<SpotifyLoginService>()
-      .AddSingleton<SQSService>()
-      .AddSingleton<AccountsService>()
+      .AddScoped<UnauthorizedUserCommandHandler>()
+      .AddScoped<StartCommandHandler>()
+      .AddScoped<GenerateCommandHandler>()
+      .AddScoped<UnknownCommandHandler>()
+      .AddScoped<EmptyCommandDataHandler>()
 
-    services.AddApplicationInsightsTelemetryWorkerService()
+      .AddScoped<PlaylistCommandHandler>()
+      .AddScoped<AddSourcePlaylistCommandHandler>()
+      .AddScoped<SetTargetPlaylistCommandHandler>()
+      .AddScoped<SetHistoryPlaylistCommandHandler>()
+      .AddScoped<AddHistoryPlaylistCommandHandler>()
+
+      .AddScoped<MessageService>()
+
+    services
+      .AddScoped<FileService>()
+      .AddScoped<TracksIdsService>()
+      .AddScoped<PlaylistService>()
+      .AddScoped<HistoryPlaylistsService>()
+      .AddScoped<LikedTracksService>()
+      .AddScoped<PlaylistsService>()
+      .AddScoped<TargetPlaylistService>()
+      .AddScoped<GeneratorService>()
 
     services.AddHostedService<Worker>()
 
-    ()
+    services.AddApplicationInsightsTelemetry()
+
+    services.AddControllers().AddNewtonsoftJson()
 
   [<EntryPoint>]
   let main args =
-    Host
-      .CreateDefaultBuilder(args)
-      .ConfigureServices(configureServices)
-      .Build()
-      .Run()
 
-    0 // exit code
+    let builder =
+      WebApplication.CreateBuilder(args)
+
+    configureServices builder.Services builder.Configuration
+
+    let app = builder.Build()
+
+    app.MapControllers()
+
+    app.Run()
+
+    0
