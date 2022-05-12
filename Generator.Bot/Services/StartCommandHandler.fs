@@ -19,8 +19,7 @@ type StartCommandHandler
 
   let sendMessageAsync (message: Message) =
     task {
-      (ChatId(message.From.Id), "You've successfully logged in!")
-      |> _bot.SendTextMessageAsync
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "You've successfully logged in!", replyToMessageId = message.MessageId)
       |> ignore
     }
 

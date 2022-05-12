@@ -27,20 +27,18 @@ type PlaylistCommandHandler
         do! handlePlaylistUriFunction message playlistId
       with
       | _ ->
-        let! _ =
-          (ChatId(message.From.Id), "Playlist not found in Spotify or you don't have access to it.")
-          |> _bot.SendTextMessageAsync
-
-        ()
+        _bot.SendTextMessageAsync(
+          ChatId(message.Chat.Id),
+          "Playlist not found in Spotify or you don't have access to it.",
+          message.MessageId
+        )
+        |> ignore
     }
 
   let handleNonUriCommandDataAsync (message: Message) =
     task {
-      let! _ =
-        (ChatId(message.From.Id), "You have entered wrong playlist url")
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "You have entered wrong playlist url", replyToMessageId = message.MessageId)
+      |> ignore
     }
 
   let handleCommandDataAsync (message: Message) (data: string) handlePlaylistUriFunction =

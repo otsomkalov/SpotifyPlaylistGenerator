@@ -4,25 +4,17 @@ open Shared.Data
 open Telegram.Bot
 open Telegram.Bot.Types
 
-type AddHistoryPlaylistCommandHandler
-  (
-    _playlistCommandHandler: PlaylistCommandHandler,
-    _context: AppDbContext,
-    _bot: ITelegramBotClient
-  ) =
+type AddHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext, _bot: ITelegramBotClient) =
   let addHistoryPlaylistAsync (message: Message) playlistId =
     task {
       let! _ =
-        Playlist(Url = playlistId, UserId = message.Chat.Id, PlaylistType = PlaylistType.TargetHistory)
+        Playlist(Url = playlistId, UserId = message.From.Id, PlaylistType = PlaylistType.TargetHistory)
         |> _context.Playlists.AddAsync
 
       let! _ = _context.SaveChangesAsync()
 
-      let! _ =
-        (ChatId(message.From.Id), "History playlist successfully added!")
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "History playlist successfully added!", replyToMessageId = message.MessageId)
+      |> ignore
     }
 
   member this.HandleAsync(message: Message) =

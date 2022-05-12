@@ -26,7 +26,6 @@ type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: I
         InlineKeyboardButton("Login", Url = loginRequest.ToUri().ToString())
         |> InlineKeyboardMarkup
 
-      let! _ = _bot.SendTextMessageAsync(ChatId(message.From.Id), "Login to generate playlist", replyMarkup = replyMarkup)
-
-      ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Login to generate playlist", replyMarkup = replyMarkup)
+      |> ignore
     }

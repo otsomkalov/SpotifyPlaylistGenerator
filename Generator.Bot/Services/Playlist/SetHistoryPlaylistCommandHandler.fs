@@ -6,19 +6,12 @@ open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
 open EntityFrameworkCore.FSharp.DbContextHelpers
 
-type SetHistoryPlaylistCommandHandler
-  (
-    _playlistCommandHandler: PlaylistCommandHandler,
-    _context: AppDbContext,
-    _bot: ITelegramBotClient
-  ) =
+type SetHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext, _bot: ITelegramBotClient) =
   let addTargetHistoryPlaylistAsync playlistId userId =
     task {
-      let! _ =
-        Playlist(Url = playlistId, UserId = userId, PlaylistType = PlaylistType.TargetHistory)
-        |> _context.Playlists.AddAsync
-
-      return ()
+      Playlist(Url = playlistId, UserId = userId, PlaylistType = PlaylistType.TargetHistory)
+      |> _context.Playlists.AddAsync
+      |> ignore
     }
 
   let updateTargetHistoryPlaylistAsync (playlist: Playlist) playlistId =
@@ -48,11 +41,8 @@ type SetHistoryPlaylistCommandHandler
 
       let! _ = _context.SaveChangesAsync()
 
-      let! _ =
-        (ChatId(message.From.Id), "Target history playlist successfully set!")
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Target history playlist successfully set!", replyToMessageId = message.MessageId)
+      |> ignore
     }
 
   member this.HandleAsync(message: Message) =

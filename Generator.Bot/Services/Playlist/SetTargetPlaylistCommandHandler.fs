@@ -43,11 +43,8 @@ type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandH
 
       let! _ = _context.SaveChangesAsync()
 
-      let! _ =
-        (ChatId(message.From.Id), "Target playlist successfully set!")
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Target playlist successfully set!", replyToMessageId = message.MessageId)
+      |> ignore
     }
 
   member this.HandleAsync(message: Message) =

@@ -61,11 +61,12 @@ type GenerateCommandHandler
 
   let handleWrongCommandDataAsync (message: Message) =
     task {
-      let! _ =
-        (ChatId(message.From.Id), "Command data should be boolean value indicates either refresh tracks cache or not")
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(
+        ChatId(message.Chat.Id),
+        "Command data should be boolean value indicates either refresh tracks cache or not",
+        replyToMessageId = message.MessageId
+      )
+      |> ignore
     }
 
   let sendSQSMessageAsync message =
@@ -83,10 +84,13 @@ type GenerateCommandHandler
         { TelegramId = message.From.Id
           RefreshCache = refreshCache }
 
-      do! sendSQSMessageAsync message
+      do! sendSQSMessageAsync queueMessage
 
-      (ChatId(message.From.Id), "Your playlist generation requests is queued")
-      |> _bot.SendTextMessageAsync
+      _bot.SendTextMessageAsync(
+        ChatId(message.Chat.Id),
+        "Your playlist generation requests is queued",
+        replyToMessageId = message.MessageId
+      )
       |> ignore
 
       return ()
@@ -128,11 +132,8 @@ type GenerateCommandHandler
 
   let handleUserPlaylistsValidationErrorAsync (message: Message) error =
     task {
-      let! _ =
-        (ChatId(message.From.Id), error)
-        |> _bot.SendTextMessageAsync
-
-      return ()
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), error, replyToMessageId = message.MessageId)
+      |> ignore
     }
 
   member this.HandleAsync(message: Message) =
