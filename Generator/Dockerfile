@@ -5,16 +5,16 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["Bot/Bot.fsproj", "Bot/"]
-RUN dotnet restore "Bot/Bot.fsproj"
+COPY ["Generator/Generator.fsproj", "Generator/"]
+RUN dotnet restore "Generator/Generator.fsproj"
 COPY . .
-WORKDIR "/src/Bot"
-RUN dotnet build "Bot.fsproj" -c Release -o /app/build
+WORKDIR "/src/Generator"
+RUN dotnet build "Generator.fsproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Bot.fsproj" -c Release -o /app/publish
+RUN dotnet publish "Generator.fsproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Bot.dll"]
+ENTRYPOINT ["dotnet", "Generator.dll"]
