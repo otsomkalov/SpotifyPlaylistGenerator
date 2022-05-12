@@ -30,7 +30,7 @@ type PlaylistCommandHandler
         _bot.SendTextMessageAsync(
           ChatId(message.Chat.Id),
           "Playlist not found in Spotify or you don't have access to it.",
-          message.MessageId
+          replyToMessageId = message.MessageId
         )
         |> ignore
     }
