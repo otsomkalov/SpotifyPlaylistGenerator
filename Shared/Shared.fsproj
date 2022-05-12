@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="Data.fs" />
     <Compile Include="Migrations\20220506193632_Init.fs" />
+    <Compile Include="Migrations\20220512165341_ReworkAuth.fs" />
     <Compile Include="Migrations\AppDbContextModelSnapshot.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="Services.fs" />

@@ -1,6 +1,7 @@
 ﻿namespace Shared.Data
 
 open Microsoft.EntityFrameworkCore
+open Microsoft.FSharp.Core
 
 type PlaylistType =
   | Source = 0
@@ -10,8 +11,6 @@ type PlaylistType =
 
 type User() =
   member val Id = 0L with get, set
-
-  member val SpotifyId = "" with get, set
 
   member val Playlists: Playlist list = [] with get, set
 

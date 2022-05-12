@@ -7,14 +7,31 @@ open Microsoft.EntityFrameworkCore.Infrastructure
 open Microsoft.EntityFrameworkCore.Metadata
 open Microsoft.EntityFrameworkCore.Migrations
 open Microsoft.EntityFrameworkCore.Storage.ValueConversion
-open Npgsql.EntityFrameworkCore.PostgreSQL.Metadata
 open Shared.Data
 
 [<DbContext(typeof<AppDbContext>)>]
-type AppDbContextModelSnapshot() =
-    inherit ModelSnapshot()
+[<Migration("20220512165341_ReworkAuth")>]
+type ReworkAuth() =
+    inherit Migration()
 
-    override this.BuildModel(modelBuilder: ModelBuilder) =
+    override this.Up(migrationBuilder:MigrationBuilder) =
+        migrationBuilder.DropColumn(
+            name = "SpotifyId"
+            ,table = "Users"
+            ) |> ignore
+
+
+    override this.Down(migrationBuilder:MigrationBuilder) =
+        migrationBuilder.AddColumn<string>(
+            name = "SpotifyId"
+            ,table = "Users"
+            ,``type`` = "text"
+            ,nullable = false
+            ,defaultValue = "\"\""
+            ) |> ignore
+
+
+    override this.BuildTargetModel(modelBuilder: ModelBuilder) =
         modelBuilder
             .HasAnnotation("ProductVersion", "6.0.4")
             .HasAnnotation("Relational:MaxIdentifierLength", 63) |> ignore

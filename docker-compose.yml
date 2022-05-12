@@ -23,26 +23,6 @@ services:
       AWS_SECRET_ACCESS_KEY:
       Amazon:QueueUrl:
       Database:ConnectionString:
-  spotify-playlist-generator-worker:
-    container_name: spotify-playlist-generator-worker
-    image: spotify-playlist-generator-worker:latest
-    restart: always
-    build:
-      context: .
-      dockerfile: ./Generator/Dockerfile
-    depends_on:
-      - telegram-bot-api
-      - spotify-playlist-generator-database
-    environment:
-      Telegram:Token:
-      Telegram:BotUrl:
-      Spotify:ClientId:
-      Spotify:ClientSecret:
-      ApplicationInsights:InstrumentationKey:
-      AWS_ACCESS_KEY_ID:
-      AWS_SECRET_ACCESS_KEY:
-      Amazon:QueueUrl:
-      Database:ConnectionString:
   spotify-playlist-generator-database:
     container_name: spotify-playlist-generator-database
     image: postgres:latest
