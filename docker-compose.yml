@@ -1,13 +1,13 @@
 ﻿version: '3.1'
 
 services:
-  spotify-playlist-generator-telegram-bot:
-    container_name: spotify-playlist-generator-telegram-bot
-    image: spotify-playlist-generator-telegram-bot:latest
+  spotify-playlist-generator:
+    container_name: spotify-playlist-generator
+    image: spotify-playlist-generator:latest
     restart: always
     build:
       context: .
-      dockerfile: ./Bot/Dockerfile
+      dockerfile: ./Generator/Dockerfile
     depends_on:
       - telegram-bot-api
       - spotify-playlist-generator-database
