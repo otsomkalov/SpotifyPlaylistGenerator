@@ -47,7 +47,6 @@ module Program =
 
     services
       .AddApplicationInsightsTelemetry()
-      .AddApplicationInsightsTelemetryWorkerService()
 
     services.AddControllers().AddNewtonsoftJson()
 
