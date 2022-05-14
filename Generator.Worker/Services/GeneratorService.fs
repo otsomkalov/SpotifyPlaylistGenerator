@@ -31,7 +31,7 @@ type GeneratorService
       let queueMessage =
         JsonSerializer.Deserialize<GeneratePlaylistMessage>(messageBody)
 
-      _logger.LogInformation("Received message to generate playlist for Spotify user with id {SpotifyUserId}", queueMessage.TelegramId)
+      _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
 
       (ChatId(queueMessage.TelegramId), "Generating playlist...")
       |> _bot.SendTextMessageAsync
@@ -44,13 +44,21 @@ type GeneratorService
       let tracksIdsToExclude =
         List.append likedTracksIds historyTracksIds
 
-      _logger.LogInformation("Tracks to exclude count: {TracksToExcludeCount}", tracksIdsToExclude.Length)
+      _logger.LogInformation(
+        "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
+        queueMessage.TelegramId,
+        tracksIdsToExclude.Length
+      )
 
       let potentialTracks =
         playlistsTracksIds
         |> List.except tracksIdsToExclude
 
-      _logger.LogInformation("Potential tracks count: {PotentialTracksCount}", potentialTracks.Length)
+      _logger.LogInformation(
+        "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks",
+        queueMessage.TelegramId,
+        potentialTracks.Length
+      )
 
       let tracksIdsToImport =
         potentialTracks

@@ -45,7 +45,8 @@ module Program =
 
     services.AddHostedService<Worker>()
 
-    services.AddApplicationInsightsTelemetry()
+    services
+      .AddApplicationInsightsTelemetry()
 
     services.AddControllers().AddNewtonsoftJson()
 

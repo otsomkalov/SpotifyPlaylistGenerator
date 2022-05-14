@@ -31,11 +31,9 @@ type LikedTracksService(_spotifyClientProvider: SpotifyClientProvider, _idsServi
 
   member _.ListIdsAsync userId refreshCache =
     task {
-      _logger.LogInformation("Listing liked tracks ids")
-
       let! tracksIds = _idsService.ReadOrDownloadAsync "LikedTracks.json" (downloadIdsAsync' userId 0) refreshCache
 
-      _logger.LogInformation("Liked tracks count: {LikedTracksIdsCount}", tracksIds.Length)
+      _logger.LogInformation("User with Telegram id {TelegramId} has {LikedTracksIdsCount} liked tracks", userId, tracksIds.Length)
 
       return tracksIds
     }

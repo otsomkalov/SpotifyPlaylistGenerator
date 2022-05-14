@@ -20,8 +20,6 @@ type HistoryPlaylistsService
 
   member _.ListTracksIdsAsync userId refreshCache =
     task {
-      _logger.LogInformation("Listing history playlists tracks ids")
-
       let! historyPlaylistsUrls =
         _context
           .Playlists
@@ -34,7 +32,11 @@ type HistoryPlaylistsService
 
       let! tracksIds = _playlistService.ListTracksIdsAsync userId historyPlaylistsUrls refreshCache
 
-      _logger.LogInformation("History playlists tracks count: {HistoryPlaylistsTracksCount}", tracksIds.Length)
+      _logger.LogInformation(
+        "User with Telegram id {TelegramId} has {HistoryPlaylistsTracksCount} tracks in history playlists",
+        userId,
+        tracksIds.Length
+      )
 
       return tracksIds
     }
