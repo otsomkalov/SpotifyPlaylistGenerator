@@ -47,10 +47,6 @@ type Worker
         ReceiveMessageRequest(_amazonSettings.QueueUrl, WaitTimeSeconds = 20)
         |> _sqs.ReceiveMessageAsync
 
-      _logger.LogInformation("Received {MessagesCount} messages", response.Messages.Count)
-      _logger.LogWarning("Received {MessagesCount} messages", response.Messages.Count)
-      _logger.LogError("Received {MessagesCount} messages", response.Messages.Count)
-
       let message =
         response.Messages |> Seq.tryHead
 
