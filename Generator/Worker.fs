@@ -1,7 +1,6 @@
 ﻿namespace Generator
 
 open System
-open System.Collections.Generic
 open System.Threading
 open System.Threading.Tasks
 open Amazon.SQS
@@ -10,7 +9,6 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
-open Shared.QueueMessages
 open Shared.Settings
 open Telegram.Bot
 open Generator.Worker.Services
@@ -25,8 +23,12 @@ type Worker
   ) =
   inherit BackgroundService()
   let _amazonSettings = _amazonOptions.Value
-  let serviceScope = _serviceScopeFactory.CreateScope()
-  let _generatorService = serviceScope.ServiceProvider.GetRequiredService<GeneratorService>()
+
+  let serviceScope =
+    _serviceScopeFactory.CreateScope()
+
+  let _generatorService =
+    serviceScope.ServiceProvider.GetRequiredService<GeneratorService>()
 
   let processMessageAsync (message: Message) =
     task {
@@ -41,12 +43,9 @@ type Worker
 
   let runAsync () =
     task {
-      let receiveMessageRequest =
+      let! response =
         ReceiveMessageRequest(_amazonSettings.QueueUrl, WaitTimeSeconds = 20)
-
-      receiveMessageRequest.MessageAttributeNames <- [ MessageAttributeNames.Type ] |> List<string>
-
-      let! response = _sqs.ReceiveMessageAsync(receiveMessageRequest)
+        |> _sqs.ReceiveMessageAsync
 
       let message =
         response.Messages |> Seq.tryHead

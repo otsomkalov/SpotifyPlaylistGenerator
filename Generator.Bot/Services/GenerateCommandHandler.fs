@@ -78,12 +78,8 @@ type GenerateCommandHandler
       |> ignore
     }
 
-  let handleCommandDataAsync (message: Message) refreshCache =
+  let sendGenerateMessageAsync (message: Message) queueMessage =
     task {
-      let queueMessage =
-        { TelegramId = message.From.Id
-          RefreshCache = refreshCache }
-
       do! sendSQSMessageAsync queueMessage
 
       _bot.SendTextMessageAsync(
@@ -92,8 +88,15 @@ type GenerateCommandHandler
         replyToMessageId = message.MessageId
       )
       |> ignore
+    }
 
-      return ()
+  let handleCommandDataAsync (message: Message) refreshCache =
+    task {
+      let queueMessage =
+        { TelegramId = message.From.Id
+          RefreshCache = refreshCache }
+
+      return! sendGenerateMessageAsync message queueMessage
     }
 
   let handleEmptyCommandAsync (message: Message) =
@@ -102,9 +105,7 @@ type GenerateCommandHandler
         { TelegramId = message.From.Id
           RefreshCache = false }
 
-      do! sendSQSMessageAsync queueMessage
-
-      return ()
+      return! sendGenerateMessageAsync message queueMessage
     }
 
   let validateCommandDataAsync (message: Message) data =
