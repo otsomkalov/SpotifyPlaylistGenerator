@@ -1,6 +1,7 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
-open Shared.Data
+open Database
+open Database.Entities
 open Telegram.Bot
 open Telegram.Bot.Types
 

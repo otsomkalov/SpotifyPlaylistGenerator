@@ -2,10 +2,11 @@
 
 open System.Collections.Generic
 open System.Linq
+open Database
+open Database.Entities
 open Generator.Worker.Domain
 open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Logging
-open Shared.Data
 open Shared.Services
 open SpotifyAPI.Web
 

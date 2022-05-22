@@ -1,7 +1,7 @@
 ﻿namespace Generator.Bot.Services
 
+open Database
 open Microsoft.Extensions.Logging
-open Shared.Data
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -53,7 +53,7 @@ type StartCommandHandler
   let createUserAsync userId =
     task {
       let! _ =
-        Shared.Data.User(Id = userId)
+        Database.Entities.User(Id = userId)
         |> _context.Users.AddAsync
 
       _context.SaveChangesAsync() |> ignore

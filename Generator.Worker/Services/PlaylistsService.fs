@@ -1,9 +1,10 @@
 ﻿namespace Generator.Worker.Services
 
+open Database
+open Database.Entities
 open Microsoft.Extensions.Logging
 open System.Linq
 open Microsoft.EntityFrameworkCore
-open Shared.Data
 
 type PlaylistsService(_playlistService: PlaylistService, _logger: ILogger<PlaylistsService>, _context: AppDbContext) =
   member _.ListTracksIdsAsync userId refreshCache =
