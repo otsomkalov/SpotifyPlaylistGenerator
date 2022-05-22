@@ -41,7 +41,7 @@ type MessageService
       | StartsWith "/sethistoryplaylist" -> validateUserLogin _setHistoryPlaylistCommandHandler.HandleAsync
       | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
       | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
-      | Equals Messages.Settings -> validateUserLogin _settingsCommandHandler.HandleAsync
+      | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
       | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 
     handleCommandFunction message

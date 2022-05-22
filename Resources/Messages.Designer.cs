@@ -62,7 +62,7 @@ namespace Resources {
         
         /// <summary>
         ///   Looks up a localized string similar to Your current settings are:
-        ///Include liked tracks - {0}.
+        ///*Include liked tracks* - {0}.
         /// </summary>
         public static string CurrentSettings {
             get {
@@ -94,6 +94,24 @@ namespace Resources {
         public static string IncludeLikedTracks {
             get {
                 return ResourceManager.GetString("IncludeLikedTracks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login.
+        /// </summary>
+        public static string Login {
+            get {
+                return ResourceManager.GetString("Login", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login to Spotify to generate playlist.
+        /// </summary>
+        public static string LoginToSpotify {
+            get {
+                return ResourceManager.GetString("LoginToSpotify", resourceCulture);
             }
         }
         

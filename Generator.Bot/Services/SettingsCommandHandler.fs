@@ -1,10 +1,11 @@
 ﻿namespace Generator.Bot.Services
 
+open Database
 open Resources
 open Microsoft.Extensions.Localization
-open Shared.Data
 open Telegram.Bot
 open Telegram.Bot.Types
+open Telegram.Bot.Types.Enums
 
 type SettingsCommandHandler
   (
@@ -20,8 +21,7 @@ type SettingsCommandHandler
       let text, replyMarkup =
         _getSettingsMessageCommandHandler.HandleAsync(user)
 
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), text, replyMarkup = replyMarkup)
-      |> ignore
+      let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), text, ParseMode.Markdown, replyMarkup = replyMarkup)
 
       return ()
     }

@@ -29,12 +29,18 @@
     </data>
     <data name="CurrentSettings" xml:space="preserve">
         <value>Your current settings are:
-Include liked tracks - {0}</value>
+*Include liked tracks* - {0}</value>
     </data>
     <data name="Updated" xml:space="preserve">
         <value>Updated</value>
     </data>
     <data name="GeneratePlaylist" xml:space="preserve">
         <value>🎵 Generate playlist</value>
+    </data>
+    <data name="LoginToSpotify" xml:space="preserve">
+        <value>Login to Spotify to generate playlist</value>
+    </data>
+    <data name="Login" xml:space="preserve">
+        <value>Login</value>
     </data>
 </root>

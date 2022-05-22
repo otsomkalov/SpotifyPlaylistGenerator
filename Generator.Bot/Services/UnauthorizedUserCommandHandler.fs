@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open Microsoft.Extensions.Options
+open Resources
 open Shared.Settings
 open SpotifyAPI.Web
 open Telegram.Bot
@@ -23,9 +24,9 @@ type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: I
         LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
 
       let replyMarkup =
-        InlineKeyboardButton("Login", Url = loginRequest.ToUri().ToString())
+        InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
         |> InlineKeyboardMarkup
 
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Login to generate playlist", replyMarkup = replyMarkup)
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.LoginToSpotify, replyMarkup = replyMarkup)
       |> ignore
     }

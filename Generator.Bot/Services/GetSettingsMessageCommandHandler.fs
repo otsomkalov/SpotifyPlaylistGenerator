@@ -1,6 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
-open Data.Entities
+open Database.Entities
 open Generator.Bot.Constants
 open Resources
 open System
@@ -9,7 +9,7 @@ open Telegram.Bot.Types.ReplyMarkups
 type GetSettingsMessageCommandHandler() =
   member this.HandleAsync(user: User) =
     let includeLikedTracksMark, buttonText, callbackData =
-      if user.IncludeLikedTracks then
+      if user.Settings.IncludeLikedTracks then
         ("✅", Messages.ExcludeLikedTracks, CallbackQueryConstants.excludeLikedTracks)
       else
         ("❌", Messages.IncludeLikedTracks, CallbackQueryConstants.includeLikedTracks)
