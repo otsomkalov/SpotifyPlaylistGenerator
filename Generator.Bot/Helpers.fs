@@ -8,6 +8,12 @@ let (|StartsWith|_|) (substring: string) (str: string) =
   else
     None
 
+let (|Equals|_|) (toCompare: string) (source: string) =
+  if source = toCompare then
+    Some()
+  else
+    None
+
 let (|CommandData|_|) (command: string) =
   let commandParts = command.Split(" ")
 

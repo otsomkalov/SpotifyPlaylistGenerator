@@ -11,6 +11,7 @@ open Generator.Worker.Domain
 open Shared.Settings
 open Telegram.Bot
 open Telegram.Bot.Types
+open Microsoft.EntityFrameworkCore
 
 type GeneratorService
   (
@@ -37,31 +38,39 @@ type GeneratorService
       |> _bot.SendTextMessageAsync
       |> ignore
 
+      let! user =
+        _context
+          .Users
+          .AsNoTracking()
+          .FirstOrDefaultAsync(fun u -> u.Id = queueMessage.TelegramId)
+
       let! likedTracksIds = _likedTracksService.ListIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! historyTracksIds = _historyPlaylistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
 
-      let tracksIdsToExclude =
-        List.append likedTracksIds historyTracksIds
+      let excludedTracksIds, includedTracksIds =
+        match user.Settings.IncludeLikedTracks with
+        | true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
+        | false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
         queueMessage.TelegramId,
-        tracksIdsToExclude.Length
+        excludedTracksIds.Length
       )
 
-      let potentialTracks =
-        playlistsTracksIds
-        |> List.except tracksIdsToExclude
+      let potentialTracksIds =
+        includedTracksIds
+        |> List.except excludedTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks",
         queueMessage.TelegramId,
-        potentialTracks.Length
+        potentialTracksIds.Length
       )
 
       let tracksIdsToImport =
-        potentialTracks
+        potentialTracksIds
         |> List.shuffle
         |> List.take 20
         |> List.map SpotifyTrackId.create

@@ -7,6 +7,8 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
+open Telegram.Bot.Types.ReplyMarkups
+open Resources
 
 type StartCommandHandler
   (
@@ -19,7 +21,19 @@ type StartCommandHandler
 
   let sendMessageAsync (message: Message) =
     task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "You've successfully logged in!", replyToMessageId = message.MessageId)
+      let replyMarkup =
+        ReplyKeyboardMarkup(
+          seq {
+            seq { KeyboardButton(Messages.Settings) }
+          }
+        )
+
+      _bot.SendTextMessageAsync(
+        ChatId(message.Chat.Id),
+        "You've successfully logged in!",
+        replyToMessageId = message.MessageId,
+        replyMarkup = replyMarkup
+      )
       |> ignore
     }
 
