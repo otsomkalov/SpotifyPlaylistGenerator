@@ -20,13 +20,13 @@
     <Compile Include="Services\UnknownCommandHandler.fs"/>
     <Compile Include="Services\GetSettingsMessageCommandHandler.fs"/>
     <Compile Include="Services\SettingsCommandHandler.fs"/>
+    <Compile Include="Services\SetPlaylistSizeCommandHandler.fs"/>
     <Compile Include="Services\MessageService.fs"/>
     <Compile Include="Services\SetIncludeLikedTracksCommandHandler.fs"/>
     <Compile Include="Services\CallbackQueryService.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Resources\Resources.csproj"/>
     <ProjectReference Include="..\Shared\Shared.fsproj"/>
   </ItemGroup>
 

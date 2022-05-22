@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
+open System.Threading.Tasks
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Shared.Services
@@ -18,7 +19,8 @@ type MessageService
     _setHistoryPlaylistCommandHandler: SetHistoryPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _settingsCommandHandler: SettingsCommandHandler
+    _settingsCommandHandler: SettingsCommandHandler,
+    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler
   ) =
 
   let validateUserLogin handleCommandFunction (message: Message) =
@@ -30,17 +32,26 @@ type MessageService
     else
       handleCommandFunction message
 
+  let getProcessReplyToMessageTextFunc (replyToMessage: Message) : (Message -> Task<unit>) =
+    match replyToMessage.Text with
+    | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
+
+  let getProcessMessageTextFunc text =
+    match text with
+    | StartsWith "/start" -> _startCommandHandler.HandleAsync
+    | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
+    | StartsWith "/addsourceplaylist" -> validateUserLogin _addSourcePlaylistCommandHandler.HandleAsync
+    | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
+    | StartsWith "/sethistoryplaylist" -> validateUserLogin _setHistoryPlaylistCommandHandler.HandleAsync
+    | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
+    | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
+    | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
+    | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
+
   member this.ProcessMessageAsync(message: Message) =
     let handleCommandFunction =
-      match message.Text with
-      | StartsWith "/start" -> _startCommandHandler.HandleAsync
-      | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
-      | StartsWith "/addsourceplaylist" -> validateUserLogin _addSourcePlaylistCommandHandler.HandleAsync
-      | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
-      | StartsWith "/sethistoryplaylist" -> validateUserLogin _setHistoryPlaylistCommandHandler.HandleAsync
-      | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
-      | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
-      | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
-      | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
+      match isNull message.ReplyToMessage with
+      | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
+      | _ -> getProcessMessageTextFunc message.Text
 
     handleCommandFunction message
