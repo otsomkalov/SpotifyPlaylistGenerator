@@ -47,7 +47,9 @@ type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbCont
 
   member this.HandleAsync(callbackQuery: CallbackQuery) =
     task {
-      let! _ = _bot.AnswerCallbackQueryAsync(callbackQuery.Id)
-      let! _ = _bot.SendTextMessageAsync(ChatId(callbackQuery.From.Id), Messages.SendPlaylistSize, replyMarkup = ForceReplyMarkup())
-      return ()
+      _bot.AnswerCallbackQueryAsync(callbackQuery.Id)
+      |> ignore
+
+      _bot.SendTextMessageAsync(ChatId(callbackQuery.From.Id), Messages.SendPlaylistSize, replyMarkup = ForceReplyMarkup())
+      |> ignore
     }
