@@ -1,9 +1,12 @@
 ﻿namespace Generator.Bot.Services
 
+open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
+open Microsoft.Extensions.Localization
 open Shared.Services
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
+open Resources
 
 type MessageService
   (
@@ -15,7 +18,8 @@ type MessageService
     _setTargetPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _setHistoryPlaylistCommandHandler: SetHistoryPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
-    _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler
+    _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
+    _settingsCommandHandler: SettingsCommandHandler
   ) =
 
   let validateUserLogin handleCommandFunction (message: Message) =
@@ -36,6 +40,8 @@ type MessageService
       | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
       | StartsWith "/sethistoryplaylist" -> validateUserLogin _setHistoryPlaylistCommandHandler.HandleAsync
       | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
+      | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
+      | Equals Messages.Settings -> validateUserLogin _settingsCommandHandler.HandleAsync
       | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 
     handleCommandFunction message

@@ -7,12 +7,29 @@ open Microsoft.EntityFrameworkCore.Infrastructure
 open Microsoft.EntityFrameworkCore.Metadata
 open Microsoft.EntityFrameworkCore.Migrations
 open Microsoft.EntityFrameworkCore.Storage.ValueConversion
-open Npgsql.EntityFrameworkCore.PostgreSQL.Metadata
 
-type AppDbContextModelSnapshot() =
-    inherit ModelSnapshot()
+[<Migration("20220521173926_UserSettingsIncludeLikedTracks")>]
+type UserSettingsIncludeLikedTracks() =
+    inherit Migration()
 
-    override this.BuildModel(modelBuilder: ModelBuilder) =
+    override this.Up(migrationBuilder:MigrationBuilder) =
+        migrationBuilder.AddColumn<bool>(
+            name = "IncludeLikedTracks"
+            ,table = "Users"
+            ,``type`` = "boolean"
+            ,nullable = false
+            ,defaultValue = "``false``"
+            ) |> ignore
+
+
+    override this.Down(migrationBuilder:MigrationBuilder) =
+        migrationBuilder.DropColumn(
+            name = "IncludeLikedTracks"
+            ,table = "Users"
+            ) |> ignore
+
+
+    override this.BuildTargetModel(modelBuilder: ModelBuilder) =
         modelBuilder
             .HasAnnotation("ProductVersion", "6.0.4")
             .HasAnnotation("Relational:MaxIdentifierLength", 63) |> ignore

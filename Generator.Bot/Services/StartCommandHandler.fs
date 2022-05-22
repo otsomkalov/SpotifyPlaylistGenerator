@@ -1,12 +1,14 @@
 ﻿namespace Generator.Bot.Services
 
+open Data
 open Microsoft.Extensions.Logging
-open Shared.Data
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
+open Telegram.Bot.Types.ReplyMarkups
+open Resources
 
 type StartCommandHandler
   (
@@ -19,7 +21,15 @@ type StartCommandHandler
 
   let sendMessageAsync (message: Message) =
     task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "You've successfully logged in!", replyToMessageId = message.MessageId)
+      let replyMarkup =
+        ReplyKeyboardMarkup([ KeyboardButton(Messages.Settings) ])
+
+      _bot.SendTextMessageAsync(
+        ChatId(message.Chat.Id),
+        "You've successfully logged in!",
+        replyToMessageId = message.MessageId,
+        replyMarkup = replyMarkup
+      )
       |> ignore
     }
 
@@ -53,7 +63,7 @@ type StartCommandHandler
   let createUserAsync userId =
     task {
       let! _ =
-        Shared.Data.User(Id = userId)
+        Data.Entities.User(Id = userId)
         |> _context.Users.AddAsync
 
       _context.SaveChangesAsync() |> ignore

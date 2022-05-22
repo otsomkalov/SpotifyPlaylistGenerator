@@ -37,12 +37,16 @@ type GeneratorService
       |> _bot.SendTextMessageAsync
       |> ignore
 
+      let! user = _context.Users.FindAsync queueMessage.TelegramId
+
       let! likedTracksIds = _likedTracksService.ListIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! historyTracksIds = _historyPlaylistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
 
       let tracksIdsToExclude =
-        List.append likedTracksIds historyTracksIds
+        match user.IncludeLikedTracks with
+        | true -> historyTracksIds
+        | false -> List.append likedTracksIds historyTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",

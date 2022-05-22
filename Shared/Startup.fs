@@ -10,7 +10,6 @@ open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
-open Shared.Data
 open Shared.Services
 open Shared.Settings
 open Telegram.Bot
@@ -46,7 +45,7 @@ let addSettings (configuration: IConfiguration) (services: IServiceCollection) =
 
 let addServices (services: IServiceCollection) =
   services.AddSingleton<SpotifyClientProvider>()
-  services.AddDbContext<AppDbContext>(configureDbContext)
+  services.AddDbContext<Data.AppDbContext>(configureDbContext)
 
   services.AddSingleton<IAmazonSQS>(configureSQS)
   services.AddSingleton<ITelegramBotClient>(configureTelegramBotClient)

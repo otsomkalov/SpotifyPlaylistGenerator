@@ -1,9 +1,23 @@
 ﻿module Generator.Bot.Helpers
 
+open Resources
 open System
+open Microsoft.Extensions.Localization
 
 let (|StartsWith|_|) (substring: string) (str: string) =
   if str.StartsWith(substring, StringComparison.InvariantCultureIgnoreCase) then
+    Some()
+  else
+    None
+
+let (|Equals|_|) (toCompare: string) (source: string) =
+  if source = toCompare then
+    Some()
+  else
+    None
+
+let (|EqualsResource|_|) (localizer: IStringLocalizer<Messages>) (resource: string) (source: string) =
+  if source = localizer[nameof resource].Value then
     Some()
   else
     None

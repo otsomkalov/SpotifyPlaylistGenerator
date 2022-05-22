@@ -2,7 +2,6 @@
 namespace Shared.Migrations
 
 open System
-open Shared.Data
 open Microsoft.EntityFrameworkCore
 open Microsoft.EntityFrameworkCore.Infrastructure
 open Microsoft.EntityFrameworkCore.Metadata
@@ -10,7 +9,6 @@ open Microsoft.EntityFrameworkCore.Migrations
 open Microsoft.EntityFrameworkCore.Storage.ValueConversion
 open Npgsql.EntityFrameworkCore.PostgreSQL.Metadata
 
-[<DbContext(typeof<AppDbContext>)>]
 [<Migration("20220506193632_Init")>]
 type Init() =
     inherit Migration()

@@ -7,9 +7,7 @@ open Microsoft.EntityFrameworkCore.Infrastructure
 open Microsoft.EntityFrameworkCore.Metadata
 open Microsoft.EntityFrameworkCore.Migrations
 open Microsoft.EntityFrameworkCore.Storage.ValueConversion
-open Shared.Data
 
-[<DbContext(typeof<AppDbContext>)>]
 [<Migration("20220512165341_ReworkAuth")>]
 type ReworkAuth() =
     inherit Migration()

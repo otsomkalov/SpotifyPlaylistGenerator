@@ -24,6 +24,7 @@ module Program =
       .AddScoped<GenerateCommandHandler>()
       .AddScoped<UnknownCommandHandler>()
       .AddScoped<EmptyCommandDataHandler>()
+      .AddScoped<SettingsCommandHandler>()
 
       .AddScoped<PlaylistCommandHandler>()
       .AddScoped<AddSourcePlaylistCommandHandler>()
@@ -31,7 +32,11 @@ module Program =
       .AddScoped<SetHistoryPlaylistCommandHandler>()
       .AddScoped<AddHistoryPlaylistCommandHandler>()
 
+      .AddScoped<GetSettingsMessageCommandHandler>()
+      .AddScoped<SetIncludeLikedTracksCommandHandler>()
+
       .AddScoped<MessageService>()
+      .AddScoped<CallbackQueryService>()
 
     services
       .AddScoped<FileService>()
@@ -45,8 +50,9 @@ module Program =
 
     services.AddHostedService<Worker>()
 
-    services
-      .AddApplicationInsightsTelemetry()
+    services.AddApplicationInsightsTelemetry()
+
+    services.AddLocalization()
 
     services.AddControllers().AddNewtonsoftJson()
 
