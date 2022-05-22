@@ -62,7 +62,8 @@ namespace Resources {
         
         /// <summary>
         ///   Looks up a localized string similar to Your current settings are:
-        ///*Include liked tracks* - {0}.
+        ///*Include liked tracks* - {0}
+        ///*Playlist size* - {1}.
         /// </summary>
         public static string CurrentSettings {
             get {
@@ -116,6 +117,51 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to New playlist size is set!.
+        /// </summary>
+        public static string PlaylistSizeSet {
+            get {
+                return ResourceManager.GetString("PlaylistSizeSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be lower than 10000!.
+        /// </summary>
+        public static string PlaylistSizeTooBig {
+            get {
+                return ResourceManager.GetString("PlaylistSizeTooBig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be greater than 0!.
+        /// </summary>
+        public static string PlaylistSizeTooSmall {
+            get {
+                return ResourceManager.GetString("PlaylistSizeTooSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send me new playlist size in reply to this message.
+        /// </summary>
+        public static string SendPlaylistSize {
+            get {
+                return ResourceManager.GetString("SendPlaylistSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to #️⃣ Set playlist size.
+        /// </summary>
+        public static string SetPlaylistSize {
+            get {
+                return ResourceManager.GetString("SetPlaylistSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ⚙ Settings.
         /// </summary>
         public static string Settings {
@@ -130,6 +176,15 @@ namespace Resources {
         public static string Updated {
             get {
                 return ResourceManager.GetString("Updated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Command data should be positive number indicates playlist size.
+        /// </summary>
+        public static string WrongPlaylistSize {
+            get {
+                return ResourceManager.GetString("WrongPlaylistSize", resourceCulture);
             }
         }
     }

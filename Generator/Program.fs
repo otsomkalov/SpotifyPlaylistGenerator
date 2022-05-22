@@ -34,6 +34,7 @@ module Program =
 
       .AddScoped<GetSettingsMessageCommandHandler>()
       .AddScoped<SetIncludeLikedTracksCommandHandler>()
+      .AddScoped<SetPlaylistSizeCommandHandler>()
 
       .AddScoped<MessageService>()
       .AddScoped<CallbackQueryService>()

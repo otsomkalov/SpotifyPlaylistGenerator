@@ -29,7 +29,8 @@
     </data>
     <data name="CurrentSettings" xml:space="preserve">
         <value>Your current settings are:
-*Include liked tracks* - {0}</value>
+*Include liked tracks* - {0}
+*Playlist size* - {1}</value>
     </data>
     <data name="Updated" xml:space="preserve">
         <value>Updated</value>
@@ -42,5 +43,23 @@
     </data>
     <data name="Login" xml:space="preserve">
         <value>Login</value>
+    </data>
+    <data name="SetPlaylistSize" xml:space="preserve">
+        <value>#️⃣ Set playlist size</value>
+    </data>
+    <data name="SendPlaylistSize" xml:space="preserve">
+        <value>Send me new playlist size in reply to this message</value>
+    </data>
+    <data name="PlaylistSizeSet" xml:space="preserve">
+        <value>New playlist size is set!</value>
+    </data>
+    <data name="WrongPlaylistSize" xml:space="preserve">
+        <value>Command data should be positive number indicates playlist size</value>
+    </data>
+    <data name="PlaylistSizeTooSmall" xml:space="preserve">
+        <value>Playlist size should be greater than 0!</value>
+    </data>
+    <data name="PlaylistSizeTooBig" xml:space="preserve">
+        <value>Playlist size should be lower than 10000!</value>
     </data>
 </root>

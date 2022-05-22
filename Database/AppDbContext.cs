@@ -18,6 +18,10 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<User>()
-            .OwnsOne(u => u.Settings);
+            .OwnsOne(u => u.Settings, settings =>
+            {
+                settings.Property(s => s.PlaylistSize)
+                    .HasDefaultValue(20);
+            });
     }
 }

@@ -72,7 +72,7 @@ type GeneratorService
       let tracksIdsToImport =
         potentialTracksIds
         |> List.shuffle
-        |> List.take 20
+        |> List.take user.Settings.PlaylistSize
         |> List.map SpotifyTrackId.create
 
       do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
