@@ -2,8 +2,9 @@
 
 open System.Text.Json
 open Amazon.SQS
+open Database
+open Database.Entities
 open Microsoft.Extensions.Options
-open Shared.Data
 open Shared.Services
 open Shared.Settings
 open Telegram.Bot
