@@ -2,8 +2,8 @@
 
 open System.Collections.Generic
 open System.Linq
-open Data
-open Data.Entities
+open Database
+open Database.Entities
 open Generator.Worker.Domain
 open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Logging

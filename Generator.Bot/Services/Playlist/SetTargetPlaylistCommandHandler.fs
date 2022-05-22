@@ -1,11 +1,10 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
-open Data
-open Data.Entities
+open Database
+open Database.Entities
 open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
-open EntityFrameworkCore.FSharp.DbContextHelpers
 
 type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext) =
   let updateExistingTargetPlaylistAsync (playlist: Playlist) playlistId =
@@ -29,16 +28,18 @@ type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandH
   let setTargetPlaylistAsync (message: Message) playlistId =
     task {
       let! existingTargetPlaylist =
-        _context.Playlists.AsNoTracking()
-        |> tryFilterFirstTaskAsync
-             <@ fun p ->
-                  p.UserId = message.From.Id
-                  && p.PlaylistType = PlaylistType.Target @>
+        _context
+          .Playlists
+          .AsNoTracking()
+          .FirstOrDefaultAsync(fun p ->
+            p.UserId = message.From.Id
+            && p.PlaylistType = PlaylistType.Target)
 
       let addOrUpdateTargetPlaylistTask =
-        match existingTargetPlaylist with
-        | Some p -> updateExistingTargetPlaylistAsync p playlistId
-        | None -> createTargetPlaylistAsync playlistId message.From.Id
+        if isNull existingTargetPlaylist then
+          createTargetPlaylistAsync playlistId message.From.Id
+        else
+          updateExistingTargetPlaylistAsync existingTargetPlaylist playlistId
 
       do! addOrUpdateTargetPlaylistTask
 

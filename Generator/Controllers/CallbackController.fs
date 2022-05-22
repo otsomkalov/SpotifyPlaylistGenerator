@@ -1,8 +1,8 @@
 ﻿namespace Generator
 
+open Database
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Options
-open Shared.Data
 open Shared.Services
 open Shared.Settings
 open SpotifyAPI.Web

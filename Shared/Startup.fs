@@ -10,6 +10,7 @@ open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
+open Database
 open Shared.Services
 open Shared.Settings
 open Telegram.Bot

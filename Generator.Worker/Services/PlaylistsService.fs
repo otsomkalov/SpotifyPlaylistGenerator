@@ -1,6 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
-open Data
+open Database
+open Database.Entities
 open Microsoft.Extensions.Logging
 open System.Linq
 open Microsoft.EntityFrameworkCore

@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator.Worker", "Generat
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator.Bot", "Generator.Bot\Generator.Bot.fsproj", "{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Database", "Database\Database.csproj", "{91F79094-F203-40D2-A33C-DE1E162C380A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources", "Resources\Resources.csproj", "{72F7EEAB-192B-4BA2-A827-A876B3825821}"
 EndProject
 Global
@@ -38,6 +40,10 @@ Global
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91F79094-F203-40D2-A33C-DE1E162C380A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91F79094-F203-40D2-A33C-DE1E162C380A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91F79094-F203-40D2-A33C-DE1E162C380A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91F79094-F203-40D2-A33C-DE1E162C380A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{72F7EEAB-192B-4BA2-A827-A876B3825821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{72F7EEAB-192B-4BA2-A827-A876B3825821}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72F7EEAB-192B-4BA2-A827-A876B3825821}.Release|Any CPU.ActiveCfg = Release|Any CPU

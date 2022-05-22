@@ -1,9 +1,10 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Collections.Generic
+open Database
+open Database.Entities
 open Generator.Worker.Domain
 open Microsoft.Extensions.Logging
-open Shared.Data
 open Shared.Services
 open SpotifyAPI.Web
 open System.Linq

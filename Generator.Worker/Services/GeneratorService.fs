@@ -1,9 +1,9 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Text.Json
+open Database
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
-open Shared.Data
 open Shared.Services
 open Shared.QueueMessages
 open Generator.Worker.Extensions
