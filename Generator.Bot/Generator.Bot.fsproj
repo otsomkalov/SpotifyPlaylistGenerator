@@ -6,28 +6,28 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Constants.fs" />
-    <Compile Include="Helpers.fs" />
-    <Compile Include="Services\EmptyCommandDataHandler.fs" />
-    <Compile Include="Services\Playlist\PlaylistCommandHandler.fs" />
-    <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs" />
-    <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs" />
-    <Compile Include="Services\Playlist\SetHistoryPlaylistCommandHandler.fs" />
-    <Compile Include="Services\Playlist\AddHistoryPlaylistCommandHandler.fs" />
-    <Compile Include="Services\UnauthorizedUserCommandHandler.fs" />
-    <Compile Include="Services\StartCommandHandler.fs" />
-    <Compile Include="Services\GenerateCommandHandler.fs" />
-    <Compile Include="Services\UnknownCommandHandler.fs" />
-    <Compile Include="Services\GetSettingsMessageCommandHandler.fs" />
-    <Compile Include="Services\SettingsCommandHandler.fs" />
-    <Compile Include="Services\MessageService.fs" />
-    <Compile Include="Services\SetIncludeLikedTracksCommandHandler.fs" />
-    <Compile Include="Services\CallbackQueryService.fs" />
+    <Compile Include="Constants.fs"/>
+    <Compile Include="Helpers.fs"/>
+    <Compile Include="Services\EmptyCommandDataHandler.fs"/>
+    <Compile Include="Services\Playlist\PlaylistCommandHandler.fs"/>
+    <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs"/>
+    <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs"/>
+    <Compile Include="Services\Playlist\SetHistoryPlaylistCommandHandler.fs"/>
+    <Compile Include="Services\Playlist\AddHistoryPlaylistCommandHandler.fs"/>
+    <Compile Include="Services\UnauthorizedUserCommandHandler.fs"/>
+    <Compile Include="Services\StartCommandHandler.fs"/>
+    <Compile Include="Services\GenerateCommandHandler.fs"/>
+    <Compile Include="Services\UnknownCommandHandler.fs"/>
+    <Compile Include="Services\GetSettingsMessageCommandHandler.fs"/>
+    <Compile Include="Services\SettingsCommandHandler.fs"/>
+    <Compile Include="Services\MessageService.fs"/>
+    <Compile Include="Services\SetIncludeLikedTracksCommandHandler.fs"/>
+    <Compile Include="Services\CallbackQueryService.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Resources\Resources.csproj" />
-    <ProjectReference Include="..\Shared\Shared.fsproj" />
+    <ProjectReference Include="..\Resources\Resources.csproj"/>
+    <ProjectReference Include="..\Shared\Shared.fsproj"/>
   </ItemGroup>
 
 </Project>

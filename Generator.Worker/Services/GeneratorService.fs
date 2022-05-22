@@ -48,7 +48,7 @@ type GeneratorService
       let! historyTracksIds = _historyPlaylistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
       let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
 
-      let tracksIdsToExclude, tracksIdsToInclude =
+      let excludedTracksIds, includedTracksIds =
         match user.Settings.IncludeLikedTracks with
         | true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
         | false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
@@ -56,21 +56,21 @@ type GeneratorService
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
         queueMessage.TelegramId,
-        tracksIdsToExclude.Length
+        excludedTracksIds.Length
       )
 
-      let potentialTracks =
-        tracksIdsToInclude
-        |> List.except tracksIdsToExclude
+      let potentialTracksIds =
+        includedTracksIds
+        |> List.except excludedTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks",
         queueMessage.TelegramId,
-        potentialTracks.Length
+        potentialTracksIds.Length
       )
 
       let tracksIdsToImport =
-        potentialTracks
+        potentialTracksIds
         |> List.shuffle
         |> List.take 20
         |> List.map SpotifyTrackId.create

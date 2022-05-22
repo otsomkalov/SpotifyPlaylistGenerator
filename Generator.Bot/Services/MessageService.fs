@@ -2,7 +2,6 @@
 
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
-open Microsoft.Extensions.Localization
 open Shared.Services
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
