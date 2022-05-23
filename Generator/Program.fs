@@ -39,16 +39,6 @@ module Program =
       .AddScoped<MessageService>()
       .AddScoped<CallbackQueryService>()
 
-    services
-      .AddScoped<FileService>()
-      .AddScoped<TracksIdsService>()
-      .AddScoped<PlaylistService>()
-      .AddScoped<HistoryPlaylistsService>()
-      .AddScoped<LikedTracksService>()
-      .AddScoped<PlaylistsService>()
-      .AddScoped<TargetPlaylistService>()
-      .AddScoped<GeneratorService>()
-
     services.AddHostedService<Worker>()
 
     services.AddApplicationInsightsTelemetry()

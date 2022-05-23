@@ -1,18 +1,19 @@
-﻿namespace Generator.Worker.Services
+﻿module Generator.Worker.Services.TracksIdsService
 
-type TracksIdsService(_fileService: FileService) =
-  let refreshCachedAsync filePath loadIdsFunc =
-    task {
-      let! ids = loadIdsFunc
+open System.IO
 
-      do! _fileService.SaveIdsAsync filePath ids
+let private refreshCachedAsync env filePath loadIdsFunc =
+  task {
+    let! ids = loadIdsFunc env
 
-      return ids
-    }
+    do! FileService.saveIdsAsync filePath ids
 
-  member _.ReadOrDownloadAsync idsFileName downloadIdsFunc refreshCache =
-    match (refreshCache, _fileService.Exists idsFileName) with
-    | true, true -> refreshCachedAsync idsFileName downloadIdsFunc
-    | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
-    | false, true -> _fileService.ReadIdsAsync idsFileName
-    | false, false -> refreshCachedAsync idsFileName downloadIdsFunc
+    return ids
+  }
+
+let readOrDownloadAsync env idsFileName downloadIdsFunc refreshCache =
+  match (refreshCache, File.Exists idsFileName) with
+  | true, true -> refreshCachedAsync env idsFileName downloadIdsFunc
+  | true, false -> refreshCachedAsync env idsFileName downloadIdsFunc
+  | false, true -> FileService.readIdsAsync idsFileName
+  | false, false -> refreshCachedAsync env idsFileName downloadIdsFunc
