@@ -23,7 +23,7 @@ services:
       Database:ConnectionString:
   spotify-playlist-generator-database-dev:
     container_name: spotify-playlist-generator-database-dev
-    image: postgres:latest
+    image: postgres:alpine
     restart: always
     environment:
       POSTGRES_USER:
