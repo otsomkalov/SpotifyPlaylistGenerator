@@ -31,4 +31,5 @@ module AmazonSettings =
   [<Literal>]
   let SectionName = "Amazon"
 
+[<CLIMutable>]
 type AmazonSettings = { QueueUrl: string }
