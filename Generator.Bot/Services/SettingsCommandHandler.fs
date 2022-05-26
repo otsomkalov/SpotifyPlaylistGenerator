@@ -1,27 +1,14 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.SettingsCommandHandler
 
-open Database
-open Resources
-open Microsoft.Extensions.Localization
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
-open Telegram.Bot.Types.Enums
 
-type SettingsCommandHandler
-  (
-    _bot: ITelegramBotClient,
-    _context: AppDbContext,
-    _localizer: IStringLocalizer<Messages>,
-    _getSettingsMessageCommandHandler: GetSettingsMessageCommandHandler
-  ) =
-  member this.HandleAsync(message: Message) =
-    task {
-      let! user = _context.Users.FindAsync message.From.Id
+let handle env (message: Message) =
+  task {
+    let! user = Db.getUser env message.From.Id
 
-      let text, replyMarkup =
-        _getSettingsMessageCommandHandler.HandleAsync(user)
+    let text, replyMarkup =
+      GetSettingsMessageCommandHandler.handle user
 
-      let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), text, ParseMode.Markdown, replyMarkup = replyMarkup)
-
-      return ()
-    }
+    return! Bot.sendMessageWithMarkup env message.Chat.Id text replyMarkup
+  }

@@ -1,57 +1,45 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.MessageService
 
 open System.Threading.Tasks
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
-open Shared.Services
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Resources
+open Shared
 
-type MessageService
-  (
-    _startCommandHandler: StartCommandHandler,
-    _generateCommandHandler: GenerateCommandHandler,
-    _unknownCommandHandler: UnknownCommandHandler,
-    _addSourcePlaylistCommandHandler: AddSourcePlaylistCommandHandler,
-    _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
-    _setTargetPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
-    _setHistoryPlaylistCommandHandler: SetHistoryPlaylistCommandHandler,
-    _spotifyClientProvider: SpotifyClientProvider,
-    _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _settingsCommandHandler: SettingsCommandHandler,
-    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler
-  ) =
+let private validateUserLogin handleCommandFunction env (message: Message) =
+  let spotifyClient =
+    Spotify.getClient env message.From.Id
 
-  let validateUserLogin handleCommandFunction (message: Message) =
-    let spotifyClient =
-      _spotifyClientProvider.Get message.From.Id
+  if isNull spotifyClient then
+    UnauthorizedUserCommandHandler.handle env message
+  else
+    handleCommandFunction env message
 
-    if spotifyClient = null then
-      _unauthorizedUserCommandHandler.HandleAsync message
-    else
-      handleCommandFunction message
+let private getProcessReplyToMessageTextFunc (replyToMessage: Message) env =
+  match replyToMessage.Text with
+  | Equals Messages.SendPlaylistSize -> SetPlaylistSizeCommandHandler.handle env
 
-  let getProcessReplyToMessageTextFunc (replyToMessage: Message) : (Message -> Task<unit>) =
-    match replyToMessage.Text with
-    | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
-
-  let getProcessMessageTextFunc text =
+let private getProcessMessageTextFunc text env =
+  let func =
     match text with
-    | StartsWith "/start" -> _startCommandHandler.HandleAsync
-    | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
-    | StartsWith "/addsourceplaylist" -> validateUserLogin _addSourcePlaylistCommandHandler.HandleAsync
-    | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
-    | StartsWith "/sethistoryplaylist" -> validateUserLogin _setHistoryPlaylistCommandHandler.HandleAsync
-    | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
-    | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
-    | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
-    | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
+    | StartsWith "/start" -> StartCommandHandler.handle
+    | StartsWith "/generate" -> validateUserLogin GenerateCommandHandler.handle
+    | StartsWith "/addsourceplaylist" -> validateUserLogin AddSourcePlaylistCommandHandler.handle
+    | StartsWith "/addhistoryplaylist" -> validateUserLogin AddHistoryPlaylistCommandHandler.handle
+    | StartsWith "/sethistoryplaylist" -> validateUserLogin SetHistoryPlaylistCommandHandler.handle
+    | StartsWith "/settargetplaylist" -> validateUserLogin SetTargetPlaylistCommandHandler.handle
+    | Equals Messages.GeneratePlaylist -> validateUserLogin GenerateCommandHandler.handle
+    | Equals Messages.Settings -> SettingsCommandHandler.handle
+    | _ -> validateUserLogin UnknownCommandHandler.handle
 
-  member this.ProcessMessageAsync(message: Message) =
-    let handleCommandFunction =
-      match isNull message.ReplyToMessage with
-      | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
-      | _ -> getProcessMessageTextFunc message.Text
+  func env
 
-    handleCommandFunction message
+let handle env (message: Message) =
+  let handleCommandFunction =
+    match isNull message.ReplyToMessage with
+    | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
+    | _ -> getProcessMessageTextFunc message.Text
+
+  handleCommandFunction env message

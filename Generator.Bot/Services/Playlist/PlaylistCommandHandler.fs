@@ -1,52 +1,35 @@
-﻿namespace Generator.Bot.Services.Playlist
+﻿module Generator.Bot.Services.Playlist.PlaylistCommandHandler
 
 open System
 open Generator.Bot.Services
-open Shared.Services
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 
-type PlaylistCommandHandler
-  (
-    _emptyCommandDataHandler: EmptyCommandDataHandler,
-    _spotifyClientProvider: SpotifyClientProvider,
-    _bot: ITelegramBotClient
-  ) =
+let private validatePlaylistExistsAsync env (message: Message) (uri: Uri) handlePlaylistUriFunction =
+  task {
+    let spotifyClient =
+      Spotify.getClient env message.From.Id
 
-  let validatePlaylistExistsAsync (message: Message) (uri: Uri) handlePlaylistUriFunction =
-    task {
-      let spotifyClient =
-        _spotifyClientProvider.Get message.From.Id
+    let playlistId = uri.Segments |> Seq.last
 
-      let playlistId = uri.Segments |> Seq.last
+    try
+      let! _ = spotifyClient.Playlists.Get(playlistId)
 
-      try
-        let! _ = spotifyClient.Playlists.Get(playlistId)
+      do! handlePlaylistUriFunction env message playlistId
+    with
+    | _ -> do! Bot.replyToMessage env message.Chat.Id "Playlist not found in Spotify or you don't have access to it." message.MessageId
+  }
 
-        do! handlePlaylistUriFunction message playlistId
-      with
-      | _ ->
-        _bot.SendTextMessageAsync(
-          ChatId(message.Chat.Id),
-          "Playlist not found in Spotify or you don't have access to it.",
-          replyToMessageId = message.MessageId
-        )
-        |> ignore
-    }
+let handleNonUriCommandDataAsync env (message: Message) =
+  Bot.replyToMessage env message.Chat.Id "You have entered wrong playlist url" message.MessageId
 
-  let handleNonUriCommandDataAsync (message: Message) =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "You have entered wrong playlist url", replyToMessageId = message.MessageId)
-      |> ignore
-    }
+let handleCommandDataAsync env (message: Message) (data: string) handlePlaylistUriFunction =
+  match Uri.TryCreate(data, UriKind.Absolute) with
+  | true, uri -> validatePlaylistExistsAsync env message uri handlePlaylistUriFunction
+  | _ -> handleNonUriCommandDataAsync env message
 
-  let handleCommandDataAsync (message: Message) (data: string) handlePlaylistUriFunction =
-    match Uri.TryCreate(data, UriKind.Absolute) with
-    | true, uri -> validatePlaylistExistsAsync message uri handlePlaylistUriFunction
-    | _ -> handleNonUriCommandDataAsync message
-
-  member this.HandleAsync (message: Message) handlePlaylistUriFunction =
-    match message.Text with
-    | CommandData data -> handleCommandDataAsync message data handlePlaylistUriFunction
-    | _ -> _emptyCommandDataHandler.HandleAsync message
+let handle env (message: Message) handlePlaylistUriFunction =
+  match message.Text with
+  | CommandData data -> handleCommandDataAsync env message data handlePlaylistUriFunction
+  | _ -> EmptyCommandDataHandler.handle env message

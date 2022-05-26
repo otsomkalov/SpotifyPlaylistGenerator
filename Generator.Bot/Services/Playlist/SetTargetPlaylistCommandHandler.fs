@@ -1,53 +1,33 @@
-﻿namespace Generator.Bot.Services.Playlist
+﻿module Generator.Bot.Services.Playlist.SetTargetPlaylistCommandHandler
 
-open Database
 open Database.Entities
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
 
-type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext) =
-  let updateExistingTargetPlaylistAsync (playlist: Playlist) playlistId =
-    task {
-      playlist.Url <- playlistId
+let updateExistingTargetPlaylistAsync (playlist: Playlist) playlistId env =
+  task {
+    playlist.Url <- playlistId
 
-      _context.Update(playlist) |> ignore
+    return! Db.updatePlaylist env playlist
+  }
 
-      return ()
-    }
+let createTargetPlaylistAsync playlistId userId env =
+  Db.createPlaylist env playlistId userId PlaylistType.Target
 
-  let createTargetPlaylistAsync playlistId userId =
-    task {
-      let! _ =
-        Playlist(Url = playlistId, UserId = userId, PlaylistType = PlaylistType.Target)
-        |> _context.Playlists.AddAsync
+let setTargetPlaylistAsync env (message: Message) playlistId =
+  task {
+    let! existingTargetPlaylist = Db.getTargetPlaylist env message.From.Id
 
-      return ()
-    }
+    let addOrUpdateTargetPlaylistTask =
+      if isNull existingTargetPlaylist then
+        createTargetPlaylistAsync playlistId message.From.Id
+      else
+        updateExistingTargetPlaylistAsync existingTargetPlaylist playlistId
 
-  let setTargetPlaylistAsync (message: Message) playlistId =
-    task {
-      let! existingTargetPlaylist =
-        _context
-          .Playlists
-          .AsNoTracking()
-          .FirstOrDefaultAsync(fun p ->
-            p.UserId = message.From.Id
-            && p.PlaylistType = PlaylistType.Target)
+    do! addOrUpdateTargetPlaylistTask env
 
-      let addOrUpdateTargetPlaylistTask =
-        if isNull existingTargetPlaylist then
-          createTargetPlaylistAsync playlistId message.From.Id
-        else
-          updateExistingTargetPlaylistAsync existingTargetPlaylist playlistId
+    return! Bot.replyToMessage env message.Chat.Id "Target playlist successfully set!" message.MessageId
+  }
 
-      do! addOrUpdateTargetPlaylistTask
-
-      let! _ = _context.SaveChangesAsync()
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Target playlist successfully set!", replyToMessageId = message.MessageId)
-      |> ignore
-    }
-
-  member this.HandleAsync(message: Message) =
-    _playlistCommandHandler.HandleAsync message setTargetPlaylistAsync
+let handle env (message: Message) =
+  PlaylistCommandHandler.handle env message setTargetPlaylistAsync

@@ -1,32 +1,26 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.UnauthorizedUserCommandHandler
 
 open System.Collections.Generic
-open Microsoft.Extensions.Options
 open Resources
-open Shared.Settings
+open Shared
 open SpotifyAPI.Web
-open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
 
-type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: IOptions<SpotifySettings>) =
-  let _spotifySettings = _spotifyOptions.Value
+let handle env (message: Message) =
+  task {
+    let scopes =
+      [ Scopes.PlaylistModifyPrivate
+        Scopes.PlaylistModifyPublic
+        Scopes.UserLibraryRead ]
+      |> List<string>
 
-  member this.HandleAsync(message: Message) =
-    task {
-      let scopes =
-        [ Scopes.PlaylistModifyPrivate
-          Scopes.PlaylistModifyPublic
-          Scopes.UserLibraryRead ]
-        |> List<string>
+    let loginRequest =
+      LoginRequest(SpotifySettings.callbackUrl env, SpotifySettings.clientUrl env, LoginRequest.ResponseType.Code, Scope = scopes)
 
-      let loginRequest =
-        LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
+    let replyMarkup =
+      InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
+      |> InlineKeyboardMarkup
 
-      let replyMarkup =
-        InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
-        |> InlineKeyboardMarkup
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.LoginToSpotify, replyMarkup = replyMarkup)
-      |> ignore
-    }
+    return! Bot.sendMessageWithMarkup env message.Chat.Id Messages.LoginToSpotify replyMarkup
+  }

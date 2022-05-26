@@ -27,6 +27,10 @@ type ISpotify =
 
 let getClient (env: #ISpotify) (userId: int64) = env.Provider.Get userId
 
+let getClientBySpotifyId (env: #ISpotify) (spotifyId: string) = env.Provider.Get spotifyId
+
+let setClient (env: #ISpotify) (userId: int64) (client: ISpotifyClient) = env.Provider.SetClient(userId, client)
+
 let rec private listLikedTracksIds' (env: #ISpotify) (userId: int64) (offset: int) =
   task {
     let client = env.Provider.Get userId

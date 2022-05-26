@@ -1,11 +1,7 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.UnknownCommandHandler
 
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
 
-type UnknownCommandHandler(_bot: ITelegramBotClient) =
-  member this.HandleAsync(message: Message) =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Unknown command", replyToMessageId = message.MessageId)
-      |> ignore
-    }
+let handle env (message: Message) =
+  Bot.replyToMessage env message.Chat.Id "Unknown command" message.MessageId

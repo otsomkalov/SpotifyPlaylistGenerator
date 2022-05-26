@@ -24,6 +24,7 @@
     <Compile Include="Bot.fs" />
     <Compile Include="Db.fs" />
     <Compile Include="Spotify.fs" />
+    <Compile Include="SpotifySettings.fs" />
     <Compile Include="AppEnv.fs" />
   </ItemGroup>
 

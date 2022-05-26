@@ -1,55 +1,47 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.SetPlaylistSizeCommandHandler
 
 open Resources
-open Database
 open Generator.Bot
 open Microsoft.FSharp.Core
+open Shared
 open Shared.Domain
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
 open Helpers
 
-type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler) =
-  let handleWrongCommandDataAsync (message: Message) =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.WrongPlaylistSize, replyToMessageId = message.MessageId)
-      |> ignore
-    }
+let private setPlaylistSizeAsync env size (message: Message) =
+  task {
+    match PlaylistSize.create size with
+    | Ok playlistSize ->
+      let! user = Db.getUser env message.From.Id
 
-  let setPlaylistSizeAsync size (message: Message) =
-    task {
-      match PlaylistSize.create size with
-      | Ok playlistSize ->
-        let! user = _context.Users.FindAsync message.From.Id
+      user.Settings.PlaylistSize <- PlaylistSize.value playlistSize
 
-        user.Settings.PlaylistSize <- PlaylistSize.value playlistSize
+      do! Db.updateUser env user
+      do! Bot.replyToMessage env message.Chat.Id Messages.PlaylistSizeSet message.MessageId
 
-        let! _ = _context.SaveChangesAsync()
+      return! SettingsCommandHandler.handle env message
+    | Error error ->
+      do! Bot.replyToMessage env message.Chat.Id error message.MessageId
+  }
 
-        let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.PlaylistSizeSet, replyToMessageId = message.MessageId)
+let private handleWrongCommandData env (message: Message) =
+  Bot.replyToMessage env message.Chat.Id Messages.WrongPlaylistSize message.MessageId
 
-        return! _settingsCommandHandler.HandleAsync message
-      | Error e ->
-        _bot.SendTextMessageAsync(ChatId(message.Chat.Id), e, replyToMessageId = message.MessageId)
-        |> ignore
-    }
+let handle env (message: Message) =
+  task {
+    let processMessageFunc =
+      match message.Text with
+      | Int size -> setPlaylistSizeAsync env size
+      | _ -> handleWrongCommandData env
 
-  member this.HandleAsync(message: Message) =
-    task {
-      let processMessageFunc =
-        match message.Text with
-        | Int size -> setPlaylistSizeAsync size
-        | _ -> handleWrongCommandDataAsync
+    return! processMessageFunc message
+  }
 
-      return! processMessageFunc message
-    }
+let handleAsync env (callbackQuery: CallbackQuery) =
+  task {
+    do! Bot.answerCallbackQuery env callbackQuery.Id
+    do! Bot.sendMessageWithMarkup env callbackQuery.From.Id Messages.SendPlaylistSize (ForceReplyMarkup())
+  }
 
-  member this.HandleAsync(callbackQuery: CallbackQuery) =
-    task {
-      _bot.AnswerCallbackQueryAsync(callbackQuery.Id)
-      |> ignore
-
-      _bot.SendTextMessageAsync(ChatId(callbackQuery.From.Id), Messages.SendPlaylistSize, replyMarkup = ForceReplyMarkup())
-      |> ignore
-    }

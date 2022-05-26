@@ -1,16 +1,9 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.GenerateCommandHandler
 
 open System.Text.Json
-open Amazon.SQS
-open Database
 open Database.Entities
-open Microsoft.Extensions.Options
-open Shared.Services
-open Shared.Settings
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
-open System.Linq
 open Shared.QueueMessages
 open Generator.Bot.Helpers
 
@@ -50,96 +43,67 @@ module UserPlaylistValidation =
     |> Result.bind validateHasHistoryPlaylists
     |> Result.bind validateHasTargetHistoryPlaylist
 
-type GenerateCommandHandler
-  (
-    _sqs: IAmazonSQS,
-    _amazonOptions: IOptions<AmazonSettings>,
-    _spotifyClientProvider: SpotifyClientProvider,
-    _bot: ITelegramBotClient,
-    _context: AppDbContext
-  ) =
-  let _amazonSettings = _amazonOptions.Value
+let private handleWrongCommandDataAsync env (message: Message) =
+  Bot.replyToMessage
+    env
+    message.Chat.Id
+    "Command data should be boolean value indicates either refresh tracks cache or not"
+    message.MessageId
 
-  let handleWrongCommandDataAsync (message: Message) =
-    task {
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "Command data should be boolean value indicates either refresh tracks cache or not",
-        replyToMessageId = message.MessageId
-      )
-      |> ignore
-    }
+let private sendSQSMessageAsync message =
+  task {
+    let messageJson =
+      JsonSerializer.Serialize message
 
-  let sendSQSMessageAsync message =
-    task {
-      let messageJson =
-        JsonSerializer.Serialize message
+    _sqs.SendMessageAsync(_amazonSettings.QueueUrl, messageJson)
+    |> ignore
+  }
 
-      _sqs.SendMessageAsync(_amazonSettings.QueueUrl, messageJson)
-      |> ignore
-    }
+let private sendGenerateMessageAsync env (message: Message) queueMessage =
+  task {
+    do! sendSQSMessageAsync queueMessage
+    do! Bot.replyToMessage env message.Chat.Id "Your playlist generation requests is queued" message.MessageId
+  }
 
-  let sendGenerateMessageAsync (message: Message) queueMessage =
-    task {
-      do! sendSQSMessageAsync queueMessage
+let private handleCommandDataAsync env (message: Message) refreshCache =
+  let queueMessage =
+    { TelegramId = message.From.Id
+      RefreshCache = refreshCache }
 
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "Your playlist generation requests is queued",
-        replyToMessageId = message.MessageId
-      )
-      |> ignore
-    }
+  sendGenerateMessageAsync env message queueMessage
 
-  let handleCommandDataAsync (message: Message) refreshCache =
-    let queueMessage =
-      { TelegramId = message.From.Id
-        RefreshCache = refreshCache }
+let private handleEmptyCommandAsync env (message: Message) =
+  let queueMessage =
+    { TelegramId = message.From.Id
+      RefreshCache = false }
 
-    sendGenerateMessageAsync message queueMessage
+  sendGenerateMessageAsync env message queueMessage
 
-  let handleEmptyCommandAsync (message: Message) =
-    let queueMessage =
-      { TelegramId = message.From.Id
-        RefreshCache = false }
+let private validateCommandDataAsync env (message: Message) data =
+  match data with
+  | Bool value -> handleCommandDataAsync env message value
+  | _ -> handleWrongCommandDataAsync env message
 
-    sendGenerateMessageAsync message queueMessage
+let private handleCommandAsync env (message: Message) =
+  match message.Text with
+  | CommandData data -> validateCommandDataAsync env message data
+  | _ -> handleEmptyCommandAsync env message
 
-  let validateCommandDataAsync (message: Message) data =
-    match data with
-    | Bool value -> handleCommandDataAsync message value
-    | _ -> handleWrongCommandDataAsync message
+let private validateUserPlaylistsAsync env (message: Message) =
+  task {
+    let! userPlaylistsTypes = Db.getUserPlaylistsTypes env message.From.Id
+    return UserPlaylistValidation.validateUserPlaylists userPlaylistsTypes
+  }
 
-  let handleCommandAsync (message: Message) =
-    match message.Text with
-    | CommandData data -> validateCommandDataAsync message data
-    | _ -> handleEmptyCommandAsync message
+let private handleUserPlaylistsValidationErrorAsync env (message: Message) error =
+  Bot.replyToMessage env message.Chat.Id error message.MessageId
 
-  let validateUserPlaylistsAsync (message: Message) =
-    task {
-      let! userPlaylistsTypes =
-        _context
-          .Playlists
-          .AsNoTracking()
-          .Where(fun p -> p.UserId = message.From.Id)
-          .Select(fun p -> p.PlaylistType)
-          .ToListAsync()
+let handle env (message: Message) =
+  task {
+    let! validationResult = validateUserPlaylistsAsync env message
 
-      return UserPlaylistValidation.validateUserPlaylists userPlaylistsTypes
-    }
-
-  let handleUserPlaylistsValidationErrorAsync (message: Message) error =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), error, replyToMessageId = message.MessageId)
-      |> ignore
-    }
-
-  member this.HandleAsync(message: Message) =
-    task {
-      let! validationResult = validateUserPlaylistsAsync message
-
-      return!
-        match validationResult with
-        | Ok _ -> handleCommandAsync message
-        | Error e -> handleUserPlaylistsValidationErrorAsync message e
-    }
+    return!
+      match validationResult with
+      | Ok _ -> handleCommandAsync env message
+      | Error e -> handleUserPlaylistsValidationErrorAsync env message e
+  }

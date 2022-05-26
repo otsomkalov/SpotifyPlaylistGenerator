@@ -1,93 +1,60 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.StartCommandHandler
 
-open Database
-open Microsoft.Extensions.Logging
-open Shared.Services
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
-open Microsoft.EntityFrameworkCore
 open Telegram.Bot.Types.ReplyMarkups
 open Resources
 
-type StartCommandHandler
-  (
-    _bot: ITelegramBotClient,
-    _context: AppDbContext,
-    _spotifyClientProvider: SpotifyClientProvider,
-    _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _logger: ILogger<StartCommandHandler>
-  ) =
+let private sendMessageAsync env (message: Message) =
+  task {
+    let replyMarkup =
+      ReplyKeyboardMarkup(seq { seq { KeyboardButton(Messages.Settings) } })
 
-  let sendMessageAsync (message: Message) =
-    task {
-      let replyMarkup =
-        ReplyKeyboardMarkup(
-          seq {
-            seq { KeyboardButton(Messages.Settings) }
-          }
-        )
+    return! Bot.replyToMessageWithMarkup env message.Chat.Id "You've successfully logged in!" message.MessageId replyMarkup
+  }
 
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "You've successfully logged in!",
-        replyToMessageId = message.MessageId,
-        replyMarkup = replyMarkup
-      )
-      |> ignore
-    }
+let private setSpotifyClient env (message: Message) (data: string) =
+  task {
+    Spotify.getClientBySpotifyId env data
+    |> Spotify.setClient env message.From.Id
 
-  let setSpotifyClient (message: Message) (data: string) =
-    (message.From.Id, data |> _spotifyClientProvider.Get)
-    |> _spotifyClientProvider.SetClient
+    return! sendMessageAsync env message
+  }
 
-    sendMessageAsync message
-
-  let handleCommandDataAsync' (message: Message) (spotifyId: string) =
-    task {
-      let spotifyClient =
-        _spotifyClientProvider.Get message.From.Id
-
-      return!
-        if spotifyClient = null then
-          setSpotifyClient message spotifyId
-        else
-          sendMessageAsync message
-    }
-
-  let handleCommandDataAsync (message: Message) (spotifyId: string) =
+let handleCommandDataAsync' env (message: Message) (spotifyId: string) =
+  task {
     let spotifyClient =
-      _spotifyClientProvider.Get spotifyId
+      Spotify.getClient env message.From.Id
 
-    if spotifyClient = null then
-      _unauthorizedUserCommandHandler.HandleAsync message
-    else
-      handleCommandDataAsync' message spotifyId
+    return!
+      if spotifyClient = null then
+        setSpotifyClient env message spotifyId
+      else
+        sendMessageAsync env message
+  }
 
-  let createUserAsync userId =
-    task {
-      let! _ =
-        Database.Entities.User(Id = userId)
-        |> _context.Users.AddAsync
+let handleCommandDataAsync env (message: Message) (spotifyId: string) =
+  let spotifyClient =
+    Spotify.getClientBySpotifyId env spotifyId
 
-      _context.SaveChangesAsync() |> ignore
-    }
+  if spotifyClient = null then
 
-  let handleEmptyCommandAsync (message: Message) =
-    task {
-      let! userExists =
-        _context
-          .Users
-          .AsNoTracking()
-          .AnyAsync(fun u -> u.Id = message.From.Id)
+    UnauthorizedUserCommandHandler.handle env message
+  else
+    handleCommandDataAsync' env message spotifyId
 
-      if not userExists then
-        createUserAsync message.From.Id
+let handleEmptyCommandAsync env (message: Message) =
+  task {
+    let! userExists = Db.userExists env message.From.Id
 
-      return! _unauthorizedUserCommandHandler.HandleAsync message
-    }
+    if not userExists then
+      do! Db.createUser env message.From.Id
 
-  member this.HandleAsync(message: Message) =
-    match message.Text with
-    | CommandData spotifyId -> handleCommandDataAsync message spotifyId
-    | _ -> handleEmptyCommandAsync message
+    return! UnauthorizedUserCommandHandler.handle env message
+  }
+
+let handle env (message: Message) =
+  match message.Text with
+  | CommandData spotifyId -> handleCommandDataAsync env message spotifyId
+  | _ -> handleEmptyCommandAsync env message

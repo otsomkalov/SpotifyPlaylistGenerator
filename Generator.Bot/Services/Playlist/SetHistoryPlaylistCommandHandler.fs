@@ -1,51 +1,33 @@
-﻿namespace Generator.Bot.Services.Playlist
+﻿module Generator.Bot.Services.Playlist.SetHistoryPlaylistCommandHandler
 
-open Database
 open Database.Entities
-open Telegram.Bot
+open Shared
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
 
-type SetHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext, _bot: ITelegramBotClient) =
-  let addTargetHistoryPlaylistAsync playlistId userId =
-    task {
-      Playlist(Url = playlistId, UserId = userId, PlaylistType = PlaylistType.TargetHistory)
-      |> _context.Playlists.AddAsync
-      |> ignore
-    }
+let addTargetHistoryPlaylistAsync playlistId userId env =
+  Db.createPlaylist env playlistId userId PlaylistType.TargetHistory
 
-  let updateTargetHistoryPlaylistAsync (playlist: Playlist) playlistId =
-    task {
-      playlist.Url <- playlistId
+let updateTargetHistoryPlaylistAsync (playlist: Playlist) playlistId env =
+  task {
+    playlist.Url <- playlistId
 
-      _context.Update(playlist) |> ignore
+    return! Db.updatePlaylist env playlist
+  }
 
-      return ()
-    }
+let setTargetHistoryPlaylistAsync env (message: Message) playlistId =
+  task {
+    let! existingTargetHistoryPlaylist = Db.getTargetHistoryPlaylist env message.From.Id
 
-  let setTargetHistoryPlaylistAsync (message: Message) playlistId =
-    task {
-      let! existingTargetHistoryPlaylist =
-        _context
-          .Playlists
-          .AsNoTracking()
-          .FirstOrDefaultAsync(fun p ->
-            p.UserId = message.From.Id
-            && p.PlaylistType = PlaylistType.TargetHistory)
+    let addOrUpdateTargetHistoryPlaylistTask =
+      if isNull existingTargetHistoryPlaylist then
+        addTargetHistoryPlaylistAsync playlistId message.From.Id
+      else
+        updateTargetHistoryPlaylistAsync existingTargetHistoryPlaylist playlistId
 
-      let addOrUpdateTargetHistoryPlaylistTask =
-        if isNull existingTargetHistoryPlaylist then
-          addTargetHistoryPlaylistAsync playlistId message.From.Id
-        else
-          updateTargetHistoryPlaylistAsync existingTargetHistoryPlaylist playlistId
+    do! addOrUpdateTargetHistoryPlaylistTask env
 
-      do! addOrUpdateTargetHistoryPlaylistTask
+    return! Bot.replyToMessage env message.Chat.Id "Target history playlist successfully set!" message.MessageId
+  }
 
-      let! _ = _context.SaveChangesAsync()
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Target history playlist successfully set!", replyToMessageId = message.MessageId)
-      |> ignore
-    }
-
-  member this.HandleAsync(message: Message) =
-    _playlistCommandHandler.HandleAsync message setTargetHistoryPlaylistAsync
+let handle env (message: Message) =
+  PlaylistCommandHandler.handle env message setTargetHistoryPlaylistAsync
