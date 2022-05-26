@@ -1,6 +1,7 @@
 ﻿module Generator.Worker.Services.GeneratorService
 
 open System.Text.Json
+open Generator.Worker
 open Shared
 open Shared.QueueMessages
 open Generator.Worker.Extensions
@@ -11,7 +12,8 @@ let generatePlaylistAsync env (messageBody: string) =
     let queueMessage =
       JsonSerializer.Deserialize<GeneratePlaylistMessage>(messageBody)
 
-    Log.info env ("Received request to generate playlist for user with Telegram id {TelegramId}", [ queueMessage.TelegramId ])
+    Log.infoWithArg env "Received request to generate playlist for user with Telegram id {TelegramId}" queueMessage.TelegramId
+
     do! Bot.sendMessage env queueMessage.TelegramId "Generating playlist..."
     let! user = Db.getUser env queueMessage.TelegramId
 
@@ -24,20 +26,20 @@ let generatePlaylistAsync env (messageBody: string) =
       | true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
       | false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
 
-    Log.info
+    Log.infoWithArgs
       env
-      ("User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
-       [ queueMessage.TelegramId
-         excludedTracksIds.Length ])
+      "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude"
+      queueMessage.TelegramId
+      excludedTracksIds.Length
 
     let potentialTracksIds =
       includedTracksIds |> List.except excludedTracksIds
 
-    Log.info
+    Log.infoWithArgs
       env
-      ("User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks",
-       [ queueMessage.TelegramId
-         potentialTracksIds.Length ])
+      "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks"
+      queueMessage.TelegramId
+      potentialTracksIds.Length
 
     let tracksIdsToImport =
       potentialTracksIds

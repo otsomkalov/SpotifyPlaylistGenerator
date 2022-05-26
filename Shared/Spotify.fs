@@ -4,6 +4,7 @@ open System.Collections.Generic
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
 open Shared.Services
+open Shared.Settings
 open SpotifyAPI.Web
 
 type RawTrackId = RawTrackId of string
@@ -89,7 +90,7 @@ let appendTracksToPlaylist (env: #ISpotify) (userId: int64) playlistUrl tracksId
       |> List<string>
       |> PlaylistAddItemsRequest
 
-    client.Playlists.AddItems(playlistUrl, addItemsRequest)
+    let! _ = client.Playlists.AddItems(playlistUrl, addItemsRequest)
 
     ()
   }

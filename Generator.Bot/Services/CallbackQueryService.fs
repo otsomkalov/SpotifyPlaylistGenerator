@@ -1,21 +1,15 @@
-﻿namespace Generator.Bot.Services
+﻿module Generator.Bot.Services.CallbackQueryService
 
-open System.Threading.Tasks
 open Generator.Bot.Constants
 open Telegram.Bot.Types
 
-type CallbackQueryService
-  (
-    _setIncludeLikedTracksCommandHandler: SetIncludeLikedTracksCommandHandler,
-    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler
-  ) =
-  member this.HandleAsync(callbackQuery: CallbackQuery) =
-    task {
-      let processCallbackQueryDataTask : CallbackQuery -> Task<unit> =
-        match callbackQuery.Data with
-        | CallbackQueryConstants.excludeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync false
-        | CallbackQueryConstants.includeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync true
-        | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
+let handle (callbackQuery: CallbackQuery) env =
+  task {
+    let processCallbackQueryDataTask =
+      match callbackQuery.Data with
+      | CallbackQueryConstants.excludeLikedTracks -> SetIncludeLikedTracksCommandHandler.handle false
+      | CallbackQueryConstants.includeLikedTracks -> SetIncludeLikedTracksCommandHandler.handle true
+      | CallbackQueryConstants.setPlaylistSize -> SetPlaylistSizeCommandHandler.handleCallbackQuery
 
-      return! processCallbackQueryDataTask callbackQuery
-    }
+    return! processCallbackQueryDataTask env callbackQuery
+  }

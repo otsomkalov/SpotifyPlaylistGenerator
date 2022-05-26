@@ -50,18 +50,9 @@ let private handleWrongCommandDataAsync env (message: Message) =
     "Command data should be boolean value indicates either refresh tracks cache or not"
     message.MessageId
 
-let private sendSQSMessageAsync message =
-  task {
-    let messageJson =
-      JsonSerializer.Serialize message
-
-    _sqs.SendMessageAsync(_amazonSettings.QueueUrl, messageJson)
-    |> ignore
-  }
-
 let private sendGenerateMessageAsync env (message: Message) queueMessage =
   task {
-    do! sendSQSMessageAsync queueMessage
+    do! SQS.sendMessage env queueMessage
     do! Bot.replyToMessage env message.Chat.Id "Your playlist generation requests is queued" message.MessageId
   }
 

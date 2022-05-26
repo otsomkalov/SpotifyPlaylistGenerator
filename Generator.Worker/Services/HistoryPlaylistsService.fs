@@ -1,5 +1,6 @@
 ﻿module Generator.Worker.Services.HistoryPlaylistsService
 
+open Generator.Worker
 open Shared
 
 let listTracksIdsAsync env userId refreshCache =
@@ -8,14 +9,18 @@ let listTracksIdsAsync env userId refreshCache =
 
     let! tracksIds = PlaylistService.listTracksIdsAsync env userId historyPlaylistsUrls refreshCache
 
-    Log.info env ("User with Telegram id {TelegramId} has {HistoryPlaylistsTracksCount} tracks in history playlists", [userId; tracksIds.Length])
+    Log.infoWithArgs
+      env
+      "User with Telegram id {TelegramId} has {HistoryPlaylistsTracksCount} tracks in history playlists"
+      userId
+      tracksIds.Length
 
     return tracksIds
   }
 
 let updateAsync env (userId: int64) tracksIds =
   task {
-    Log.info env ("Adding new tracks to history playlist", [])
+    Log.info env "Adding new tracks to history playlist"
 
     let! targetHistoryPlaylistUrl = Db.getTargetHistoryPlaylistUrl env userId
 
@@ -26,7 +31,7 @@ let updateAsync env (userId: int64) tracksIds =
 
 let updateCachedAsync env userId tracksIds =
   task {
-    Log.info env ("Updating history playlist cache file", [])
+    Log.info env "Updating history playlist cache file"
 
     let! targetHistoryPlaylistId = Db.getTargetHistoryPlaylistUrl env userId
 

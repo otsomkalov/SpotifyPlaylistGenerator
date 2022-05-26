@@ -23,8 +23,9 @@ let sendMessageWithMarkup (env: #IBot) (userId: int64) message markup =
 
 let replyToMessage (env: #IBot) (userId: int64) message replyToMessageId =
   task {
-    env.Bot.SendTextMessageAsync(ChatId(userId), message, replyToMessageId = replyToMessageId)
-    |> ignore
+    let! _ = env.Bot.SendTextMessageAsync(ChatId(userId), message, replyToMessageId = replyToMessageId)
+
+    return ()
   }
 
 let replyToMessageWithMarkup (env: #IBot) (userId: int64) message replyToMessageId markup =
@@ -37,5 +38,18 @@ let answerCallbackQuery (env: #IBot) id =
   task {
     let! _ = env.Bot.AnswerCallbackQueryAsync(id)
 
+    return ()
+  }
+
+let answerCallbackQueryWithText (env: #IBot) id text =
+  task {
+    let! _ = env.Bot.AnswerCallbackQueryAsync(id, text)
+
+    return ()
+  }
+
+let editMessageText (env: #IBot) (chatId: int64) messageId text markup =
+  task {
+    let! _ = env.Bot.EditMessageTextAsync(ChatId(chatId), messageId, text, ParseMode.Markdown, replyMarkup = markup)
     return ()
   }

@@ -6,11 +6,11 @@ open System.Threading.Tasks
 open Amazon.SQS
 open Amazon.SQS.Model
 open Database
+open Generator.Worker.Env
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
-open Shared.AppEnv
 open Shared.Services
 open Shared.Settings
 open Telegram.Bot
@@ -36,7 +36,7 @@ type Worker
 
   let processMessageAsync (message: Message) =
     task {
-      let env = AppEnv(_logger, _bot, _context, _spotifyClientProvider)
+      let env = WorkerEnv(_logger, _bot, _context, _spotifyClientProvider)
 
       do! GeneratorService.generatePlaylistAsync env message.Body
 

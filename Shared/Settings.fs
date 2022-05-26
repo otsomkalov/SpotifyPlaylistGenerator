@@ -1,34 +1,34 @@
 ﻿namespace Shared.Settings
 
 open System
+open Microsoft.FSharp.Core
 
 module SpotifySettings =
   [<Literal>]
   let SectionName = "Spotify"
 
-type SpotifySettings() =
-  member val ClientId = "" with get, set
-  member val ClientSecret = "" with get, set
-  member val CallbackUrl: Uri = null with get, set
+[<CLIMutable>]
+type SpotifySettings =
+  { ClientId: string
+    ClientSecret: string
+    CallbackUrl: Uri }
 
 module TelegramSettings =
   [<Literal>]
   let SectionName = "Telegram"
 
-type TelegramSettings() =
-  member val Token = "" with get, set
-  member val BotUrl = "" with get, set
+[<CLIMutable>]
+type TelegramSettings = { Token: string; BotUrl: string }
 
 module DatabaseSettings =
   [<Literal>]
   let SectionName = "Database"
 
-type DatabaseSettings() =
-  member val ConnectionString = "" with get, set
+[<CLIMutable>]
+type DatabaseSettings = { ConnectionString: string }
 
 module AmazonSettings =
   [<Literal>]
   let SectionName = "Amazon"
 
-type AmazonSettings() =
-  member val QueueUrl = "" with get, set
+type AmazonSettings = { QueueUrl: string }

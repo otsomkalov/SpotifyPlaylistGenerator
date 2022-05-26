@@ -1,17 +1,26 @@
-﻿module Shared.AppEnv
+﻿module Generator.Worker.Env
 
+open Amazon.SQS
 open Database
+open Generator.Worker.Log
 open Microsoft.Extensions.Logging
 open Shared.Bot
 open Shared.Db
-open Shared.Log
+open Shared.SQS
 open Shared.Services
+open Shared.Settings
 open Shared.Spotify
 open Telegram.Bot
 
 [<Struct>]
 [<NoComparison>]
-type AppEnv(logger: ILogger, bot: ITelegramBotClient, context: AppDbContext, provider: SpotifyClientProvider) =
+type WorkerEnv
+  (
+    logger: ILogger,
+    bot: ITelegramBotClient,
+    context: AppDbContext,
+    provider: SpotifyClientProvider
+  ) =
   interface ILog with
     member _.Logger = logger
 

@@ -18,27 +18,6 @@ module Program =
     |> Startup.addSettings configuration
     |> Startup.addServices
 
-    services
-      .AddScoped<UnauthorizedUserCommandHandler>()
-      .AddScoped<StartCommandHandler>()
-      .AddScoped<GenerateCommandHandler>()
-      .AddScoped<UnknownCommandHandler>()
-      .AddScoped<EmptyCommandDataHandler>()
-      .AddScoped<SettingsCommandHandler>()
-
-      .AddScoped<PlaylistCommandHandler>()
-      .AddScoped<AddSourcePlaylistCommandHandler>()
-      .AddScoped<SetTargetPlaylistCommandHandler>()
-      .AddScoped<SetHistoryPlaylistCommandHandler>()
-      .AddScoped<AddHistoryPlaylistCommandHandler>()
-
-      .AddScoped<GetSettingsMessageCommandHandler>()
-      .AddScoped<SetIncludeLikedTracksCommandHandler>()
-      .AddScoped<SetPlaylistSizeCommandHandler>()
-
-      .AddScoped<MessageService>()
-      .AddScoped<CallbackQueryService>()
-
     services.AddHostedService<Worker>()
 
     services.AddApplicationInsightsTelemetry()

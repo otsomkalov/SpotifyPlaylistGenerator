@@ -11,25 +11,17 @@ type SpotifyClientProvider() =
     Dictionary<int64, ISpotifyClient>()
 
   member this.Get telegramId =
-    if _clientsByTelegramId.ContainsKey(telegramId) then
-      _clientsByTelegramId[telegramId]
-    else
-      null
+    _clientsByTelegramId[telegramId]
 
   member this.Get spotifyId =
-    if _clientsBySpotifyId.ContainsKey(spotifyId) then
-      _clientsBySpotifyId[spotifyId]
-    else
-      null
+    _clientsBySpotifyId[spotifyId]
 
   member this.SetClient(spotifyId: string, client: ISpotifyClient) =
-    if _clientsBySpotifyId.ContainsKey(spotifyId) then
-      ()
-    else
-      (spotifyId, client) |> _clientsBySpotifyId.Add
+    match _clientsBySpotifyId.ContainsKey(spotifyId) with
+    | false -> (spotifyId, client) |> _clientsBySpotifyId.Add
+    | true -> ()
 
   member this.SetClient(telegramId: int64, client: ISpotifyClient) =
-    if _clientsByTelegramId.ContainsKey(telegramId) then
-      ()
-    else
-      (telegramId, client) |> _clientsByTelegramId.Add
+    match _clientsByTelegramId.ContainsKey(telegramId) with
+    | false -> (telegramId, client) |> _clientsByTelegramId.Add
+    | true -> ()

@@ -19,7 +19,7 @@ let private validateUserLogin handleCommandFunction env (message: Message) =
 
 let private getProcessReplyToMessageTextFunc (replyToMessage: Message) env =
   match replyToMessage.Text with
-  | Equals Messages.SendPlaylistSize -> SetPlaylistSizeCommandHandler.handle env
+  | Equals Messages.SendPlaylistSize -> SetPlaylistSizeCommandHandler.handleMessage env
 
 let private getProcessMessageTextFunc text env =
   let func =
@@ -36,7 +36,7 @@ let private getProcessMessageTextFunc text env =
 
   func env
 
-let handle env (message: Message) =
+let handle (message: Message) env =
   let handleCommandFunction =
     match isNull message.ReplyToMessage with
     | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage

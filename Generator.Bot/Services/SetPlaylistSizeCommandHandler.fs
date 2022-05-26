@@ -29,7 +29,7 @@ let private setPlaylistSizeAsync env size (message: Message) =
 let private handleWrongCommandData env (message: Message) =
   Bot.replyToMessage env message.Chat.Id Messages.WrongPlaylistSize message.MessageId
 
-let handle env (message: Message) =
+let handleMessage env (message: Message) =
   task {
     let processMessageFunc =
       match message.Text with
@@ -39,7 +39,7 @@ let handle env (message: Message) =
     return! processMessageFunc message
   }
 
-let handleAsync env (callbackQuery: CallbackQuery) =
+let handleCallbackQuery env (callbackQuery: CallbackQuery) =
   task {
     do! Bot.answerCallbackQuery env callbackQuery.Id
     do! Bot.sendMessageWithMarkup env callbackQuery.From.Id Messages.SendPlaylistSize (ForceReplyMarkup())

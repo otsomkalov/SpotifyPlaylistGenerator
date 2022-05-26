@@ -8,14 +8,4 @@ type GeneratePlaylistMessage =
 
 module MessageTypes =
   [<Literal>]
-  let SpotifyLogin = "SpotifyLogin"
-
-  [<Literal>]
-  let LinkAccounts = "LinkAccounts"
-
-  [<Literal>]
   let GeneratePlaylist = "GeneratePlaylist"
-
-module MessageAttributeNames =
-  [<Literal>]
-  let Type = "Type"

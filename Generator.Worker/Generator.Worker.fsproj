@@ -7,20 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Extensions.fs"/>
-    <Compile Include="Domain.fs"/>
-    <Compile Include="Services\FileService.fs"/>
-    <Compile Include="Services\TracksIdsService.fs"/>
-    <Compile Include="Services\PlaylistService.fs"/>
-    <Compile Include="Services\HistoryPlaylistsService.fs"/>
-    <Compile Include="Services\LikedTracksService.fs"/>
-    <Compile Include="Services\PlaylistsService.fs"/>
-    <Compile Include="Services\TargetPlaylistService.fs"/>
-    <Compile Include="Services\GeneratorService.fs"/>
+    <Compile Include="Extensions.fs" />
+    <Compile Include="Log.fs" />
+    <Compile Include="WorkerEnv.fs" />
+    <Compile Include="Services\FileService.fs" />
+    <Compile Include="Services\TracksIdsService.fs" />
+    <Compile Include="Services\PlaylistService.fs" />
+    <Compile Include="Services\HistoryPlaylistsService.fs" />
+    <Compile Include="Services\LikedTracksService.fs" />
+    <Compile Include="Services\PlaylistsService.fs" />
+    <Compile Include="Services\TargetPlaylistService.fs" />
+    <Compile Include="Services\GeneratorService.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared\Shared.fsproj"/>
+    <ProjectReference Include="..\Shared\Shared.fsproj" />
   </ItemGroup>
 
 </Project>
