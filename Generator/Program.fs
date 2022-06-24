@@ -1,43 +1,54 @@
-namespace Generator
-
-#nowarn "20"
-
-open Generator.Bot.Services
-open Generator.Bot.Services.Playlist
-open Generator.Worker.Services
+open Generator
+open Generator.ExternalResponses.Spotify
 open Microsoft.AspNetCore.Builder
-open Microsoft.Extensions.Configuration
-open Microsoft.Extensions.DependencyInjection
+open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
+open Microsoft.Extensions.DependencyInjection
+open Giraffe
 open Shared
+open Telegram.Bot.Types
 
-module Program =
+let webApp =
+  choose [ GET
+           >=> choose [ subRoute
+                          "/callback"
+                          (choose [ route "/spotify"
+                                    >=> tryBindQuery<CodeResponse> Handlers.Shared.parsingErrorHandler None Handlers.Spotify.callbackHandler ]) ]
+           POST
+           >=> choose [ routeBind<Update> "/" Handlers.Telegram.updateHandler ]
+           Handlers.Shared.notFoundHandler ]
 
-  let configureServices (services: IServiceCollection) (configuration: IConfiguration) =
-    services
-    |> Startup.addSettings configuration
-    |> Startup.addServices
+let configureLogging (builder: ILoggingBuilder) =
+  builder.AddConsole().AddDebug() |> ignore
 
-    services.AddHostedService<Worker>()
+let builder = WebApplication.CreateBuilder()
 
-    services.AddApplicationInsightsTelemetry()
+let services =
+  builder.Services
+  |> Startup.addSettings builder.Configuration
+  |> Startup.addServices
 
-    services.AddLocalization()
+services
+  .AddHostedService<Worker>()
+  .AddApplicationInsightsTelemetry()
+  .AddLocalization()
+  .AddCors()
+  .AddGiraffe()
+|> ignore
 
-    services.AddControllers().AddNewtonsoftJson()
+let app = builder.Build()
 
-  [<EntryPoint>]
-  let main args =
+let env =
+  app.Services.GetRequiredService<IWebHostEnvironment>()
 
-    let builder =
-      WebApplication.CreateBuilder(args)
+(match env.IsDevelopment() with
+ | true -> app.UseDeveloperExceptionPage()
+ | false ->
+   app
+     .UseGiraffeErrorHandler(Handlers.Shared.errorHandler)
+     .UseHttpsRedirection())
+  .UseStaticFiles()
+  .UseGiraffe(webApp)
 
-    configureServices builder.Services builder.Configuration
-
-    let app = builder.Build()
-
-    app.MapControllers()
-
-    app.Run()
-
-    0
+app.Run()

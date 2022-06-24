@@ -2,6 +2,7 @@
 
 open System.Text.Json
 open Database.Entities
+open Generator.Bot.Env
 open Shared
 open Telegram.Bot.Types
 open Shared.QueueMessages
@@ -45,15 +46,15 @@ module UserPlaylistValidation =
 
 let private handleWrongCommandDataAsync env (message: Message) =
   Bot.replyToMessage
-    env
     message.Chat.Id
     "Command data should be boolean value indicates either refresh tracks cache or not"
     message.MessageId
+    env
 
 let private sendGenerateMessageAsync env (message: Message) queueMessage =
   task {
     do! SQS.sendMessage env queueMessage
-    do! Bot.replyToMessage env message.Chat.Id "Your playlist generation requests is queued" message.MessageId
+    do! Bot.replyToMessage message.Chat.Id "Your playlist generation requests is queued" message.MessageId env
   }
 
 let private handleCommandDataAsync env (message: Message) refreshCache =
@@ -75,26 +76,28 @@ let private validateCommandDataAsync env (message: Message) data =
   | Bool value -> handleCommandDataAsync env message value
   | _ -> handleWrongCommandDataAsync env message
 
-let private handleCommandAsync env (message: Message) =
+let private handleCommandAsync (message: Message) env =
   match message.Text with
-  | CommandData data -> validateCommandDataAsync env message data
+  | CommandWithData data -> validateCommandDataAsync env message data
   | _ -> handleEmptyCommandAsync env message
 
-let private validateUserPlaylistsAsync env (message: Message) =
+let private validateUserPlaylistsAsync (message: Message) env =
   task {
     let! userPlaylistsTypes = Db.getUserPlaylistsTypes env message.From.Id
     return UserPlaylistValidation.validateUserPlaylists userPlaylistsTypes
   }
 
-let private handleUserPlaylistsValidationErrorAsync env (message: Message) error =
-  Bot.replyToMessage env message.Chat.Id error message.MessageId
+let private handleUserPlaylistsValidationErrorAsync (error: string) (message: Message) env =
+  Bot.replyToMessage message.Chat.Id error message.MessageId env
 
-let handle env (message: Message) =
+let handle (message: Message) (env: BotEnv) =
   task {
-    let! validationResult = validateUserPlaylistsAsync env message
+    let! validationResult = validateUserPlaylistsAsync message env
 
-    return!
+    let resultFunc =
       match validationResult with
-      | Ok _ -> handleCommandAsync env message
-      | Error e -> handleUserPlaylistsValidationErrorAsync env message e
+      | Ok _ -> handleCommandAsync
+      | Error e -> handleUserPlaylistsValidationErrorAsync e
+
+    return! resultFunc message env
   }

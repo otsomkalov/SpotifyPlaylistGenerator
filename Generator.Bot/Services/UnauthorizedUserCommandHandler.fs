@@ -6,13 +6,12 @@ open Shared
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
 
-let handle env (message: Message) =
-  task {
-    let loginUri = ExtendedSpotify.getLoginUrl env
+let handle (message: Message) env =
+  let loginUri =
+    ExtendedSpotify.getLoginUrl env
 
-    let replyMarkup =
-      InlineKeyboardButton(Messages.Login, Url = loginUri)
-      |> InlineKeyboardMarkup
+  let replyMarkup =
+    InlineKeyboardButton(Messages.Login, Url = loginUri)
+    |> InlineKeyboardMarkup
 
-    return! Bot.sendMessageWithMarkup env message.Chat.Id Messages.LoginToSpotify replyMarkup
-  }
+  Bot.sendMessageWithMarkup message.Chat.Id Messages.LoginToSpotify replyMarkup env

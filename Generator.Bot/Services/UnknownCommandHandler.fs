@@ -3,5 +3,5 @@
 open Shared
 open Telegram.Bot.Types
 
-let handle env (message: Message) =
-  Bot.replyToMessage env message.Chat.Id "Unknown command" message.MessageId
+let handle (message: Message) env =
+  Bot.replyToMessage message.Chat.Id "Unknown command" message.MessageId env

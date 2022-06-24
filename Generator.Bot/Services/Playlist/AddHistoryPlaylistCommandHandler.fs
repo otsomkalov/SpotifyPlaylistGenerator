@@ -8,8 +8,8 @@ open Telegram.Bot.Types
 let addHistoryPlaylistAsync env (message: Message) playlistId =
   task {
     do! Db.createPlaylist env playlistId message.From.Id PlaylistType.TargetHistory
-    do! Bot.replyToMessage env message.Chat.Id "History playlist successfully added!" message.MessageId
+    do! Bot.replyToMessage message.Chat.Id "History playlist successfully added!" message.MessageId env
   }
 
-let handle env (message: Message) =
-  PlaylistCommandHandler.handle env message addHistoryPlaylistAsync
+let handle (message: Message) env =
+  PlaylistCommandHandler.handle addHistoryPlaylistAsync message env

@@ -15,13 +15,13 @@ let sendMessage (env: #IBot) (userId: int64) message =
     |> ignore
   }
 
-let sendMessageWithMarkup (env: #IBot) (userId: int64) message markup =
+let sendMessageWithMarkup (userId: int64) message markup (env: #IBot) =
   task {
     env.Bot.SendTextMessageAsync(ChatId(userId), message, ParseMode.Markdown, replyMarkup = markup)
     |> ignore
   }
 
-let replyToMessage (env: #IBot) (userId: int64) message replyToMessageId =
+let replyToMessage (userId: int64) message replyToMessageId (env: #IBot) =
   task {
     let! _ = env.Bot.SendTextMessageAsync(ChatId(userId), message, replyToMessageId = replyToMessageId)
 
@@ -48,7 +48,7 @@ let answerCallbackQueryWithText (env: #IBot) id text =
     return ()
   }
 
-let editMessageText (env: #IBot) (chatId: int64) messageId text markup =
+let editMessageText (chatId: int64) messageId text markup (env: #IBot) =
   task {
     let! _ = env.Bot.EditMessageTextAsync(ChatId(chatId), messageId, text, ParseMode.Markdown, replyMarkup = markup)
     return ()

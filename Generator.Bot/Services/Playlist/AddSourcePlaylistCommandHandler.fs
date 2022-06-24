@@ -11,8 +11,8 @@ let addSourcePlaylistAsync env (message: Message) playlistId =
     let! _ =
       Db.createPlaylist env playlistId message.From.Id PlaylistType.Source
 
-    do! Bot.replyToMessage env message.Chat.Id "Source playlist successfully added!" message.MessageId
+    do! Bot.replyToMessage message.Chat.Id "Source playlist successfully added!" message.MessageId env
   }
 
-let handle env (message: Message) =
-  PlaylistCommandHandler.handle env message addSourcePlaylistAsync
+let handle (message: Message) env =
+  PlaylistCommandHandler.handle addSourcePlaylistAsync message env

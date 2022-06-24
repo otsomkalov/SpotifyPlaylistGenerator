@@ -26,8 +26,8 @@ let setTargetPlaylistAsync env (message: Message) playlistId =
 
     do! addOrUpdateTargetPlaylistTask env
 
-    return! Bot.replyToMessage env message.Chat.Id "Target playlist successfully set!" message.MessageId
+    return! Bot.replyToMessage message.Chat.Id "Target playlist successfully set!" message.MessageId env
   }
 
-let handle env (message: Message) =
-  PlaylistCommandHandler.handle env message setTargetPlaylistAsync
+let handle (message: Message) env =
+  PlaylistCommandHandler.handle setTargetPlaylistAsync message env

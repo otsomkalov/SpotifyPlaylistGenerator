@@ -10,18 +10,17 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="ExtendedSpotify.fs" />
     <Compile Include="BotEnv.fs" />
-    <Compile Include="Services\EmptyCommandDataHandler.fs" />
     <Compile Include="Services\Playlist\PlaylistCommandHandler.fs" />
     <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs" />
     <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs" />
     <Compile Include="Services\Playlist\SetHistoryPlaylistCommandHandler.fs" />
     <Compile Include="Services\Playlist\AddHistoryPlaylistCommandHandler.fs" />
     <Compile Include="Services\UnauthorizedUserCommandHandler.fs" />
-    <Compile Include="Services\StartCommandHandler.fs" />
     <Compile Include="Services\GenerateCommandHandler.fs" />
     <Compile Include="Services\UnknownCommandHandler.fs" />
     <Compile Include="Services\GetSettingsMessageCommandHandler.fs" />
     <Compile Include="Services\SettingsCommandHandler.fs" />
+    <Compile Include="Services\StartCommandHandler.fs" />
     <Compile Include="Services\SetPlaylistSizeCommandHandler.fs" />
     <Compile Include="Services\MessageService.fs" />
     <Compile Include="Services\SetIncludeLikedTracksCommandHandler.fs" />
@@ -30,6 +29,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="6.0.4" />
   </ItemGroup>
 
 </Project>

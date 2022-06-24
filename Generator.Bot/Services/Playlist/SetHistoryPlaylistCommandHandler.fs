@@ -26,8 +26,8 @@ let setTargetHistoryPlaylistAsync env (message: Message) playlistId =
 
     do! addOrUpdateTargetHistoryPlaylistTask env
 
-    return! Bot.replyToMessage env message.Chat.Id "Target history playlist successfully set!" message.MessageId
+    return! Bot.replyToMessage message.Chat.Id "Target history playlist successfully set!" message.MessageId env
   }
 
-let handle env (message: Message) =
-  PlaylistCommandHandler.handle env message setTargetHistoryPlaylistAsync
+let handle (message: Message) env =
+  PlaylistCommandHandler.handle setTargetHistoryPlaylistAsync message env

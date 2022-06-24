@@ -14,13 +14,12 @@ let (|Equals|_|) (toCompare: string) (source: string) =
   else
     None
 
-let (|CommandData|_|) (command: string) =
-  let commandParts = command.Split(" ")
+let (|CommandWithData|_|) (text: string) =
+  let commandParts = text.Split(" ")
 
-  if commandParts.Length > 1 then
-    Some(commandParts |> Seq.last)
-  else
-    None
+  match commandParts with
+  | [|_; data|] -> Some(data)
+  | _ -> None
 
 let (|Uri|_|) (str: string) =
   match Uri.TryCreate(str, UriKind.Absolute) with

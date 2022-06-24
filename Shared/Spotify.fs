@@ -26,11 +26,13 @@ module SpotifyTrackId =
 type ISpotify =
   abstract Provider: SpotifyClientProvider
 
-let getClient (env: #ISpotify) (userId: int64) = env.Provider.Get userId
+let getClient (userId: int64) (env: #ISpotify)  = env.Provider.Get userId
 
 let getClientBySpotifyId (env: #ISpotify) (spotifyId: string) = env.Provider.Get spotifyId
 
 let setClient (env: #ISpotify) (userId: int64) (client: ISpotifyClient) = env.Provider.SetClient(userId, client)
+
+let setClientBySpotifyId (spotifyId: string) (client: ISpotifyClient) (env: #ISpotify) = env.Provider.SetClient(spotifyId, client)
 
 let rec private listLikedTracksIds' (env: #ISpotify) (userId: int64) (offset: int) =
   task {

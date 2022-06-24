@@ -24,4 +24,8 @@
     <ProjectReference Include="..\Shared\Shared.fsproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="6.0.4" />
+  </ItemGroup>
+
 </Project>

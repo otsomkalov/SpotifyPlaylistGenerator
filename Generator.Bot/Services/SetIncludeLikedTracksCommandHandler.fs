@@ -4,7 +4,7 @@ open Resources
 open Shared
 open Telegram.Bot.Types
 
-let handle includeLikedTracks env (callbackQuery: CallbackQuery) =
+let handle includeLikedTracks (callbackQuery: CallbackQuery) env =
   task {
     let! user = Db.getUser env callbackQuery.From.Id
 
@@ -17,7 +17,5 @@ let handle includeLikedTracks env (callbackQuery: CallbackQuery) =
     let text, replyMarkup =
       GetSettingsMessageCommandHandler.handle user
 
-    do! Bot.editMessageText env callbackQuery.Message.Chat.Id callbackQuery.Message.MessageId text replyMarkup
-
-    return ()
+    return! Bot.editMessageText callbackQuery.Message.Chat.Id callbackQuery.Message.MessageId text replyMarkup env
   }

@@ -28,7 +28,8 @@
         <value>❌ Exclude liked</value>
     </data>
     <data name="CurrentSettings" xml:space="preserve">
-        <value>Your current settings are:
+        <value>Welcome to the bot!
+Your current settings are:
 *Include liked tracks* - {0}
 *Playlist size* - {1}</value>
     </data>
