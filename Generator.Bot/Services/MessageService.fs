@@ -33,11 +33,11 @@ type MessageService
     else
       handleCommandFunction message
 
-  let processReplyToMessageText (replyToMessage: Message) : (Message -> Task<unit>) =
+  let getProcessReplyToMessageTextFunc (replyToMessage: Message) : (Message -> Task<unit>) =
     match replyToMessage.Text with
     | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
 
-  let processMessageText text =
+  let getProcessMessageTextFunc text =
     match text with
     | StartsWith "/start" -> _startCommandHandler.HandleAsync
     | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
@@ -52,8 +52,8 @@ type MessageService
   let processTextMessage (message: Message) =
     let processMessageText =
       match isNull message.ReplyToMessage with
-      | false -> processReplyToMessageText message.ReplyToMessage
-      | _ -> processMessageText message.Text
+      | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
+      | _ -> getProcessMessageTextFunc message.Text
 
     processMessageText message
 
