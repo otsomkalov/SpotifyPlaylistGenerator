@@ -18,8 +18,8 @@ type UpdateController(_messageService: MessageService, _logger: ILogger<UpdateCo
       try
         let handleUpdateTask =
           match update.Type with
-          | UpdateType.Message -> _messageService.ProcessMessageAsync update.Message
-          | UpdateType.CallbackQuery -> _callbackQueryService.HandleAsync update.CallbackQuery
+          | UpdateType.Message -> _messageService.ProcessAsync update.Message
+          | UpdateType.CallbackQuery -> _callbackQueryService.ProcessAsync update.CallbackQuery
           | _ -> () |> Task.FromResult
 
         do! handleUpdateTask

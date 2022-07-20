@@ -9,7 +9,7 @@ type CallbackQueryService
     _setIncludeLikedTracksCommandHandler: SetIncludeLikedTracksCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler
   ) =
-  member this.HandleAsync(callbackQuery: CallbackQuery) =
+  member this.ProcessAsync(callbackQuery: CallbackQuery) =
     task {
       let processCallbackQueryDataTask : CallbackQuery -> Task<unit> =
         match callbackQuery.Data with

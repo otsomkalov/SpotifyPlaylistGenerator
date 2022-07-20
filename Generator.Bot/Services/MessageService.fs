@@ -7,6 +7,7 @@ open Shared.Services
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Resources
+open Telegram.Bot.Types.Enums
 
 type MessageService
   (
@@ -32,11 +33,11 @@ type MessageService
     else
       handleCommandFunction message
 
-  let getProcessReplyToMessageTextFunc (replyToMessage: Message) : (Message -> Task<unit>) =
+  let processReplyToMessageText (replyToMessage: Message) : (Message -> Task<unit>) =
     match replyToMessage.Text with
     | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
 
-  let getProcessMessageTextFunc text =
+  let processMessageText text =
     match text with
     | StartsWith "/start" -> _startCommandHandler.HandleAsync
     | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
@@ -48,10 +49,18 @@ type MessageService
     | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
     | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 
-  member this.ProcessMessageAsync(message: Message) =
-    let handleCommandFunction =
+  let processTextMessage (message: Message) =
+    let processMessageText =
       match isNull message.ReplyToMessage with
-      | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
-      | _ -> getProcessMessageTextFunc message.Text
+      | false -> processReplyToMessageText message.ReplyToMessage
+      | _ -> processMessageText message.Text
 
-    handleCommandFunction message
+    processMessageText message
+
+  member this.ProcessAsync(message: Message) =
+    let processMessage =
+      match message.Type with
+      | MessageType.Text -> processTextMessage
+      | _ -> (fun _ -> Task.FromResult())
+
+    processMessage message
