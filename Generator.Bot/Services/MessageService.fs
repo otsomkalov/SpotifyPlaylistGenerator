@@ -7,6 +7,7 @@ open Shared.Services
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Resources
+open Telegram.Bot.Types.Enums
 
 type MessageService
   (
@@ -48,10 +49,18 @@ type MessageService
     | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
     | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 
-  member this.ProcessMessageAsync(message: Message) =
-    let handleCommandFunction =
+  let processTextMessage (message: Message) =
+    let processMessageText =
       match isNull message.ReplyToMessage with
       | false -> getProcessReplyToMessageTextFunc message.ReplyToMessage
       | _ -> getProcessMessageTextFunc message.Text
 
-    handleCommandFunction message
+    processMessageText message
+
+  member this.ProcessAsync(message: Message) =
+    let processMessage =
+      match message.Type with
+      | MessageType.Text -> processTextMessage
+      | _ -> (fun _ -> Task.FromResult())
+
+    processMessage message
