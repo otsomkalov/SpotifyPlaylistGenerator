@@ -15,13 +15,13 @@ type UpdateController(_messageService: MessageService, _logger: ILogger<UpdateCo
   [<HttpPost>]
   member this.HandleUpdateAsync(update: Update) =
     task {
-      let handleUpdateTask =
-        match update.Type with
-        | UpdateType.Message -> _messageService.ProcessMessageAsync update.Message
-        | UpdateType.CallbackQuery -> _callbackQueryService.HandleAsync update.CallbackQuery
-        | _ -> () |> Task.FromResult
-
       try
+        let handleUpdateTask =
+          match update.Type with
+          | UpdateType.Message -> _messageService.ProcessMessageAsync update.Message
+          | UpdateType.CallbackQuery -> _callbackQueryService.HandleAsync update.CallbackQuery
+          | _ -> () |> Task.FromResult
+
         do! handleUpdateTask
       with
       | e -> _logger.LogError(e, "Error during processing update:")
