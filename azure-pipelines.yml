@@ -25,7 +25,7 @@ steps:
     inputs:
       command: 'build'
       configuration: 'Release'
-      projects: '**/Bot.fsproj'
+      projects: '**/Generator.fsproj'
       arguments: '-r $(Runtime) -c Release --no-self-contained'
       publishWebProjects: false
   - task: DotNetCoreCLI@2
@@ -33,7 +33,7 @@ steps:
     inputs:
       command: 'publish'
       configuration: 'Release'
-      projects: '**/Bot.fsproj'
+      projects: '**/Generator.fsproj'
       arguments: '-r $(Runtime) -c Release -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
   - task: PublishBuildArtifacts@1
