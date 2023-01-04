@@ -26,7 +26,7 @@ type SpotifyFunctions
     _telegramOptions.Value
 
   [<FunctionName("HandleCallbackAsync")>]
-  member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Function, "GET", Route = "spotify/callback")>] request: HttpRequest) =
+  member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "spotify/callback")>] request: HttpRequest) =
     task {
       let code = request.Query["code"]
 
