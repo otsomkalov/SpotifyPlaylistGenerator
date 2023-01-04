@@ -14,7 +14,7 @@ public class Playlist
 
     public PlaylistType PlaylistType { get; init; }
 
-    public string Url { get; init; }
+    public string Url { get; set; }
 
     public long UserId { get; init; }
 
