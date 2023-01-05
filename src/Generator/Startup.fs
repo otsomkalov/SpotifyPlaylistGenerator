@@ -2,6 +2,8 @@ namespace Generator
 
 #nowarn "20"
 
+open System
+open System.Collections
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
@@ -23,6 +25,10 @@ type Startup() =
     let configuration =
       builder.GetContext().Configuration
     let services = builder.Services
+
+    for ev in Environment.GetEnvironmentVariables() do
+      let de = ev :?> DictionaryEntry
+      printfn $"{de.Key}:{de.Value}"
 
     services
     |> Startup.addSettings configuration
