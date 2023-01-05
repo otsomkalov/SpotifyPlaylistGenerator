@@ -29,19 +29,15 @@ let private configureSQS (_: IServiceProvider) =
   :> IAmazonSQS
 
 let private configureDbContext (serviceProvider: IServiceProvider) (builder: DbContextOptionsBuilder) =
-  let settings =
-    serviceProvider
-      .GetRequiredService<IOptions<DatabaseSettings>>()
-      .Value
+  let configuration = serviceProvider.GetRequiredService<IConfiguration>()
 
-  builder.UseNpgsql(settings.ConnectionString)
+  builder.UseNpgsql(configuration.GetConnectionString(ConnectionStrings.Postgre))
 
   ()
 
 let addSettings (configuration: IConfiguration) (services: IServiceCollection) =
   services.Configure<SpotifySettings>(configuration.GetSection(SpotifySettings.SectionName))
   services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.SectionName))
-  services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName))
   services.Configure<AmazonSettings>(configuration.GetSection(AmazonSettings.SectionName))
 
 let addServices (services: IServiceCollection) =

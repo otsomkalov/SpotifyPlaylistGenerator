@@ -81,8 +81,13 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
     AWS_ACCESS_KEY_ID          = var.aws-access-key-id
     AWS_SECRET_ACCESS_KEY      = var.aws-secret-access-key
     Amazon__QueueUrl           = var.amazon-queue-url
-    Database__ConnectionString = var.database-connection-string
     GeneratorSchedule          = var.generator-schedule
+  }
+
+  connection_string {
+    name = "Postgre"
+    type = "PostgreSQL"
+    value = var.database-connection-string
   }
 
   tags = local.tags

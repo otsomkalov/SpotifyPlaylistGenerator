@@ -2,6 +2,10 @@
 
 open System
 
+module ConnectionStrings =
+  [<Literal>]
+  let Postgre = "Postgre"
+
 module SpotifySettings =
   [<Literal>]
   let SectionName = "Spotify"
@@ -18,13 +22,6 @@ module TelegramSettings =
 type TelegramSettings() =
   member val Token = "" with get, set
   member val BotUrl = "" with get, set
-
-module DatabaseSettings =
-  [<Literal>]
-  let SectionName = "Database"
-
-type DatabaseSettings() =
-  member val ConnectionString = "" with get, set
 
 module AmazonSettings =
   [<Literal>]
