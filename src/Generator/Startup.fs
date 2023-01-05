@@ -10,6 +10,7 @@ open Generator.Worker.Services
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
 open Shared
 
 type Startup() =
@@ -26,9 +27,11 @@ type Startup() =
       builder.GetContext().Configuration
     let services = builder.Services
 
+    let logger = services.BuildServiceProvider().GetRequiredService<ILogger<Generator.GeneratorFunctions>>()
+
     for ev in Environment.GetEnvironmentVariables() do
       let de = ev :?> DictionaryEntry
-      printfn $"{de.Key}:{de.Value}"
+      logger.LogInformation $"{de.Key}:{de.Value}"
 
     services
     |> Startup.addSettings configuration
