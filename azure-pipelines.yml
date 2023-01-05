@@ -19,13 +19,14 @@ steps:
     name: Restore
     inputs:
       command: 'restore'
+      projects: '**/*.fsproj'
       arguments: '-r $(Runtime)'
   - task: DotNetCoreCLI@2
     name: Build
     inputs:
       command: 'build'
       configuration: 'Release'
-      projects: '**/Generator.fsproj'
+      projects: '**/*.fsproj'
       arguments: '-r $(Runtime) -c Release --no-self-contained'
       publishWebProjects: false
   - task: DotNetCoreCLI@2
@@ -33,7 +34,7 @@ steps:
     inputs:
       command: 'publish'
       configuration: 'Release'
-      projects: '**/Generator.fsproj'
+      projects: 'src/**/Generator.fsproj'
       arguments: '-r $(Runtime) -c Release -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
   - task: PublishBuildArtifacts@1
