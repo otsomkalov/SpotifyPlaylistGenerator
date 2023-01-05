@@ -1,5 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
+open System.IO
+
 type TracksIdsService(_fileService: FileService) =
   let refreshCachedAsync filePath loadIdsFunc =
     task {
@@ -11,8 +13,12 @@ type TracksIdsService(_fileService: FileService) =
     }
 
   member _.ReadOrDownloadAsync idsFileName downloadIdsFunc refreshCache =
-    match (refreshCache, _fileService.Exists idsFileName) with
-    | true, true -> refreshCachedAsync idsFileName downloadIdsFunc
-    | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
-    | false, true -> _fileService.ReadIdsAsync idsFileName
-    | false, false -> refreshCachedAsync idsFileName downloadIdsFunc
+    let idsFilePath =
+      [|Path.GetTempPath(); idsFileName|]
+      |> Path.Combine
+
+    match (refreshCache, _fileService.Exists idsFilePath) with
+    | true, true -> refreshCachedAsync idsFilePath downloadIdsFunc
+    | true, false -> refreshCachedAsync idsFilePath downloadIdsFunc
+    | false, true -> _fileService.ReadIdsAsync idsFilePath
+    | false, false -> refreshCachedAsync idsFilePath downloadIdsFunc
