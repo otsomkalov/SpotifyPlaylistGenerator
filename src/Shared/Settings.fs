@@ -4,7 +4,7 @@ open System
 
 module ConnectionStrings =
   [<Literal>]
-  let Postgre = "CUSTOMCONNSTR_Postgre"
+  let Postgre = "Postgre"
 
 module SpotifySettings =
   [<Literal>]

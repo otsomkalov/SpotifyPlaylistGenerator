@@ -15,7 +15,7 @@ type Startup() =
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
-    builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
+    builder.ConfigurationBuilder.AddUserSecrets<Startup>(true).AddEnvironmentVariables()
 
     ()
 
@@ -26,7 +26,7 @@ type Startup() =
 
     services
     |> Startup.addSettings configuration
-    |> Startup.addServices
+    |> Startup.addServices configuration
 
     services
       .AddScoped<UnauthorizedUserCommandHandler>()

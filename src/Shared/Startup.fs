@@ -28,10 +28,9 @@ let private configureSQS (_: IServiceProvider) =
   |> AmazonSQSClient
   :> IAmazonSQS
 
-let private configureDbContext (serviceProvider: IServiceProvider) (builder: DbContextOptionsBuilder) =
-  let configuration = serviceProvider.GetRequiredService<IConfiguration>()
+let private configureDbContext (configuration: IConfiguration) (builder: DbContextOptionsBuilder) =
 
-  builder.UseNpgsql(configuration[ConnectionStrings.Postgre])
+  builder.UseNpgsql(configuration.GetConnectionString(ConnectionStrings.Postgre))
 
   ()
 
@@ -40,9 +39,9 @@ let addSettings (configuration: IConfiguration) (services: IServiceCollection) =
   services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.SectionName))
   services.Configure<AmazonSettings>(configuration.GetSection(AmazonSettings.SectionName))
 
-let addServices (services: IServiceCollection) =
+let addServices (configuration: IConfiguration) (services: IServiceCollection) =
   services.AddSingleton<SpotifyClientProvider>()
-  services.AddDbContext<AppDbContext>(configureDbContext)
+  services.AddDbContext<AppDbContext>(configureDbContext configuration)
 
   services.AddSingleton<IAmazonSQS>(configureSQS)
   services.AddSingleton<ITelegramBotClient>(configureTelegramBotClient)
