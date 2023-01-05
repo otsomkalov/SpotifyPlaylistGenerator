@@ -6,19 +6,19 @@ open Generator.Worker.Domain
 open Microsoft.Extensions.Logging
 
 type FileService(_logger: ILogger<FileService>) =
-  member _.SaveIdsAsync fileName ids =
+  member _.SaveIdsAsync filePath ids =
     task {
       let rawIds =
         ids |> List.map RawTrackId.value
 
       let json = JsonSerializer.Serialize(rawIds)
 
-      do! File.WriteAllTextAsync(fileName, json)
+      do! File.WriteAllTextAsync(filePath, json)
     }
 
-  member _.ReadIdsAsync fileName =
+  member _.ReadIdsAsync filePath =
     task {
-      let! json = File.ReadAllTextAsync(fileName)
+      let! json = File.ReadAllTextAsync(filePath)
 
       let data =
         JsonSerializer.Deserialize<string list>(json)

@@ -1,0 +1,43 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  Runtime: 'linux-x64'
+
+steps:
+  - task: DotNetCoreCLI@2
+    name: Restore
+    inputs:
+      command: 'restore'
+      arguments: '-r $(Runtime)'
+  - task: DotNetCoreCLI@2
+    name: Build
+    inputs:
+      command: 'build'
+      configuration: 'Release'
+      projects: '**/Generator.fsproj'
+      arguments: '-r $(Runtime) -c Release --no-self-contained'
+      publishWebProjects: false
+  - task: DotNetCoreCLI@2
+    name: Publish
+    inputs:
+      command: 'publish'
+      configuration: 'Release'
+      projects: '**/Generator.fsproj'
+      arguments: '-r $(Runtime) -c Release -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
+      publishWebProjects: false
+  - task: PublishBuildArtifacts@1
+    name: Pack
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'

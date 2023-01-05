@@ -5,15 +5,25 @@ namespace Generator
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
-open Microsoft.AspNetCore.Builder
+open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
 open Shared
 
-module Program =
+type Startup() =
+  inherit FunctionsStartup()
 
-  let configureServices (services: IServiceCollection) (configuration: IConfiguration) =
+  override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
+
+    builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
+
+    ()
+
+  override this.Configure(builder: IFunctionsHostBuilder) : unit =
+    let configuration =
+      builder.GetContext().Configuration
+    let services = builder.Services
+
     services
     |> Startup.addSettings configuration
     |> Startup.addServices
@@ -49,26 +59,9 @@ module Program =
       .AddScoped<TargetPlaylistService>()
       .AddScoped<GeneratorService>()
 
-    services.AddHostedService<Worker>()
-
-    services.AddApplicationInsightsTelemetry()
-
     services.AddLocalization()
 
-    services.AddControllers().AddNewtonsoftJson()
+    ()
 
-  [<EntryPoint>]
-  let main args =
-
-    let builder =
-      WebApplication.CreateBuilder(args)
-
-    configureServices builder.Services builder.Configuration
-
-    let app = builder.Build()
-
-    app.MapControllers()
-
-    app.Run()
-
-    0
+[<assembly: FunctionsStartup(typeof<Startup>)>]
+do ()

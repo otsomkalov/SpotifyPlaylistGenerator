@@ -1,15 +1,16 @@
 ﻿namespace Generator
 
 open Database
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
+open Microsoft.Azure.WebJobs
+open Microsoft.Azure.WebJobs.Extensions.Http
 open Microsoft.Extensions.Options
 open Shared.Services
 open Shared.Settings
 open SpotifyAPI.Web
 
-[<ApiController>]
-[<Route("callback")>]
-type CallbackController
+type SpotifyFunctions
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _spotifyOptions: IOptions<SpotifySettings>,
@@ -17,7 +18,6 @@ type CallbackController
     _amazonOptions: IOptions<AmazonSettings>,
     _context: AppDbContext
   ) =
-  inherit ControllerBase()
 
   let _spotifySettings = _spotifyOptions.Value
   let _amazonSettings = _amazonOptions.Value
@@ -25,9 +25,11 @@ type CallbackController
   let _telegramSettings =
     _telegramOptions.Value
 
-  [<HttpGet>]
-  member this.HandleCallbackAsync(code: string) =
+  [<FunctionName("HandleCallbackAsync")>]
+  member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "spotify/callback")>] request: HttpRequest) =
     task {
+      let code = request.Query["code"]
+
       let! tokenResponse =
         (_spotifySettings.ClientId, _spotifySettings.ClientSecret, code, _spotifySettings.CallbackUrl)
         |> AuthorizationCodeTokenRequest
@@ -46,5 +48,5 @@ type CallbackController
       (spotifyUserProfile.Id, spotifyClient)
       |> _spotifyClientProvider.SetClient
 
-      return this.RedirectPermanent($"{_telegramSettings.BotUrl}?start={spotifyUserProfile.Id}")
+      return RedirectResult($"{_telegramSettings.BotUrl}?start={spotifyUserProfile.Id}", true)
     }
