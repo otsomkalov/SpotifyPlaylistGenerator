@@ -1,6 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Collections.Generic
+open System.IO
 open System.Linq
 open Database
 open Database.Entities
@@ -86,5 +87,9 @@ type HistoryPlaylistsService
           .Select(fun p -> p.Url)
           .FirstOrDefaultAsync()
 
-      return! _fileService.SaveIdsAsync $"{targetHistoryPlaylistId}.json" tracksIds
+      let idsFilePath =
+        [|Path.GetTempPath(); $"{targetHistoryPlaylistId}.json"|]
+        |> Path.Combine
+
+      return! _fileService.SaveIdsAsync idsFilePath tracksIds
     }
