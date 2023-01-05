@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1"/>
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1"/>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -20,10 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Functions\SpotifyFunctions.fs" />
-    <Compile Include="Functions\UpdateFunctions.fs" />
-    <Compile Include="Functions\GeneratorFunctions.fs" />
-    <Compile Include="Startup.fs" />
+    <Compile Include="Functions\SpotifyFunctions.fs"/>
+    <Compile Include="Functions\UpdateFunctions.fs"/>
+    <Compile Include="Functions\GeneratorFunctions.fs"/>
+    <Compile Include="Startup.fs"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Update="Resources\Messages.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -45,8 +45,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Generator.Bot\Generator.Bot.fsproj" />
-    <ProjectReference Include="..\Generator.Worker\Generator.Worker.fsproj" />
+    <ProjectReference Include="..\Generator.Bot\Generator.Bot.fsproj"/>
+    <ProjectReference Include="..\Generator.Worker\Generator.Worker.fsproj"/>
   </ItemGroup>
 
 </Project>
