@@ -31,7 +31,7 @@ let private configureSQS (_: IServiceProvider) =
 let private configureDbContext (serviceProvider: IServiceProvider) (builder: DbContextOptionsBuilder) =
   let configuration = serviceProvider.GetRequiredService<IConfiguration>()
 
-  builder.UseNpgsql(configuration.GetConnectionString(ConnectionStrings.Postgre))
+  builder.UseNpgsql(configuration[ConnectionStrings.Postgre])
 
   ()
 

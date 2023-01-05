@@ -73,20 +73,20 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
   }
 
   app_settings = {
-    Telegram__Token            = var.telegram-token
-    Telegram__BotUrl           = var.telegram-bot-url
-    Spotify__ClientId          = var.spotify-client-id
-    Spotify__ClientSecret      = var.spotify-client-secret
-    Spotify__CallbackUrl       = var.spotify-callback-url
-    AWS_ACCESS_KEY_ID          = var.aws-access-key-id
-    AWS_SECRET_ACCESS_KEY      = var.aws-secret-access-key
-    Amazon__QueueUrl           = var.amazon-queue-url
-    GeneratorSchedule          = var.generator-schedule
+    Telegram__Token       = var.telegram-token
+    Telegram__BotUrl      = var.telegram-bot-url
+    Spotify__ClientId     = var.spotify-client-id
+    Spotify__ClientSecret = var.spotify-client-secret
+    Spotify__CallbackUrl  = var.spotify-callback-url
+    AWS_ACCESS_KEY_ID     = var.aws-access-key-id
+    AWS_SECRET_ACCESS_KEY = var.aws-secret-access-key
+    Amazon__QueueUrl      = var.amazon-queue-url
+    GeneratorSchedule     = var.generator-schedule
   }
 
   connection_string {
-    name = "Postgre"
-    type = "PostgreSQL"
+    name  = "Postgre"
+    type  = "PostgreSQL"
     value = var.database-connection-string
   }
 
