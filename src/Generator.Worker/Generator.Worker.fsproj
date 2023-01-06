@@ -9,7 +9,6 @@
   <ItemGroup>
     <Compile Include="Extensions.fs"/>
     <Compile Include="Domain.fs"/>
-    <Compile Include="Services\FileService.fs"/>
     <Compile Include="Services\TracksIdsService.fs"/>
     <Compile Include="Services\PlaylistService.fs"/>
     <Compile Include="Services\HistoryPlaylistsService.fs"/>

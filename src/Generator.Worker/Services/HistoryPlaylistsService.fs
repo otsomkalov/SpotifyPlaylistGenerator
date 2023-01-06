@@ -1,12 +1,13 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Collections.Generic
-open System.IO
 open System.Linq
+open System.Text.Json
 open Database
 open Database.Entities
 open Generator.Worker.Domain
 open Microsoft.EntityFrameworkCore
+open Microsoft.Extensions.Caching.Distributed
 open Microsoft.Extensions.Logging
 open Shared.Services
 open SpotifyAPI.Web
@@ -15,7 +16,7 @@ type HistoryPlaylistsService
   (
     _playlistService: PlaylistService,
     _spotifyClientProvider: SpotifyClientProvider,
-    _fileService: FileService,
+    _cache: IDistributedCache,
     _logger: ILogger<HistoryPlaylistsService>,
     _context: AppDbContext
   ) =
@@ -87,9 +88,5 @@ type HistoryPlaylistsService
           .Select(fun p -> p.Url)
           .FirstOrDefaultAsync()
 
-      let idsFilePath =
-        [|Path.GetTempPath(); $"{targetHistoryPlaylistId}.json"|]
-        |> Path.Combine
-
-      return! _fileService.SaveIdsAsync idsFilePath tracksIds
+      return! _cache.SetStringAsync (targetHistoryPlaylistId, JsonSerializer.Serialize tracksIds)
     }

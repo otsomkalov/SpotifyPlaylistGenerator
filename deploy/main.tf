@@ -83,6 +83,7 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
     Amazon__QueueUrl           = var.amazon-queue-url
     Database__ConnectionString = var.database-connection-string
     GeneratorSchedule          = var.generator-schedule
+    Redis__ConnectionString    = var.redis-connection-string
   }
 
   tags = local.tags

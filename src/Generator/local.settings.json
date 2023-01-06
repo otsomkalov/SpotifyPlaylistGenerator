@@ -9,6 +9,7 @@
     "Spotify__ClientSecret": "<Spotify app ClientSecret>",
     "Spotify__CallbackUrl": "<Spotify login callback url>",
     "Database__ConnectionString": "<PostgreSQL connection string>",
-    "GeneratorSchedule": "0 * * * * *"
+    "GeneratorSchedule": "0 * * * * *",
+    "Redis__ConnectionString": "<Redis connection string>"
   }
 }
