@@ -33,7 +33,7 @@ type PlaylistService(_spotifyClientProvider: SpotifyClientProvider, _idsService:
     downloadTracksIdsAsync' userId playlistId 0
 
   let readOrDownloadTracksIdsAsync userId refreshCache playlistId =
-    _idsService.ReadOrDownloadAsync $"{playlistId}.json" (downloadTracksIdsAsync userId playlistId) refreshCache
+    _idsService.ReadOrDownloadAsync playlistId (downloadTracksIdsAsync userId playlistId) refreshCache
 
   member this.ListTracksIdsAsync userId playlistsIds refreshCache =
     task {

@@ -2,6 +2,10 @@
 
 open System
 
+module ConnectionStrings =
+  [<Literal>]
+  let Redis = "Redis:ConnectionString"
+
 module SpotifySettings =
   [<Literal>]
   let SectionName = "Spotify"

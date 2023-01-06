@@ -39,6 +39,10 @@ variable "generator-schedule" {
   type = string
 }
 
+variable "redis-connection-string" {
+  type = string
+}
+
 variable "env" {
   type    = string
   default = "prod"

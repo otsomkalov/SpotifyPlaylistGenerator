@@ -6,12 +6,17 @@ open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
+open Microsoft.Extensions.Caching.StackExchangeRedis
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Shared
+open Shared.Settings
 
 type Startup() =
   inherit FunctionsStartup()
+
+  let configureRedisCache (configuration: IConfiguration) (options: RedisCacheOptions) =
+    options.Configuration <- configuration[ConnectionStrings.Redis]
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
@@ -27,6 +32,8 @@ type Startup() =
     services
     |> Startup.addSettings configuration
     |> Startup.addServices
+
+    services.AddStackExchangeRedisCache(configureRedisCache configuration)
 
     services
       .AddScoped<UnauthorizedUserCommandHandler>()
@@ -50,7 +57,6 @@ type Startup() =
       .AddScoped<CallbackQueryService>()
 
     services
-      .AddScoped<FileService>()
       .AddScoped<TracksIdsService>()
       .AddScoped<PlaylistService>()
       .AddScoped<HistoryPlaylistsService>()
