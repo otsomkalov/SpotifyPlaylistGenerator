@@ -45,6 +45,12 @@ resource "azurerm_storage_account" "st-spotify-playlist-generator" {
   tags = local.tags
 }
 
+resource "azurerm_storage_queue" "stq-requests-spotify-playlist-generator" {
+  storage_account_name = azurerm_storage_account.st-spotify-playlist-generator.name
+
+  name = var.storage-queue-name
+}
+
 resource "azurerm_service_plan" "asp-spotify-playlist-generator" {
   resource_group_name = azurerm_resource_group.rg-spotify-playlist-generator.name
   location            = azurerm_resource_group.rg-spotify-playlist-generator.location
@@ -78,12 +84,11 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
     Spotify__ClientId          = var.spotify-client-id
     Spotify__ClientSecret      = var.spotify-client-secret
     Spotify__CallbackUrl       = var.spotify-callback-url
-    AWS_ACCESS_KEY_ID          = var.aws-access-key-id
-    AWS_SECRET_ACCESS_KEY      = var.aws-secret-access-key
-    Amazon__QueueUrl           = var.amazon-queue-url
     Database__ConnectionString = var.database-connection-string
     GeneratorSchedule          = var.generator-schedule
     Redis__ConnectionString    = var.redis-connection-string
+    Storage__ConnectionString  = azurerm_storage_account.st-spotify-playlist-generator.primary_connection_string
+    Storage__QueueName         = azurerm_storage_queue.stq-requests-spotify-playlist-generator.name
   }
 
   tags = local.tags

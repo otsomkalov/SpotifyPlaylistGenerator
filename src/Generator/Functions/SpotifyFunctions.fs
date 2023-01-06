@@ -15,12 +15,10 @@ type SpotifyFunctions
     _spotifyClientProvider: SpotifyClientProvider,
     _spotifyOptions: IOptions<SpotifySettings>,
     _telegramOptions: IOptions<TelegramSettings>,
-    _amazonOptions: IOptions<AmazonSettings>,
     _context: AppDbContext
   ) =
 
   let _spotifySettings = _spotifyOptions.Value
-  let _amazonSettings = _amazonOptions.Value
 
   let _telegramSettings =
     _telegramOptions.Value

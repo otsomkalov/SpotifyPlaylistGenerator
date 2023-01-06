@@ -22,11 +22,7 @@ type StartCommandHandler
   let sendMessageAsync (message: Message) =
     task {
       let replyMarkup =
-        ReplyKeyboardMarkup(
-          seq {
-            seq { KeyboardButton(Messages.Settings) }
-          }
-        )
+        ReplyKeyboardMarkup(seq { seq { KeyboardButton(Messages.Settings) } })
 
       _bot.SendTextMessageAsync(
         ChatId(message.Chat.Id),
@@ -45,8 +41,7 @@ type StartCommandHandler
 
   let handleCommandDataAsync' (message: Message) (spotifyId: string) =
     task {
-      let spotifyClient =
-        _spotifyClientProvider.Get message.From.Id
+      let spotifyClient = _spotifyClientProvider.Get message.From.Id
 
       return!
         if spotifyClient = null then
@@ -56,8 +51,7 @@ type StartCommandHandler
     }
 
   let handleCommandDataAsync (message: Message) (spotifyId: string) =
-    let spotifyClient =
-      _spotifyClientProvider.Get spotifyId
+    let spotifyClient = _spotifyClientProvider.Get spotifyId
 
     if spotifyClient = null then
       _unauthorizedUserCommandHandler.HandleAsync message
@@ -66,20 +60,16 @@ type StartCommandHandler
 
   let createUserAsync userId =
     task {
-      let! _ =
-        Database.Entities.User(Id = userId)
-        |> _context.Users.AddAsync
+      let! _ = Database.Entities.User(Id = userId) |> _context.Users.AddAsync
 
-      _context.SaveChangesAsync() |> ignore
+      let! _ = _context.SaveChangesAsync()
+
+      ()
     }
 
   let handleEmptyCommandAsync (message: Message) =
     task {
-      let! userExists =
-        _context
-          .Users
-          .AsNoTracking()
-          .AnyAsync(fun u -> u.Id = message.From.Id)
+      let! userExists = _context.Users.AsNoTracking().AnyAsync(fun u -> u.Id = message.From.Id)
 
       if not userExists then
         createUserAsync message.From.Id

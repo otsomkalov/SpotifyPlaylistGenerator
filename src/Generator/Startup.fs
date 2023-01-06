@@ -2,6 +2,8 @@ namespace Generator
 
 #nowarn "20"
 
+open System
+open Azure.Storage.Queues
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
@@ -9,6 +11,7 @@ open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Caching.StackExchangeRedis
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Options
 open Shared
 open Shared.Settings
 
@@ -17,6 +20,11 @@ type Startup() =
 
   let configureRedisCache (configuration: IConfiguration) (options: RedisCacheOptions) =
     options.Configuration <- configuration[ConnectionStrings.Redis]
+
+  let configureQueueClient (sp: IServiceProvider) =
+    let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
+
+    QueueClient(settings.ConnectionString, settings.QueueName(*, QueueClientOptions(MessageEncoding = QueueMessageEncoding.Base64)*))
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
@@ -34,6 +42,8 @@ type Startup() =
     |> Startup.addServices
 
     services.AddStackExchangeRedisCache(configureRedisCache configuration)
+
+    services.AddSingleton<QueueClient>(configureQueueClient)
 
     services
       .AddScoped<UnauthorizedUserCommandHandler>()
