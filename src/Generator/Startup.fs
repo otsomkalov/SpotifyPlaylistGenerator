@@ -24,7 +24,7 @@ type Startup() =
   let configureQueueClient (sp: IServiceProvider) =
     let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
 
-    QueueClient(settings.ConnectionString, settings.QueueName(*, QueueClientOptions(MessageEncoding = QueueMessageEncoding.Base64)*))
+    QueueClient(settings.ConnectionString, settings.QueueName)
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
