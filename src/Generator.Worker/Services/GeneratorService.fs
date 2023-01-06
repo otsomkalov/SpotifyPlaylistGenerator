@@ -1,14 +1,12 @@
 ﻿namespace Generator.Worker.Services
 
-open System.Text.Json
+
 open Database
 open Microsoft.Extensions.Logging
-open Microsoft.Extensions.Options
 open Shared.Services
 open Shared.QueueMessages
 open Generator.Worker.Extensions
 open Generator.Worker.Domain
-open Shared.Settings
 open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
@@ -21,17 +19,12 @@ type GeneratorService
     _spotifyClientProvider: SpotifyClientProvider,
     _playlistsService: PlaylistsService,
     _logger: ILogger<GeneratorService>,
-    _amazonOptions: IOptions<AmazonSettings>,
     _bot: ITelegramBotClient,
     _context: AppDbContext
   ) =
-  let _amazonSettings = _amazonOptions.Value
 
-  member this.GeneratePlaylistAsync(messageBody: string) =
+  member this.GeneratePlaylistAsync(queueMessage: GeneratePlaylistMessage) =
     task {
-      let queueMessage =
-        JsonSerializer.Deserialize<GeneratePlaylistMessage>(messageBody)
-
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
 
       (ChatId(queueMessage.TelegramId), "Generating playlist...")

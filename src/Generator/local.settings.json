@@ -10,6 +10,8 @@
     "Spotify__CallbackUrl": "<Spotify login callback url>",
     "Database__ConnectionString": "<PostgreSQL connection string>",
     "GeneratorSchedule": "0 * * * * *",
-    "Redis__ConnectionString": "<Redis connection string>"
+    "Redis__ConnectionString": "<Redis connection string>",
+    "Storage__ConnectionString": "<Azure storage account connection string>",
+    "Storage__QueueName": "<Queue name>"
   }
 }

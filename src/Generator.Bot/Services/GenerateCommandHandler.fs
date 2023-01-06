@@ -1,12 +1,10 @@
 ﻿namespace Generator.Bot.Services
 
 open System.Text.Json
-open Amazon.SQS
+open Azure.Storage.Queues
 open Database
 open Database.Entities
-open Microsoft.Extensions.Options
 open Shared.Services
-open Shared.Settings
 open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
@@ -16,30 +14,22 @@ open Generator.Bot.Helpers
 
 module UserPlaylistValidation =
   let private validateHasSourcePlaylists playlistsTypes =
-    match playlistsTypes
-          |> Seq.tryFind (fun p -> p = PlaylistType.Source)
-      with
+    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.Source) with
     | Some _ -> Ok(playlistsTypes)
     | None -> Error("Source playlists are not added")
 
   let private validateHasTargetPlaylist playlistsTypes =
-    match playlistsTypes
-          |> Seq.tryFind (fun p -> p = PlaylistType.Target)
-      with
+    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.Target) with
     | Some _ -> Ok(playlistsTypes)
     | None -> Error("Target playlist is not set")
 
   let private validateHasHistoryPlaylists playlistsTypes =
-    match playlistsTypes
-          |> Seq.tryFind (fun p -> p = PlaylistType.History)
-      with
+    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.History) with
     | Some _ -> Ok(playlistsTypes)
     | None -> Error("History playlists are not added")
 
   let private validateHasTargetHistoryPlaylist playlistsTypes =
-    match playlistsTypes
-          |> Seq.tryFind (fun p -> p = PlaylistType.TargetHistory)
-      with
+    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.TargetHistory) with
     | Some _ -> Ok(playlistsTypes)
     | None -> Error("Target history playlist is not set")
 
@@ -52,14 +42,11 @@ module UserPlaylistValidation =
 
 type GenerateCommandHandler
   (
-    _sqs: IAmazonSQS,
-    _amazonOptions: IOptions<AmazonSettings>,
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
-    _context: AppDbContext
+    _context: AppDbContext,
+    _queueClient: QueueClient
   ) =
-  let _amazonSettings = _amazonOptions.Value
-
   let handleWrongCommandDataAsync (message: Message) =
     task {
       _bot.SendTextMessageAsync(
@@ -72,11 +59,11 @@ type GenerateCommandHandler
 
   let sendSQSMessageAsync message =
     task {
-      let messageJson =
-        JsonSerializer.Serialize message
+      let messageJson = JsonSerializer.Serialize message
 
-      _sqs.SendMessageAsync(_amazonSettings.QueueUrl, messageJson)
-      |> ignore
+      let! _ = _queueClient.SendMessageAsync(messageJson)
+
+      ()
     }
 
   let sendGenerateMessageAsync (message: Message) queueMessage =

@@ -10,5 +10,11 @@
         "excludedTypes": "Request"
       }
     }
+  },
+  "extensions": {
+    "queues": {
+      "maxDequeueCount": 1,
+      "messageEncoding": "none"
+    }
   }
 }

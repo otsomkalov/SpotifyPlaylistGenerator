@@ -30,9 +30,11 @@ module DatabaseSettings =
 type DatabaseSettings() =
   member val ConnectionString = "" with get, set
 
-module AmazonSettings =
+module StorageSettings =
   [<Literal>]
-  let SectionName = "Amazon"
+  let SectionName = "Storage"
 
-type AmazonSettings() =
-  member val QueueUrl = "" with get, set
+type StorageSettings() =
+  member val ConnectionString = "" with get, set
+
+  member val QueueName = "" with get, set

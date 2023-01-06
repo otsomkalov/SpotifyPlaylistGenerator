@@ -19,18 +19,6 @@ variable "spotify-callback-url" {
   default = "<Spotify login callback url>"
 }
 
-variable "aws-access-key-id" {
-  type = string
-}
-
-variable "aws-secret-access-key" {
-  type = string
-}
-
-variable "amazon-queue-url" {
-  type = string
-}
-
 variable "database-connection-string" {
   type = string
 }
@@ -40,6 +28,10 @@ variable "generator-schedule" {
 }
 
 variable "redis-connection-string" {
+  type = string
+}
+
+variable "storage-queue-name" {
   type = string
 }
 
