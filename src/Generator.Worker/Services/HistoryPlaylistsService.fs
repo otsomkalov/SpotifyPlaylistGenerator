@@ -88,5 +88,5 @@ type HistoryPlaylistsService
           .Select(fun p -> p.Url)
           .FirstOrDefaultAsync()
 
-      return! _cache.SetStringAsync (targetHistoryPlaylistId, JsonSerializer.Serialize tracksIds)
+      return! _cache.SetStringAsync (targetHistoryPlaylistId, JsonSerializer.Serialize (tracksIds |> List.map RawTrackId.value))
     }
