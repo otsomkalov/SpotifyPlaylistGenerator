@@ -18,5 +18,7 @@ public class Playlist
 
     public long UserId { get; init; }
 
+    public bool Disabled { get; set; }
+
     public virtual User User { get; set; }
 }
