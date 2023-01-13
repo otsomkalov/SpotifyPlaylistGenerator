@@ -15,7 +15,8 @@ type PlaylistsService(_playlistService: PlaylistService, _logger: ILogger<Playli
           .AsNoTracking()
           .Where(fun p ->
             p.UserId = userId
-            && p.PlaylistType = PlaylistType.Source)
+            && p.PlaylistType = PlaylistType.Source
+            && not p.Disabled)
           .Select(fun p -> p.Url)
           .ToListAsync()
 
