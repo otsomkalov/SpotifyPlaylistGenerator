@@ -18,7 +18,7 @@ module ValidateUserPlaylists =
             [ ValidateUserPlaylists.NoIncludedPlaylists
               ValidateUserPlaylists.NoTargetPlaylists ]
             |> ValidateUserPlaylists.Errors
-          | [], _ -> [ ValidateUserPlaylists.NoTargetPlaylists ] |> ValidateUserPlaylists.Errors
-          | _, [] -> [ ValidateUserPlaylists.NoIncludedPlaylists ] |> ValidateUserPlaylists.Errors
+          | [], _ -> [ ValidateUserPlaylists.NoIncludedPlaylists ] |> ValidateUserPlaylists.Errors
+          | _, [] -> [ ValidateUserPlaylists.NoTargetPlaylists ] |> ValidateUserPlaylists.Errors
           | _, _ -> ValidateUserPlaylists.Ok
       }
