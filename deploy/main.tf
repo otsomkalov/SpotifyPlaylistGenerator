@@ -73,6 +73,7 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
   name = "func-spotify-playlist-generator-${var.env}"
 
   functions_extension_version = "~4"
+  builtin_logging_enabled = false
 
   site_config {
     application_insights_key = azurerm_application_insights.appi-spotify-playlist-generator.instrumentation_key
