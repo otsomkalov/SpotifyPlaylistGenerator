@@ -17,11 +17,4 @@ type GeneratorFunctions
 
   [<FunctionName("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage) =
-    task {
-      try
-        do! _generatorService.GeneratePlaylistAsync message
-      with
-      | e -> _logger.LogError(e, "Error during generator execution:")
-
-      ()
-    }
+    _generatorService.GeneratePlaylistAsync message
