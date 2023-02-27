@@ -3,7 +3,9 @@
   "logging": {
     "logLevel": {
       "default": "Information",
-      "Azure.Core": "Warning"
+      "Azure.Core": "Warning",
+      "Host": "Warning",
+      "Microsoft": "Warning"
     }
   },
   "extensions": {
