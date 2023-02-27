@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Extensions.fs"/>
     <Compile Include="Functions\SpotifyFunctions.fs"/>
     <Compile Include="Functions\UpdateFunctions.fs"/>
     <Compile Include="Functions\GeneratorFunctions.fs"/>

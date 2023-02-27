@@ -1,51 +1,23 @@
 ﻿namespace Generator.Bot.Services
 
+open System
 open System.Text.Json
 open Azure.Storage.Queues
 open Database
-open Database.Entities
+open Domain.Core
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
-open System.Linq
 open Shared.QueueMessages
 open Generator.Bot.Helpers
-
-module UserPlaylistValidation =
-  let private validateHasSourcePlaylists playlistsTypes =
-    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.Source) with
-    | Some _ -> Ok(playlistsTypes)
-    | None -> Error("Source playlists are not added")
-
-  let private validateHasTargetPlaylist playlistsTypes =
-    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.Target) with
-    | Some _ -> Ok(playlistsTypes)
-    | None -> Error("Target playlist is not set")
-
-  let private validateHasHistoryPlaylists playlistsTypes =
-    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.History) with
-    | Some _ -> Ok(playlistsTypes)
-    | None -> Error("History playlists are not added")
-
-  let private validateHasTargetHistoryPlaylist playlistsTypes =
-    match playlistsTypes |> Seq.tryFind (fun p -> p = PlaylistType.TargetHistory) with
-    | Some _ -> Ok(playlistsTypes)
-    | None -> Error("Target history playlist is not set")
-
-  let validateUserPlaylists playlistsTypes =
-    (Ok playlistsTypes)
-    |> Result.bind validateHasSourcePlaylists
-    |> Result.bind validateHasTargetPlaylist
-    |> Result.bind validateHasHistoryPlaylists
-    |> Result.bind validateHasTargetHistoryPlaylist
 
 type GenerateCommandHandler
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
     _context: AppDbContext,
-    _queueClient: QueueClient
+    _queueClient: QueueClient,
+    validateUserPlaylists: ValidateUserPlaylists.Action
   ) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
@@ -102,31 +74,26 @@ type GenerateCommandHandler
     | CommandData data -> validateCommandDataAsync message data
     | _ -> handleEmptyCommandAsync message
 
-  let validateUserPlaylistsAsync (message: Message) =
+  let handleUserPlaylistsValidationErrorAsync (message: Message) errors =
     task {
-      let! userPlaylistsTypes =
-        _context
-          .Playlists
-          .AsNoTracking()
-          .Where(fun p -> p.UserId = message.From.Id)
-          .Select(fun p -> p.PlaylistType)
-          .ToListAsync()
+      let errorsText =
+        errors
+        |> Seq.map (
+          function
+          | ValidateUserPlaylists.NoIncludedPlaylists -> "No included playlists!"
+          | ValidateUserPlaylists.NoTargetPlaylists -> "No target playlists!")
+        |> String.concat Environment.NewLine
 
-      return UserPlaylistValidation.validateUserPlaylists userPlaylistsTypes
-    }
-
-  let handleUserPlaylistsValidationErrorAsync (message: Message) error =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), error, replyToMessageId = message.MessageId)
+      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), errorsText, replyToMessageId = message.MessageId)
       |> ignore
     }
 
   member this.HandleAsync(message: Message) =
     task {
-      let! validationResult = validateUserPlaylistsAsync message
+      let! validationResult = validateUserPlaylists (message.From.Id |> UserId)
 
       return!
         match validationResult with
-        | Ok _ -> handleCommandAsync message
-        | Error e -> handleUserPlaylistsValidationErrorAsync message e
+        | ValidateUserPlaylists.Ok -> handleCommandAsync message
+        | ValidateUserPlaylists.Errors errors -> handleUserPlaylistsValidationErrorAsync message errors
     }

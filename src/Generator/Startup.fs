@@ -4,9 +4,12 @@ namespace Generator
 
 open System
 open Azure.Storage.Queues
+open Database
+open Domain.Core
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
+open Infrastructure.Workflows
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Caching.StackExchangeRedis
 open Microsoft.Extensions.Configuration
@@ -14,6 +17,8 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
 open Shared
 open Shared.Settings
+open Generator.Extensions.ServiceCollection
+open Domain.Workflows
 
 type Startup() =
   inherit FunctionsStartup()
@@ -76,6 +81,9 @@ type Startup() =
       .AddScoped<GeneratorService>()
 
     services.AddLocalization()
+
+    services.AddSingletonFunc<ValidateUserPlaylists.LoadUser, AppDbContext>(ValidateUserPlaylists.loadUser)
+    services.AddSingletonFunc<ValidateUserPlaylists.Action, ValidateUserPlaylists.LoadUser>(ValidateUserPlaylists.validateUserPlaylists)
 
     ()
 
