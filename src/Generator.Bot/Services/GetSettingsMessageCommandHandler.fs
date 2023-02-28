@@ -8,18 +8,18 @@ open Telegram.Bot.Types.ReplyMarkups
 
 type GetSettingsMessageCommandHandler() =
   member this.HandleAsync(user: User) =
-    let includeLikedTracksMark, includeLikedTracksButtonText, includeLikedTracksCallbackData =
-      if user.Settings.IncludeLikedTracks then
-        ("✅", Messages.ExcludeLikedTracks, CallbackQueryConstants.excludeLikedTracks)
-      else
-        ("❌", Messages.IncludeLikedTracks, CallbackQueryConstants.includeLikedTracks)
+    let messageText, buttonText, buttonData =
+      match user.Settings.IncludeLikedTracks |> Option.ofNullable with
+      | Some v when v = true -> Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, CallbackQueryConstants.excludeLikedTracks
+      | Some v when v = false -> Messages.LikedTracksExcluded, Messages.IgnoreLikedTracks, CallbackQueryConstants.ignoreLikedTracks
+      | None -> Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, CallbackQueryConstants.includeLikedTracks
 
     let text =
-      String.Format(Messages.CurrentSettings, includeLikedTracksMark, user.Settings.PlaylistSize)
+      String.Format(Messages.CurrentSettings, messageText, user.Settings.PlaylistSize)
 
     let replyMarkup =
       InlineKeyboardMarkup(
-        [ InlineKeyboardButton(includeLikedTracksButtonText, CallbackData = includeLikedTracksCallbackData)
+        [ InlineKeyboardButton(buttonText, CallbackData = buttonData)
           InlineKeyboardButton(Messages.SetPlaylistSize, CallbackData = CallbackQueryConstants.setPlaylistSize) ]
       )
 
