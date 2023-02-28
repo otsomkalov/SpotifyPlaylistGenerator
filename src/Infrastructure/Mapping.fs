@@ -1,7 +1,9 @@
 ﻿module Infrastructure.Mapping
 
+open System
 open Database.Entities
 open Domain.Core
+open Infrastructure.Core
 
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
@@ -26,3 +28,22 @@ module User =
     { Id = userId
       IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds playlists PlaylistType.Source
       TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds playlists }
+
+module UserSettings =
+  let fromDb (settings: Settings) : UserSettings.UserSettings =
+    { LikedTracksHandling =
+        (match settings.IncludeLikedTracks |> Option.ofNullable with
+         | Some v when v = true -> UserSettings.LikedTracksHandling.Include
+         | Some v when v = false -> UserSettings.LikedTracksHandling.Exclude
+         | None -> UserSettings.LikedTracksHandling.Ignore)
+      PlaylistSize = PlaylistSize.create settings.PlaylistSize }
+
+  let toDb (settings: UserSettings.UserSettings) : Settings =
+    Settings(
+      IncludeLikedTracks =
+        (match settings.LikedTracksHandling with
+         | UserSettings.LikedTracksHandling.Include -> Nullable true
+         | UserSettings.LikedTracksHandling.Exclude -> Nullable false
+         | UserSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
+      PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value)
+    )

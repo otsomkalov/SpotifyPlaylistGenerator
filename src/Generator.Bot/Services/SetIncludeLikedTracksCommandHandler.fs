@@ -20,9 +20,9 @@ type SetIncludeLikedTracksCommandHandler
 
       user.Settings.IncludeLikedTracks <-
         (match likedTracksHandling with
-         | LikedTracksHandling.Include -> Nullable true
-         | LikedTracksHandling.Exclude -> Nullable false
-         | LikedTracksHandling.Ignore -> Nullable<bool>())
+         | UserSettings.LikedTracksHandling.Include -> Nullable true
+         | UserSettings.LikedTracksHandling.Exclude -> Nullable false
+         | UserSettings.LikedTracksHandling.Ignore -> Nullable<bool>())
 
       let! _ = _context.SaveChangesAsync()
 

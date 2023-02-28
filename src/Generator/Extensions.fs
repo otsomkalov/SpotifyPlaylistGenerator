@@ -8,6 +8,29 @@ module ServiceCollection =
   [<Extension>]
   type IServiceCollection =
     [<Extension>]
+    static member AddScopedFunc<'TFunc, 'TDep when 'TFunc: not struct>
+      (
+        sc: Microsoft.Extensions.DependencyInjection.IServiceCollection,
+        factory
+      ) =
+      sc.AddScoped<'TFunc>(fun sp ->
+        let service = sp.GetRequiredService<'TDep>()
+
+        factory service)
+
+    [<Extension>]
+    static member AddScopedFunc<'TFunc, 'TDep1, 'TDep2 when 'TFunc: not struct>
+      (
+        sc: Microsoft.Extensions.DependencyInjection.IServiceCollection,
+        factory
+      ) =
+      sc.AddScoped<'TFunc>(fun sp ->
+        let service1 = sp.GetRequiredService<'TDep1>()
+        let service2 = sp.GetRequiredService<'TDep2>()
+
+        factory service1 service2)
+
+    [<Extension>]
     static member AddSingletonFunc<'TFunc, 'TDep when 'TFunc: not struct>
       (
         sc: Microsoft.Extensions.DependencyInjection.IServiceCollection,
