@@ -85,6 +85,12 @@ type Startup() =
     services.AddSingletonFunc<ValidateUserPlaylists.LoadUser, AppDbContext>(ValidateUserPlaylists.loadUser)
     services.AddSingletonFunc<ValidateUserPlaylists.Action, ValidateUserPlaylists.LoadUser>(ValidateUserPlaylists.validateUserPlaylists)
 
+    services.AddSingletonFunc<UserSettings.Load, AppDbContext>(UserSettings.load)
+    services.AddSingletonFunc<UserSettings.Update, AppDbContext>(UserSettings.)
+    services.AddSingletonFunc<UserSettings.IncludeLikedTracks>()
+    services.AddSingletonFunc<UserSettings.ExcludeLikedTracks>()
+    services.AddSingletonFunc<UserSettings.IgnoreLikedTracks>()
+
     ()
 
 [<assembly: FunctionsStartup(typeof<Startup>)>]

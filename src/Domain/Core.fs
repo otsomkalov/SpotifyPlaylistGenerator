@@ -28,3 +28,13 @@ type LikedTracksHandling =
   | Include
   | Exclude
   | Ignore
+
+[<RequireQualifiedAccess>]
+module UserSettings =
+  type UserSettings =
+    { LikedTracksHandling: LikedTracksHandling
+      PlaylistSize: int }
+
+  type IncludeLikedTracks = UserId -> Task
+  type ExcludeLikedTracks = UserId -> Task
+  type IgnoreLikedTracks = UserId -> Task
