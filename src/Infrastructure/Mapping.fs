@@ -18,8 +18,7 @@ module WritablePlaylistId =
   let filterMapPlaylistsIds (playlists: Playlist seq) =
     playlists
     |> Seq.where (fun p ->
-      p.PlaylistType = PlaylistType.Target
-      || p.PlaylistType = PlaylistType.TargetHistory)
+      p.PlaylistType = PlaylistType.Target)
     |> Seq.map (fun p -> WritablePlaylistId p.Url)
     |> Seq.toList
 

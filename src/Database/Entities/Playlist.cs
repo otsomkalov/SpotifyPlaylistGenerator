@@ -4,15 +4,14 @@ public enum PlaylistType
 {
     Source,
     History,
-    Target,
-    TargetHistory
+    Target
 }
 
 public class Playlist
 {
     public int Id { get; init; }
 
-    public PlaylistType PlaylistType { get; init; }
+    public virtual PlaylistType PlaylistType { get; init; }
 
     public string Url { get; set; }
 

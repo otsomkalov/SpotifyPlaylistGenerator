@@ -9,6 +9,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Playlist> Playlists { get; init; }
 
+    public DbSet<TargetPlaylist> TargetPlaylists { get; init; }
+
     public AppDbContext(DbContextOptions options) : base(options)
     {
     }
@@ -23,5 +25,11 @@ public class AppDbContext : DbContext
                 settings.Property(s => s.PlaylistSize)
                     .HasDefaultValue(20);
             });
+
+        modelBuilder.Entity<Playlist>()
+            .HasDiscriminator(p => p.PlaylistType)
+            .HasValue<Playlist>(PlaylistType.Source)
+            .HasValue<Playlist>(PlaylistType.History)
+            .HasValue<TargetPlaylist>(PlaylistType.Target);
     }
 }

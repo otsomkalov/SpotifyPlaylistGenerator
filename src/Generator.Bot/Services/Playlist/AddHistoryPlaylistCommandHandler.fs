@@ -9,8 +9,8 @@ type AddHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHa
   let addHistoryPlaylistAsync (message: Message) playlistId =
     task {
       let! _ =
-        Playlist(Url = playlistId, UserId = message.From.Id, PlaylistType = PlaylistType.TargetHistory)
-        |> _context.Playlists.AddAsync
+        TargetPlaylist(Url = playlistId, UserId = message.From.Id)
+        |> _context.TargetPlaylists.AddAsync
 
       let! _ = _context.SaveChangesAsync()
 
