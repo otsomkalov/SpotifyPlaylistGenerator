@@ -22,3 +22,19 @@ module ValidateUserPlaylists =
           | _, [] -> [ ValidateUserPlaylists.NoTargetPlaylists ] |> ValidateUserPlaylists.Errors
           | _, _ -> ValidateUserPlaylists.Ok
       }
+
+[<RequireQualifiedAccess>]
+module UserSettings =
+  type Load = UserId -> Task<UserSettings.UserSettings>
+
+  type Update = UserId -> UserSettings.UserSettings -> Task
+
+  let setPlaylistSize (loadUserSettings: Load) (updateUserSettings: Update) : UserSettings.SetPlaylistSize =
+    fun userId playlistSize ->
+      task {
+        let! userSettings = loadUserSettings userId
+
+        let updatedSettings = { userSettings with PlaylistSize = playlistSize }
+
+        do! updateUserSettings userId updatedSettings
+      }

@@ -24,7 +24,17 @@ module ValidateUserPlaylists =
   type Action = UserId -> Task<Result>
 
 [<RequireQualifiedAccess>]
-type LikedTracksHandling =
-  | Include
-  | Exclude
-  | Ignore
+module UserSettings =
+  [<RequireQualifiedAccess>]
+  type LikedTracksHandling =
+    | Include
+    | Exclude
+    | Ignore
+
+  type PlaylistSize = PlaylistSize of int
+
+  type UserSettings =
+    { LikedTracksHandling: LikedTracksHandling
+      PlaylistSize: PlaylistSize }
+
+  type SetPlaylistSize = UserId -> PlaylistSize -> Task
