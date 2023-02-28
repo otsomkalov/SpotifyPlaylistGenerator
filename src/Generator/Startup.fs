@@ -33,7 +33,7 @@ type Startup() =
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
-    builder.ConfigurationBuilder.AddUserSecrets<Startup>()
+    builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
 
     ()
 
