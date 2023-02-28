@@ -22,3 +22,9 @@ module ValidateUserPlaylists =
     | Errors of Error list
 
   type Action = UserId -> Task<Result>
+
+[<RequireQualifiedAccess>]
+type LikedTracksHandling =
+  | Include
+  | Exclude
+  | Ignore

@@ -12,6 +12,6 @@
     "GeneratorSchedule": "0 * * * * *",
     "Redis__ConnectionString": "<Redis connection string>",
     "Storage__ConnectionString": "<Azure storage account connection string>",
-    "Storage__QueueName": "<Queue name>"
+    "Storage__QueueName": "requests"
   }
 }

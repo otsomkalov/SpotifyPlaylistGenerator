@@ -1,5 +1,6 @@
 ﻿namespace Generator.Worker.Services
 
+open System
 open System.Text.Json
 open System.Threading.Tasks
 open Generator.Worker.Domain
@@ -10,19 +11,27 @@ type TracksIdsService(_cache: IDistributedCache) =
     task {
       let! ids = loadIdsFunc
 
-      do! _cache.SetStringAsync(key, JsonSerializer.Serialize(ids |> List.map RawTrackId.value))
+      do!
+        _cache.SetStringAsync(
+          key,
+          JsonSerializer.Serialize(ids |> List.map RawTrackId.value),
+          DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
+        )
 
       return ids
     }
 
   member _.ReadOrDownloadAsync idsFileName downloadIdsFunc refreshCache =
-    task{
+    task {
       let! fromCache = _cache.GetStringAsync(idsFileName)
 
       return!
-        match (refreshCache, not(isNull fromCache)) with
+        match (refreshCache, not (isNull fromCache)) with
         | true, true -> refreshCachedAsync idsFileName downloadIdsFunc
         | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
-        | false, true -> JsonSerializer.Deserialize<string list>(fromCache) |> List.map RawTrackId.create |> Task.FromResult
+        | false, true ->
+          JsonSerializer.Deserialize<string list>(fromCache)
+          |> List.map RawTrackId.create
+          |> Task.FromResult
         | false, false -> refreshCachedAsync idsFileName downloadIdsFunc
     }

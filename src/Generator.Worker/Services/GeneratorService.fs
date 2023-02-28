@@ -1,6 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
 
+open System
 open Database
 open Microsoft.Extensions.Logging
 open Shared.Services
@@ -42,9 +43,10 @@ type GeneratorService
       let! playlistsTracksIds = _playlistsService.ListTracksIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
 
       let excludedTracksIds, includedTracksIds =
-        match user.Settings.IncludeLikedTracks with
-        | true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
-        | false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
+        match user.Settings.IncludeLikedTracks |> Option.ofNullable with
+        | Some v when v = true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
+        | Some v when false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
+        | None -> historyTracksIds, playlistsTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",

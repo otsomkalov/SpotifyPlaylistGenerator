@@ -21,12 +21,6 @@
     <data name="Settings" xml:space="preserve">
         <value>⚙ Settings</value>
     </data>
-    <data name="IncludeLikedTracks" xml:space="preserve">
-        <value>✅ Include liked</value>
-    </data>
-    <data name="ExcludeLikedTracks" xml:space="preserve">
-        <value>❌ Exclude liked</value>
-    </data>
     <data name="CurrentSettings" xml:space="preserve">
         <value>Your current settings are:
 *Include liked tracks* - {0}
@@ -61,5 +55,23 @@
     </data>
     <data name="PlaylistSizeTooBig" xml:space="preserve">
         <value>Playlist size should be lower than 10000!</value>
+    </data>
+    <data name="IncludeLikedTracks" xml:space="preserve">
+        <value>➕ Include liked</value>
+    </data>
+    <data name="ExcludeLikedTracks" xml:space="preserve">
+        <value>➖ Exclude liked</value>
+    </data>
+    <data name="IgnoreLikedTracks" xml:space="preserve">
+        <value>❌ Ignore liked</value>
+    </data>
+    <data name="LikedTracksIncluded" xml:space="preserve">
+        <value>➕ Liked tracks are included</value>
+    </data>
+    <data name="LikedTracksExcluded" xml:space="preserve">
+        <value>➖ Liked tracks are excluded</value>
+    </data>
+    <data name="LikedTracksIgnored" xml:space="preserve">
+        <value>❌ Liked tracks are ignored</value>
     </data>
 </root>

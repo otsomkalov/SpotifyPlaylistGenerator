@@ -1,6 +1,8 @@
 ﻿namespace Generator.Bot.Services
 
 open System.Threading.Tasks
+open Database.Migrations
+open Domain.Core
 open Generator.Bot.Constants
 open Telegram.Bot.Types
 
@@ -13,8 +15,9 @@ type CallbackQueryService
     task {
       let processCallbackQueryDataTask : CallbackQuery -> Task<unit> =
         match callbackQuery.Data with
-        | CallbackQueryConstants.excludeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync false
-        | CallbackQueryConstants.includeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync true
+        | CallbackQueryConstants.excludeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Include
+        | CallbackQueryConstants.includeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Exclude
+        | CallbackQueryConstants.ignoreLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Ignore
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
 
       return! processCallbackQueryDataTask callbackQuery

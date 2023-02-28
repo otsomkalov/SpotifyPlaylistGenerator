@@ -8,4 +8,6 @@ module CallbackQueryConstants =
   [<Literal>]
   let excludeLikedTracks = "elt"
   [<Literal>]
+  let ignoreLikedTracks = "ignore-liked-tracks"
+  [<Literal>]
   let setPlaylistSize = "sps"

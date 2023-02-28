@@ -2,7 +2,7 @@
 
 public class Settings
 {
-    public bool IncludeLikedTracks { get; set; }
+    public bool? IncludeLikedTracks { get; set; }
 
     public int PlaylistSize { get; set; }
 }
