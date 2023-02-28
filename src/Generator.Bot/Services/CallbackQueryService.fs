@@ -15,8 +15,8 @@ type CallbackQueryService
     task {
       let processCallbackQueryDataTask : CallbackQuery -> Task<unit> =
         match callbackQuery.Data with
-        | CallbackQueryConstants.excludeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Include
-        | CallbackQueryConstants.includeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Exclude
+        | CallbackQueryConstants.includeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Include
+        | CallbackQueryConstants.excludeLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Exclude
         | CallbackQueryConstants.ignoreLikedTracks -> _setIncludeLikedTracksCommandHandler.HandleAsync LikedTracksHandling.Ignore
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
 
