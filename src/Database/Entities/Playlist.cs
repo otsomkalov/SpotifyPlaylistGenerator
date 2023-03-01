@@ -27,11 +27,6 @@ public class SourcePlaylist : Playlist
     public override PlaylistType PlaylistType => PlaylistType.Source;
 }
 
-public class TargetHistoryPlaylist : Playlist
-{
-    public override PlaylistType PlaylistType => PlaylistType.TargetHistory;
-}
-
 public class HistoryPlaylist : Playlist
 {
     public override PlaylistType PlaylistType => PlaylistType.History;

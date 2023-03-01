@@ -9,8 +9,8 @@ open Microsoft.EntityFrameworkCore
 type SetHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext, _bot: ITelegramBotClient) =
   let addTargetHistoryPlaylistAsync playlistId userId =
     task {
-      TargetHistoryPlaylist(Url = playlistId, UserId = userId)
-      |> _context.TargetHistoryPlaylists.AddAsync
+      TargetPlaylist(Url = playlistId, UserId = userId)
+      |> _context.TargetPlaylists.AddAsync
       |> ignore
     }
 
@@ -27,7 +27,7 @@ type SetHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHa
     task {
       let! existingTargetHistoryPlaylist =
         _context
-          .TargetHistoryPlaylists
+          .TargetPlaylists
           .AsNoTracking()
           .FirstOrDefaultAsync(fun p ->
             p.UserId = message.From.Id)

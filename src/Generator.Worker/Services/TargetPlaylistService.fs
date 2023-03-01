@@ -51,8 +51,9 @@ type TargetPlaylistService
             let playlistAddItemsRequest =
               tracksIds |> mapSpotifyTrackId |> PlaylistAddItemsRequest
 
-      let client =
-        _spotifyClientProvider.Get userId
+            client.Playlists.AddItems(playlist.Url, playlistAddItemsRequest) :> Task)
+        |> Task.WhenAll
+    }
 
   member _.UpdateCachedAsync (userId: int64) (tracksIds: SpotifyTrackId list) =
     task {
@@ -77,7 +78,7 @@ type TargetPlaylistService
               DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
             )
           else
-            task{
+            task {
               let! value = _cache.GetStringAsync(playlist.Url)
 
               let newValue =
@@ -91,7 +92,7 @@ type TargetPlaylistService
                   playlist.Url,
                   newValue,
                   DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
-              )
+                )
             })
         |> Task.WhenAll
     }
