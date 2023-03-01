@@ -37,16 +37,15 @@ module ValidateUserPlaylists =
 [<RequireQualifiedAccess>]
 module UserSettings =
   let load (context: AppDbContext) : UserSettings.Load =
-    fun userId ->
-      let userId = userId |> UserId.value
-
+    let loadFromDb userId =
       context
         .Users
         .AsNoTracking()
         .Where(fun u -> u.Id = userId)
         .Select(fun u -> u.Settings)
-        .SingleOrDefaultAsync()
-      |> Task.map UserSettings.fromDb
+        .FirstOrDefaultAsync()
+
+    UserId.value >> loadFromDb >> Task.map UserSettings.fromDb
 
   let update (context: AppDbContext) : UserSettings.Update =
     fun userId settings ->

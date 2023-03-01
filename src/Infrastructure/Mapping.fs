@@ -2,8 +2,8 @@
 
 open System
 open Database.Entities
-open Domain.Core
 open Infrastructure.Core
+open Domain.Core
 
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
@@ -16,15 +16,7 @@ module ReadablePlaylistId =
 [<RequireQualifiedAccess>]
 module WritablePlaylistId =
   let filterMapPlaylistsIds (playlists: TargetPlaylist seq) =
-    playlists
-    |> Seq.map (fun p -> WritablePlaylistId p.Url)
-    |> Seq.toList
-
-module User =
-  let fromDb userId (playlists: SourcePlaylist seq) (targetPlaylists: TargetPlaylist seq) =
-    { Id = userId
-      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds playlists PlaylistType.Source
-      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds targetPlaylists }
+    playlists |> Seq.map (fun p -> WritablePlaylistId p.Url) |> Seq.toList
 
 module UserSettings =
   let fromDb (settings: Settings) : UserSettings.UserSettings =
@@ -33,7 +25,7 @@ module UserSettings =
          | Some v when v = true -> UserSettings.LikedTracksHandling.Include
          | Some v when v = false -> UserSettings.LikedTracksHandling.Exclude
          | None -> UserSettings.LikedTracksHandling.Ignore)
-      PlaylistSize = PlaylistSize.create settings.PlaylistSize }
+      PlaylistSize = settings.PlaylistSize |> PlaylistSize.create }
 
   let toDb (settings: UserSettings.UserSettings) : Settings =
     Settings(
@@ -44,3 +36,10 @@ module UserSettings =
          | UserSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
       PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value)
     )
+
+[<RequireQualifiedAccess>]
+module User =
+  let fromDb userId (playlists: SourcePlaylist seq) (targetPlaylists: TargetPlaylist seq) =
+    { Id = userId
+      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds playlists PlaylistType.Source
+      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds targetPlaylists }

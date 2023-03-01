@@ -86,6 +86,8 @@ type Startup() =
     services.AddScopedFunc<UserSettings.Update, AppDbContext>(UserSettings.update)
     services.AddScopedFunc<UserSettings.SetPlaylistSize, UserSettings.Load, UserSettings.Update>(UserSettings.setPlaylistSize)
 
+    services.AddScopedFunc<UserSettings.SetLikedTracksHandling, UserSettings.Load, UserSettings.Update>(UserSettings.setLikedTracksHandling)
+
     ()
 
 [<assembly: FunctionsStartup(typeof<Startup>)>]

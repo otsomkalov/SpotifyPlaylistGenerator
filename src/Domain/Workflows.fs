@@ -38,3 +38,14 @@ module UserSettings =
 
         do! updateUserSettings userId updatedSettings
       }
+
+  let setLikedTracksHandling (loadUserSettings: Load) (updateInStorage: Update) : UserSettings.SetLikedTracksHandling =
+    fun userId likedTracksHandling ->
+      task {
+        let! userSettings = loadUserSettings userId
+
+        let updatedSettings =
+          { userSettings with LikedTracksHandling = likedTracksHandling }
+
+        do! updateInStorage userId updatedSettings
+      }
