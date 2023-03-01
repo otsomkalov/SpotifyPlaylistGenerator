@@ -13,5 +13,7 @@ public class User
 
     public Settings Settings { get; set; }
 
-    public virtual IEnumerable<Playlist> Playlists { get; set; }
+    public virtual IEnumerable<SourcePlaylist> SourcePlaylists { get; set; }
+    public virtual IEnumerable<HistoryPlaylist> HistoryPlaylists { get; set; }
+    public virtual IEnumerable<TargetPlaylist> TargetPlaylists { get; set; }
 }

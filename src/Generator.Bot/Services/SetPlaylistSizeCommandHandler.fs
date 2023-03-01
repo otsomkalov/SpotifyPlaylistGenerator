@@ -1,16 +1,17 @@
 ﻿namespace Generator.Bot.Services
 
+open Domain.Core
 open Resources
 open Database
 open Generator.Bot
 open Microsoft.FSharp.Core
-open Shared.Domain
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
 open Helpers
+open Infrastructure.Core
 
-type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler) =
+type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler, setPlaylistSize: UserSettings.SetPlaylistSize) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
       _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.WrongPlaylistSize, replyToMessageId = message.MessageId)
@@ -19,13 +20,9 @@ type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbCont
 
   let setPlaylistSizeAsync size (message: Message) =
     task {
-      match PlaylistSize.create size with
+      match PlaylistSize.tryCreate size with
       | Ok playlistSize ->
-        let! user = _context.Users.FindAsync message.From.Id
-
-        user.Settings.PlaylistSize <- PlaylistSize.value playlistSize
-
-        let! _ = _context.SaveChangesAsync()
+        do! setPlaylistSize (UserId message.From.Id) playlistSize
 
         let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.PlaylistSizeSet, replyToMessageId = message.MessageId)
 

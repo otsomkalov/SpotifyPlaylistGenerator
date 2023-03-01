@@ -26,7 +26,18 @@ module ValidateUserPlaylists =
 [<RequireQualifiedAccess>]
 module UserSettings =
   type Load = UserId -> Task<UserSettings.UserSettings>
+
   type Update = UserId -> UserSettings.UserSettings -> Task
+
+  let setPlaylistSize (loadUserSettings: Load) (updateUserSettings: Update) : UserSettings.SetPlaylistSize =
+    fun userId playlistSize ->
+      task {
+        let! userSettings = loadUserSettings userId
+
+        let updatedSettings = { userSettings with PlaylistSize = playlistSize }
+
+        do! updateUserSettings userId updatedSettings
+      }
 
   let private updateLikedTracksHandling likedTracksHandling (loadUserSettings: Load) (updateInStorage: Update) =
     fun userId ->
@@ -36,11 +47,11 @@ module UserSettings =
         let updatedSettings =
           { userSettings with LikedTracksHandling = likedTracksHandling }
 
-        do! updateInStorage updatedSettings
+        do! updateInStorage userId updatedSettings
       }
 
-  let includeLikedTracks = updateLikedTracksHandling LikedTracksHandling.Include
+  let includeLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Include
 
-  let excludeLikedTracks = updateLikedTracksHandling LikedTracksHandling.Exclude
+  let excludeLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Exclude
 
-  let ignoreLikedTracks = updateLikedTracksHandling LikedTracksHandling.Ignore
+  let ignoreLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Ignore

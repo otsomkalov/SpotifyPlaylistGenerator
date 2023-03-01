@@ -10,8 +10,8 @@ type AddSourcePlaylistCommandHandler(_bot: ITelegramBotClient, _context: AppDbCo
   let addSourcePlaylistAsync (message: Message) playlistId =
     task {
       let! _ =
-        Playlist(Url = playlistId, UserId = message.From.Id, PlaylistType = PlaylistType.Source)
-        |> _context.Playlists.AddAsync
+        SourcePlaylist(Url = playlistId, UserId = message.From.Id)
+        |> _context.SourcePlaylists.AddAsync
 
       let! _ = _context.SaveChangesAsync()
 

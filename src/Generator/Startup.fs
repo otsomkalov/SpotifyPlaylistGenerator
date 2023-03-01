@@ -38,13 +38,10 @@ type Startup() =
     ()
 
   override this.Configure(builder: IFunctionsHostBuilder) : unit =
-    let configuration =
-      builder.GetContext().Configuration
+    let configuration = builder.GetContext().Configuration
     let services = builder.Services
 
-    services
-    |> Startup.addSettings configuration
-    |> Startup.addServices
+    services |> Startup.addSettings configuration |> Startup.addServices
 
     services.AddStackExchangeRedisCache(configureRedisCache configuration)
 
@@ -85,8 +82,10 @@ type Startup() =
     services.AddSingletonFunc<ValidateUserPlaylists.LoadUser, AppDbContext>(ValidateUserPlaylists.loadUser)
     services.AddSingletonFunc<ValidateUserPlaylists.Action, ValidateUserPlaylists.LoadUser>(ValidateUserPlaylists.validateUserPlaylists)
 
-    services.AddSingletonFunc<UserSettings.Load, AppDbContext>(UserSettings.load)
-    services.AddSingletonFunc<UserSettings.Update, AppDbContext>(UserSettings.)
+    services.AddScopedFunc<UserSettings.Load, AppDbContext>(UserSettings.load)
+    services.AddScopedFunc<UserSettings.Update, AppDbContext>(UserSettings.update)
+    services.AddScopedFunc<UserSettings.SetPlaylistSize, UserSettings.Load, UserSettings.Update>(UserSettings.setPlaylistSize)
+
     services.AddSingletonFunc<UserSettings.IncludeLikedTracks>()
     services.AddSingletonFunc<UserSettings.ExcludeLikedTracks>()
     services.AddSingletonFunc<UserSettings.IgnoreLikedTracks>()

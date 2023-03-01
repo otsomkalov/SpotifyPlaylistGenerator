@@ -72,7 +72,7 @@ type StartCommandHandler
       let! userExists = _context.Users.AsNoTracking().AnyAsync(fun u -> u.Id = message.From.Id)
 
       if not userExists then
-        createUserAsync message.From.Id
+        do! createUserAsync message.From.Id
 
       return! _unauthorizedUserCommandHandler.HandleAsync message
     }

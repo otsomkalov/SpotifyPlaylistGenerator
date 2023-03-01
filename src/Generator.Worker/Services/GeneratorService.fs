@@ -71,14 +71,7 @@ type GeneratorService
         |> List.map SpotifyTrackId.create
 
       do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
-      do! _historyPlaylistsService.UpdateAsync queueMessage.TelegramId tracksIdsToImport
-
-      let newHistoryTracksIds =
-        tracksIdsToImport
-        |> List.map SpotifyTrackId.rawValue
-        |> List.append historyTracksIds
-
-      do! _historyPlaylistsService.UpdateCachedAsync queueMessage.TelegramId newHistoryTracksIds
+      do! _targetPlaylistService.UpdateCachedAsync queueMessage.TelegramId tracksIdsToImport
 
       (ChatId(queueMessage.TelegramId), "Playlist generated!")
       |> _bot.SendTextMessageAsync
