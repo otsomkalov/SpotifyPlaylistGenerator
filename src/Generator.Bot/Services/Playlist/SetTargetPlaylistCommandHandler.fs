@@ -19,7 +19,7 @@ type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandH
   let createTargetPlaylistAsync playlistId userId =
     task {
       let! _ =
-        TargetPlaylist(Url = playlistId, UserId = userId)
+        TargetPlaylist(Url = playlistId, UserId = userId, Overwrite = true)
         |> _context.TargetPlaylists.AddAsync
 
       return ()

@@ -4,7 +4,7 @@
 
 namespace Database.Migrations
 {
-    public partial class OverwriteTargetPlaylistSetting : Migration
+    public partial class OverwriteTargetPlaylist : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

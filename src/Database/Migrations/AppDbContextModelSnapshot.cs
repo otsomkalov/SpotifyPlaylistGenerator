@@ -45,11 +45,9 @@ namespace Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.ToTable("Playlists", (string)null);
 
-                    b.ToTable("Playlists");
-
-                    b.HasDiscriminator<int>("PlaylistType").HasValue(1);
+                    b.HasDiscriminator<int>("PlaylistType");
                 });
 
             modelBuilder.Entity("Database.Entities.User", b =>
@@ -65,6 +63,33 @@ namespace Database.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Database.Entities.HistoryPlaylist", b =>
+                {
+                    b.HasBaseType("Database.Entities.Playlist");
+
+                    b.HasIndex("UserId");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
+            modelBuilder.Entity("Database.Entities.SourcePlaylist", b =>
+                {
+                    b.HasBaseType("Database.Entities.Playlist");
+
+                    b.HasIndex("UserId");
+
+                    b.HasDiscriminator().HasValue(0);
+                });
+
+            modelBuilder.Entity("Database.Entities.TargetHistoryPlaylist", b =>
+                {
+                    b.HasBaseType("Database.Entities.Playlist");
+
+                    b.HasIndex("UserId");
+
+                    b.HasDiscriminator().HasValue(3);
+                });
+
             modelBuilder.Entity("Database.Entities.TargetPlaylist", b =>
                 {
                     b.HasBaseType("Database.Entities.Playlist");
@@ -72,18 +97,9 @@ namespace Database.Migrations
                     b.Property<bool>("Overwrite")
                         .HasColumnType("boolean");
 
+                    b.HasIndex("UserId");
+
                     b.HasDiscriminator().HasValue(2);
-                });
-
-            modelBuilder.Entity("Database.Entities.Playlist", b =>
-                {
-                    b.HasOne("Database.Entities.User", "User")
-                        .WithMany("Playlists")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Database.Entities.User", b =>
@@ -113,9 +129,59 @@ namespace Database.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Database.Entities.HistoryPlaylist", b =>
+                {
+                    b.HasOne("Database.Entities.User", "User")
+                        .WithMany("HistoryPlaylists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Database.Entities.SourcePlaylist", b =>
+                {
+                    b.HasOne("Database.Entities.User", "User")
+                        .WithMany("SourcePlaylists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Database.Entities.TargetHistoryPlaylist", b =>
+                {
+                    b.HasOne("Database.Entities.User", "User")
+                        .WithMany("TargetHistoryPlaylists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Database.Entities.TargetPlaylist", b =>
+                {
+                    b.HasOne("Database.Entities.User", "User")
+                        .WithMany("TargetPlaylists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Database.Entities.User", b =>
                 {
-                    b.Navigation("Playlists");
+                    b.Navigation("HistoryPlaylists");
+
+                    b.Navigation("SourcePlaylists");
+
+                    b.Navigation("TargetHistoryPlaylists");
+
+                    b.Navigation("TargetPlaylists");
                 });
 #pragma warning restore 612, 618
         }
