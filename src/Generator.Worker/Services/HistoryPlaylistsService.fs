@@ -26,9 +26,9 @@ type HistoryPlaylistsService
     task {
       let! historyPlaylistsUrls =
         _context
-          .Playlists
+          .HistoryPlaylists
           .AsNoTracking()
-          .Where(fun p -> p.UserId = userId && p.PlaylistType = PlaylistType.History)
+          .Where(fun p -> p.UserId = userId)
           .Select(fun p -> p.Url)
           .ToListAsync()
 
@@ -41,4 +41,51 @@ type HistoryPlaylistsService
       )
 
       return tracksIds
+    }
+
+  member _.UpdateAsync (userId: int64) tracksIds =
+    task {
+      _logger.LogInformation("Adding new tracks to history playlist")
+
+      let addItemsRequest =
+        tracksIds
+        |> List.map SpotifyTrackId.value
+        |> List<string>
+        |> PlaylistAddItemsRequest
+
+      printfn "Saving tracks to history playlist"
+
+      let client = _spotifyClientProvider.Get userId
+
+      let! targetHistoryPlaylistId =
+        _context
+          .TargetHistoryPlaylists
+          .AsNoTracking()
+          .Where(fun p -> p.UserId = userId)
+          .Select(fun p -> p.Url)
+          .FirstOrDefaultAsync()
+
+      let! _ = client.Playlists.AddItems(targetHistoryPlaylistId, addItemsRequest)
+
+      return ()
+    }
+
+  member _.UpdateCachedAsync userId tracksIds =
+    task {
+      _logger.LogInformation("Updating history playlist cache file")
+
+      let! targetHistoryPlaylistId =
+        _context
+          .TargetHistoryPlaylists
+          .AsNoTracking()
+          .Where(fun p -> p.UserId = userId)
+          .Select(fun p -> p.Url)
+          .FirstOrDefaultAsync()
+
+      return!
+        _cache.SetStringAsync(
+          targetHistoryPlaylistId,
+          JsonSerializer.Serialize(tracksIds |> List.map RawTrackId.value),
+          DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
+        )
     }

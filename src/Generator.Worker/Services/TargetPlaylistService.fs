@@ -51,9 +51,8 @@ type TargetPlaylistService
             let playlistAddItemsRequest =
               tracksIds |> mapSpotifyTrackId |> PlaylistAddItemsRequest
 
-            client.Playlists.AddItems(playlist.Url, playlistAddItemsRequest) :> Task)
-        |> Task.WhenAll
-    }
+      let client =
+        _spotifyClientProvider.Get userId
 
   member _.UpdateCachedAsync (userId: int64) (tracksIds: SpotifyTrackId list) =
     task {

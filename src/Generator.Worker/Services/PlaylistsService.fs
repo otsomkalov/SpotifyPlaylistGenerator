@@ -11,11 +11,10 @@ type PlaylistsService(_playlistService: PlaylistService, _logger: ILogger<Playli
     task {
       let! playlistsUrls =
         _context
-          .Playlists
+          .SourcePlaylists
           .AsNoTracking()
           .Where(fun p ->
             p.UserId = userId
-            && p.PlaylistType = PlaylistType.Source
             && not p.Disabled)
           .Select(fun p -> p.Url)
           .ToListAsync()

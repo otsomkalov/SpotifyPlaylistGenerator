@@ -7,7 +7,7 @@ open Infrastructure.Core
 
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
-  let filterMapPlaylistsIds (playlists: Playlist seq) type' =
+  let filterMapPlaylistsIds (playlists: SourcePlaylist seq) type' =
     playlists
     |> Seq.where (fun p -> p.PlaylistType = type')
     |> Seq.map (fun p -> ReadablePlaylistId p.Url)
@@ -15,18 +15,16 @@ module ReadablePlaylistId =
 
 [<RequireQualifiedAccess>]
 module WritablePlaylistId =
-  let filterMapPlaylistsIds (playlists: Playlist seq) =
+  let filterMapPlaylistsIds (playlists: TargetPlaylist seq) =
     playlists
-    |> Seq.where (fun p ->
-      p.PlaylistType = PlaylistType.Target)
     |> Seq.map (fun p -> WritablePlaylistId p.Url)
     |> Seq.toList
 
 module User =
-  let fromDb userId (playlists: Playlist seq) =
+  let fromDb userId (playlists: SourcePlaylist seq) (targetPlaylists: TargetPlaylist seq) =
     { Id = userId
       IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds playlists PlaylistType.Source
-      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds playlists }
+      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds targetPlaylists }
 
 module UserSettings =
   let fromDb (settings: Settings) : UserSettings.UserSettings =
