@@ -34,10 +34,9 @@ type TargetPlaylistService
 
       let! targetPlaylistId =
         _context
-          .Playlists
+          .TargetPlaylists
           .Where(fun x ->
-            x.UserId = userId
-            && x.PlaylistType = PlaylistType.Target)
+            x.UserId = userId)
           .Select(fun x -> x.Url)
           .FirstOrDefaultAsync()
 

@@ -26,9 +26,9 @@ type HistoryPlaylistsService
     task {
       let! historyPlaylistsUrls =
         _context
-          .Playlists
+          .HistoryPlaylists
           .AsNoTracking()
-          .Where(fun p -> p.UserId = userId && p.PlaylistType = PlaylistType.History)
+          .Where(fun p -> p.UserId = userId)
           .Select(fun p -> p.Url)
           .ToListAsync()
 
@@ -59,9 +59,9 @@ type HistoryPlaylistsService
 
       let! targetHistoryPlaylistId =
         _context
-          .Playlists
+          .TargetHistoryPlaylists
           .AsNoTracking()
-          .Where(fun p -> p.UserId = userId && p.PlaylistType = PlaylistType.TargetHistory)
+          .Where(fun p -> p.UserId = userId)
           .Select(fun p -> p.Url)
           .FirstOrDefaultAsync()
 
@@ -76,9 +76,9 @@ type HistoryPlaylistsService
 
       let! targetHistoryPlaylistId =
         _context
-          .Playlists
+          .TargetHistoryPlaylists
           .AsNoTracking()
-          .Where(fun p -> p.UserId = userId && p.PlaylistType = PlaylistType.TargetHistory)
+          .Where(fun p -> p.UserId = userId)
           .Select(fun p -> p.Url)
           .FirstOrDefaultAsync()
 

@@ -18,12 +18,19 @@ module ValidateUserPlaylists =
 
         let! userPlaylists =
           context
-            .Playlists
+            .SourcePlaylists
             .AsNoTracking()
             .Where(fun p -> p.UserId = rawUserId && p.Disabled = false)
             .ToListAsync()
 
-        return User.fromDb userId userPlaylists
+        let! targetPlaylists =
+          context
+            .TargetPlaylists
+            .AsNoTracking()
+            .Where(fun p -> p.UserId = rawUserId && p.Disabled = false)
+            .ToListAsync()
+
+        return User.fromDb userId userPlaylists targetPlaylists
       }
 
 [<RequireQualifiedAccess>]
