@@ -16,7 +16,9 @@ module ReadablePlaylistId =
 [<RequireQualifiedAccess>]
 module WritablePlaylistId =
   let filterMapPlaylistsIds (playlists: TargetPlaylist seq) =
-    playlists |> Seq.map (fun p -> WritablePlaylistId p.Url) |> Seq.toList
+    playlists
+    |> Seq.map (fun p -> WritablePlaylistId p.Url)
+    |> Seq.toList
 
 module User =
   let fromDb userId (playlists: SourcePlaylist seq) (targetPlaylists: TargetPlaylist seq) =

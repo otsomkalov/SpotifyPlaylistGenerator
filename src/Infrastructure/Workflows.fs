@@ -1,6 +1,7 @@
 ﻿namespace Infrastructure.Workflows
 
 open Database
+open Database.Entities
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -16,7 +17,7 @@ module ValidateUserPlaylists =
       task {
         let rawUserId = (userId |> UserId.value)
 
-        let! userPlaylists =
+        let! sourcePlaylists =
           context
             .SourcePlaylists
             .AsNoTracking()
@@ -30,7 +31,7 @@ module ValidateUserPlaylists =
             .Where(fun p -> p.UserId = rawUserId && p.Disabled = false)
             .ToListAsync()
 
-        return User.fromDb userId userPlaylists targetPlaylists
+        return User.fromDb userId sourcePlaylists targetPlaylists
       }
 
 [<RequireQualifiedAccess>]
