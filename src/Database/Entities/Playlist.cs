@@ -12,7 +12,7 @@ public abstract class Playlist
 {
     public int Id { get; init; }
 
-    public virtual PlaylistType PlaylistType { get; init; }
+    public virtual PlaylistType PlaylistType { get; }
 
     public string Url { get; set; }
 
@@ -25,22 +25,20 @@ public abstract class Playlist
 
 public class SourcePlaylist : Playlist
 {
-    public override PlaylistType PlaylistType { get; init; } = PlaylistType.Source;
-}
-
-public class HistoryPlaylist : Playlist
-{
-    public override PlaylistType PlaylistType { get; init; } = PlaylistType.History;
+    public override PlaylistType PlaylistType => PlaylistType.Source;
 }
 
 public class TargetHistoryPlaylist : Playlist
 {
-    public override PlaylistType PlaylistType { get; init; } = PlaylistType.TargetHistory;
+    public override PlaylistType PlaylistType => PlaylistType.TargetHistory;
+}
+
+public class HistoryPlaylist : Playlist
+{
+    public override PlaylistType PlaylistType => PlaylistType.History;
 }
 
 public class TargetPlaylist : Playlist
 {
-    public override PlaylistType PlaylistType { get; init; } = PlaylistType.Target;
-
-    public bool Overwrite { get; set; }
+    public override PlaylistType PlaylistType => PlaylistType.Target;
 }

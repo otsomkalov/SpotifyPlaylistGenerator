@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
             });
 
         modelBuilder.Entity<Playlist>()
+            .ToTable("Playlists")
             .HasDiscriminator(p => p.PlaylistType)
             .HasValue<SourcePlaylist>(PlaylistType.Source)
             .HasValue<HistoryPlaylist>(PlaylistType.History)
