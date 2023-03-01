@@ -39,8 +39,8 @@ module UserSettings =
         do! updateUserSettings userId updatedSettings
       }
 
-  let private updateLikedTracksHandling likedTracksHandling (loadUserSettings: Load) (updateInStorage: Update) =
-    fun userId ->
+  let setLikedTracksHandling (loadUserSettings: Load) (updateInStorage: Update) : UserSettings.SetLikedTracksHandling =
+    fun userId likedTracksHandling ->
       task {
         let! userSettings = loadUserSettings userId
 
@@ -49,9 +49,3 @@ module UserSettings =
 
         do! updateInStorage userId updatedSettings
       }
-
-  let includeLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Include
-
-  let excludeLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Exclude
-
-  let ignoreLikedTracks = updateLikedTracksHandling UserSettings.LikedTracksHandling.Ignore

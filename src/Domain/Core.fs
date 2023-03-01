@@ -38,6 +38,4 @@ module UserSettings =
       PlaylistSize: PlaylistSize }
 
   type SetPlaylistSize = UserId -> PlaylistSize -> Task
-  type IncludeLikedTracks = UserId -> Task
-  type ExcludeLikedTracks = UserId -> Task
-  type IgnoreLikedTracks = UserId -> Task
+  type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task

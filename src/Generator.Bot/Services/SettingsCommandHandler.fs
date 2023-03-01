@@ -16,10 +16,8 @@ type SettingsCommandHandler
   ) =
   member this.HandleAsync(message: Message) =
     task {
-      let! user = _context.Users.FindAsync message.From.Id
-
-      let text, replyMarkup =
-        _getSettingsMessageCommandHandler.HandleAsync(user)
+      let! text, replyMarkup =
+        _getSettingsMessageCommandHandler.HandleAsync(message.From.Id)
 
       let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), text, ParseMode.Markdown, replyMarkup = replyMarkup)
 

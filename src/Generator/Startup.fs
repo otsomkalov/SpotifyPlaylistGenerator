@@ -86,9 +86,7 @@ type Startup() =
     services.AddScopedFunc<UserSettings.Update, AppDbContext>(UserSettings.update)
     services.AddScopedFunc<UserSettings.SetPlaylistSize, UserSettings.Load, UserSettings.Update>(UserSettings.setPlaylistSize)
 
-    services.AddSingletonFunc<UserSettings.IncludeLikedTracks>()
-    services.AddSingletonFunc<UserSettings.ExcludeLikedTracks>()
-    services.AddSingletonFunc<UserSettings.IgnoreLikedTracks>()
+    services.AddScopedFunc<UserSettings.SetLikedTracksHandling, UserSettings.Load, UserSettings.Update>(UserSettings.setLikedTracksHandling)
 
     ()
 

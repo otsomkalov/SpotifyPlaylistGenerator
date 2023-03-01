@@ -1,7 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
 open Resources
-open System
 open Database
 open Domain.Core
 open Telegram.Bot
@@ -12,23 +11,19 @@ type SetIncludeLikedTracksCommandHandler
   (
     _bot: ITelegramBotClient,
     _context: AppDbContext,
-    _getSettingsMessageCommandHandler: GetSettingsMessageCommandHandler
+    _getSettingsMessageCommandHandler: GetSettingsMessageCommandHandler,
+    setLikedTracksHandling: UserSettings.SetLikedTracksHandling
   ) =
   member this.HandleAsync likedTracksHandling (callbackQuery: CallbackQuery) =
+    let setLikedTracksHandling =
+      setLikedTracksHandling (callbackQuery.From.Id |> UserId)
+
     task {
-      let! user = _context.Users.FindAsync callbackQuery.From.Id
-
-      user.Settings.IncludeLikedTracks <-
-        (match likedTracksHandling with
-         | UserSettings.LikedTracksHandling.Include -> Nullable true
-         | UserSettings.LikedTracksHandling.Exclude -> Nullable false
-         | UserSettings.LikedTracksHandling.Ignore -> Nullable<bool>())
-
-      let! _ = _context.SaveChangesAsync()
+      do! setLikedTracksHandling likedTracksHandling
 
       _bot.AnswerCallbackQueryAsync(callbackQuery.Id, Messages.Updated) |> ignore
 
-      let text, replyMarkup = _getSettingsMessageCommandHandler.HandleAsync(user)
+      let! text, replyMarkup = _getSettingsMessageCommandHandler.HandleAsync(callbackQuery.From.Id)
 
       _bot.EditMessageTextAsync(
         ChatId(callbackQuery.Message.Chat.Id),
