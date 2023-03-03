@@ -22,6 +22,7 @@ type PlaylistService(_spotifyClientProvider: SpotifyClientProvider, _idsService:
       let currentTracksIds =
         tracks.Items
         |> List.ofSeq
+        |> List.filter (fun t -> isNull t.Track |> not)
         |> List.map (fun x -> x.Track :?> FullTrack)
         |> List.map (fun x -> x.Id)
         |> List.map RawTrackId.create
