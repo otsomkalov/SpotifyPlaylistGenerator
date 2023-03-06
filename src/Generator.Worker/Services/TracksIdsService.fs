@@ -9,7 +9,7 @@ open Microsoft.Extensions.Caching.Distributed
 type TracksIdsService(_cache: IDistributedCache) =
   let refreshCachedAsync key loadIdsFunc =
     task {
-      let! ids = loadIdsFunc
+      let! ids = loadIdsFunc()
 
       do!
         _cache.SetStringAsync(
