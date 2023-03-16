@@ -3,7 +3,8 @@
 open System
 open System.Text.Json
 open System.Threading.Tasks
-open Generator.Worker.Domain
+open Domain.Core
+open Infrastructure.Core
 open Microsoft.Extensions.Caching.Distributed
 
 type TracksIdsService(_cache: IDistributedCache) =
@@ -14,7 +15,7 @@ type TracksIdsService(_cache: IDistributedCache) =
       do!
         _cache.SetStringAsync(
           key,
-          JsonSerializer.Serialize(ids |> List.map RawTrackId.value),
+          JsonSerializer.Serialize(ids |> List.map TrackId.value),
           DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
         )
 
@@ -31,7 +32,7 @@ type TracksIdsService(_cache: IDistributedCache) =
         | true, false -> refreshCachedAsync idsFileName downloadIdsFunc
         | false, true ->
           JsonSerializer.Deserialize<string list>(fromCache)
-          |> List.map RawTrackId.create
+          |> List.map TrackId
           |> Task.FromResult
         | false, false -> refreshCachedAsync idsFileName downloadIdsFunc
     }

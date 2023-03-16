@@ -1,17 +1,11 @@
 ﻿namespace Generator.Worker.Services
 
-open System
-open System.Collections.Generic
 open System.Linq
-open System.Text.Json
 open Database
-open Database.Entities
-open Generator.Worker.Domain
 open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.Caching.Distributed
 open Microsoft.Extensions.Logging
 open Shared.Services
-open SpotifyAPI.Web
 
 type HistoryPlaylistsService
   (

@@ -1,7 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Threading.Tasks
-open Generator.Worker.Domain
+open Domain.Core
 open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
 open Shared.Services
@@ -25,7 +25,7 @@ type LikedTracksService(_spotifyClientProvider: SpotifyClientProvider, _idsServi
           tracks.Items
           |> List.ofSeq
           |> List.map (fun x -> x.Track.Id)
-          |> List.map RawTrackId.create
+          |> List.map TrackId
 
         return List.append nextTracksIds currentTracksIds
       }
