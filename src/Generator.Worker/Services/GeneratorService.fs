@@ -1,13 +1,11 @@
 ﻿namespace Generator.Worker.Services
 
 
-open System
 open Database
 open Microsoft.Extensions.Logging
 open Shared.Services
 open Shared.QueueMessages
 open Generator.Worker.Extensions
-open Generator.Worker.Domain
 open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
@@ -68,7 +66,6 @@ type GeneratorService
         potentialTracksIds
         |> List.shuffle
         |> List.take user.Settings.PlaylistSize
-        |> List.map SpotifyTrackId.create
 
       do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
       do! _targetPlaylistService.UpdateCachedAsync queueMessage.TelegramId tracksIdsToImport

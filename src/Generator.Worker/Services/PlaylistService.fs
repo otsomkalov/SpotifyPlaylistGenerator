@@ -1,7 +1,7 @@
 ﻿namespace Generator.Worker.Services
 
 open System.Threading.Tasks
-open Generator.Worker.Domain
+open Domain.Core
 open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
 open Shared.Services
@@ -27,7 +27,7 @@ type PlaylistService(_spotifyClientProvider: SpotifyClientProvider, _idsService:
             |> List.filter (fun t -> isNull t.Track |> not)
             |> List.map (fun x -> x.Track :?> FullTrack)
             |> List.map (fun x -> x.Id)
-            |> List.map RawTrackId.create
+            |> List.map TrackId
 
           return List.append nextTracksIds currentTracksIds
         with _ ->

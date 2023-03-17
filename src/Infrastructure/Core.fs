@@ -10,6 +10,11 @@ module UserId =
   let value (UserId id) = id
 
 [<RequireQualifiedAccess>]
+module TrackId =
+
+  let value (TrackId id) = id
+
+[<RequireQualifiedAccess>]
 module PlaylistSize =
   let tryCreate size =
     match size with

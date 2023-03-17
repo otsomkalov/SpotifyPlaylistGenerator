@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Compile Include="Extensions.fs"/>
-    <Compile Include="Domain.fs"/>
     <Compile Include="Services\TracksIdsService.fs"/>
     <Compile Include="Services\PlaylistService.fs"/>
     <Compile Include="Services\HistoryPlaylistsService.fs"/>
@@ -19,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Infrastructure\Infrastructure.fsproj"/>
     <ProjectReference Include="..\Shared\Shared.fsproj"/>
   </ItemGroup>
 

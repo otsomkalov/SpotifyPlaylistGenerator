@@ -6,7 +6,8 @@ open System.Text.Json
 open System.Threading.Tasks
 open Database
 open Database.Entities
-open Generator.Worker.Domain
+open Domain.Core
+open Infrastructure.Core
 open Microsoft.Extensions.Caching.Distributed
 open Microsoft.Extensions.Logging
 open Shared.Services
@@ -30,32 +31,34 @@ type TargetPlaylistService
         _context
           .TargetPlaylists
           .AsNoTracking()
-          .Where(fun p -> p.PlaylistType = PlaylistType.Target)
+          .Where(fun p -> p.UserId = userId)
           .ToListAsync()
 
-      printfn "Saving tracks to target playlist"
+      _logger.LogInformation "Saving tracks to target playlist"
 
       let client = _spotifyClientProvider.Get userId
 
       return!
         targetPlaylists
         |> Seq.map (fun playlist ->
-          let mapSpotifyTrackId = List.map SpotifyTrackId.value >> List<string>
+          let tracksIds =
+            tracksIds
+            |> List.map TrackId.value
+            |> List.map (fun id -> $"spotify:track:{id}")
+            |> List<string>
 
           if playlist.Overwrite then
-            let replaceItemsRequest =
-              tracksIds |> mapSpotifyTrackId |> PlaylistReplaceItemsRequest
+            let replaceItemsRequest = tracksIds |> PlaylistReplaceItemsRequest
 
             client.Playlists.ReplaceItems(playlist.Url, replaceItemsRequest) :> Task
           else
-            let playlistAddItemsRequest =
-              tracksIds |> mapSpotifyTrackId |> PlaylistAddItemsRequest
+            let playlistAddItemsRequest = tracksIds |> PlaylistAddItemsRequest
 
             client.Playlists.AddItems(playlist.Url, playlistAddItemsRequest) :> Task)
         |> Task.WhenAll
     }
 
-  member _.UpdateCachedAsync (userId: int64) (tracksIds: SpotifyTrackId list) =
+  member _.UpdateCachedAsync (userId: int64) (tracksIds: TrackId list) =
     task {
       _logger.LogInformation("Saving tracks ids to target playlists cache")
 
@@ -71,10 +74,12 @@ type TargetPlaylistService
       return!
         targetPlaylists
         |> Seq.map (fun playlist ->
+          let tracksIds = tracksIds |> List.map TrackId.value
+
           if playlist.Overwrite then
             _cache.SetStringAsync(
               playlist.Url,
-              JsonSerializer.Serialize(tracksIds |> List.map SpotifyTrackId.value),
+              JsonSerializer.Serialize(tracksIds),
               DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
             )
           else
@@ -84,7 +89,7 @@ type TargetPlaylistService
               let newValue =
                 value
                 |> JsonSerializer.Deserialize<string list>
-                |> List.append (tracksIds |> List.map SpotifyTrackId.value)
+                |> List.append tracksIds
                 |> JsonSerializer.Serialize
 
               return

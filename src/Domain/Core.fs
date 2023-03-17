@@ -5,6 +5,7 @@ open System.Threading.Tasks
 type UserId = UserId of int64
 type ReadablePlaylistId = ReadablePlaylistId of string
 type WritablePlaylistId = WritablePlaylistId of string
+type TrackId = TrackId of string
 
 type User =
   { Id: UserId
