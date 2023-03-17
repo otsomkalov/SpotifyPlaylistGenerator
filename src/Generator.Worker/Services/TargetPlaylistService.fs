@@ -43,17 +43,16 @@ type TargetPlaylistService
         |> Seq.map (fun playlist ->
           let tracksIds =
             tracksIds
+            |> List.map TrackId.value
             |> List.map (fun id -> $"spotify:track:{id}")
             |> List<string>
 
           if playlist.Overwrite then
-            let replaceItemsRequest =
-              tracksIds |> PlaylistReplaceItemsRequest
+            let replaceItemsRequest = tracksIds |> PlaylistReplaceItemsRequest
 
             client.Playlists.ReplaceItems(playlist.Url, replaceItemsRequest) :> Task
           else
-            let playlistAddItemsRequest =
-              tracksIds |> PlaylistAddItemsRequest
+            let playlistAddItemsRequest = tracksIds |> PlaylistAddItemsRequest
 
             client.Playlists.AddItems(playlist.Url, playlistAddItemsRequest) :> Task)
         |> Task.WhenAll
@@ -75,10 +74,12 @@ type TargetPlaylistService
       return!
         targetPlaylists
         |> Seq.map (fun playlist ->
+          let tracksIds = tracksIds |> List.map TrackId.value
+
           if playlist.Overwrite then
             _cache.SetStringAsync(
               playlist.Url,
-              JsonSerializer.Serialize(tracksIds |> List.map TrackId.value),
+              JsonSerializer.Serialize(tracksIds),
               DistributedCacheEntryOptions(AbsoluteExpirationRelativeToNow = TimeSpan(7, 0, 0, 0))
             )
           else
@@ -88,7 +89,7 @@ type TargetPlaylistService
               let newValue =
                 value
                 |> JsonSerializer.Deserialize<string list>
-                |> List.append (tracksIds |> List.map TrackId.value)
+                |> List.append tracksIds
                 |> JsonSerializer.Serialize
 
               return
