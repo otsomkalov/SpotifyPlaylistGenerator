@@ -35,6 +35,7 @@ let addSettings (configuration: IConfiguration) (services: IServiceCollection) =
   services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.SectionName))
   services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName))
   services.Configure<StorageSettings>(configuration.GetSection(StorageSettings.SectionName))
+  services.Configure<RedisSettings>(configuration.GetSection(RedisSettings.SectionName))
 
 let addServices (services: IServiceCollection) =
   services.AddSingleton<SpotifyClientProvider>()

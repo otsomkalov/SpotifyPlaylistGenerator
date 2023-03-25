@@ -2,6 +2,7 @@
 
 
 open Database
+open Domain.Core
 open Microsoft.Extensions.Logging
 open Shared.Services
 open Shared.QueueMessages
@@ -43,7 +44,7 @@ type GeneratorService
       let excludedTracksIds, includedTracksIds =
         match user.Settings.IncludeLikedTracks |> Option.ofNullable with
         | Some v when v = true -> historyTracksIds, playlistsTracksIds @ likedTracksIds
-        | Some v when false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
+        | Some v when v = false -> likedTracksIds @ historyTracksIds, playlistsTracksIds
         | None -> historyTracksIds, playlistsTracksIds
 
       _logger.LogInformation(
@@ -66,9 +67,9 @@ type GeneratorService
         potentialTracksIds
         |> List.shuffle
         |> List.take user.Settings.PlaylistSize
+        |> List.map TrackId
 
       do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
-      do! _targetPlaylistService.UpdateCachedAsync queueMessage.TelegramId tracksIdsToImport
 
       (ChatId(queueMessage.TelegramId), "Playlist generated!")
       |> _bot.SendTextMessageAsync

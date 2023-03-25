@@ -8,3 +8,15 @@ module Task =
 
       return mapping value
     }
+
+[<RequireQualifiedAccess>]
+module TaskOption =
+  let map mapping taskOption =
+    task {
+      let! option = taskOption
+
+      return
+        match option with
+        | Some v -> mapping v |> Some
+        | None -> None
+    }

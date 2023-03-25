@@ -6,10 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="2.6.96"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
     <Compile Include="Workflows.fs"/>
+    <Compile Include="Cache.fs"/>
   </ItemGroup>
 
   <ItemGroup>

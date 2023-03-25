@@ -2,9 +2,12 @@
 
 open System
 
-module ConnectionStrings =
+type RedisSettings() =
+  member val ConnectionString  = "" with get, set
+
+module RedisSettings =
   [<Literal>]
-  let Redis = "Redis:ConnectionString"
+  let SectionName = "Redis"
 
 module SpotifySettings =
   [<Literal>]
