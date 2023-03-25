@@ -11,7 +11,6 @@ open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
 open Infrastructure.Workflows
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
-open Microsoft.Extensions.Caching.StackExchangeRedis
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
@@ -19,12 +18,17 @@ open Shared
 open Shared.Settings
 open Generator.Extensions.ServiceCollection
 open Domain.Workflows
+open StackExchange.Redis
 
 type Startup() =
   inherit FunctionsStartup()
 
-  let configureRedisCache (configuration: IConfiguration) (options: RedisCacheOptions) =
-    options.Configuration <- configuration[ConnectionStrings.Redis]
+  let configureRedisCache (serviceProvider: IServiceProvider) =
+    let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
+
+    let multiplexer = ConnectionMultiplexer.Connect(settings.ConnectionString)
+
+    multiplexer.GetDatabase()
 
   let configureQueueClient (sp: IServiceProvider) =
     let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
@@ -43,7 +47,7 @@ type Startup() =
 
     services |> Startup.addSettings configuration |> Startup.addServices
 
-    services.AddStackExchangeRedisCache(configureRedisCache configuration)
+    services.AddSingleton<IDatabase>(configureRedisCache)
 
     services.AddSingleton<QueueClient>(configureQueueClient)
 
@@ -69,7 +73,6 @@ type Startup() =
       .AddScoped<CallbackQueryService>()
 
     services
-      .AddScoped<TracksIdsService>()
       .AddScoped<PlaylistService>()
       .AddScoped<HistoryPlaylistsService>()
       .AddScoped<LikedTracksService>()

@@ -8,25 +8,24 @@ open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
+open Infrastructure.Helpers
 
 type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: IOptions<SpotifySettings>) =
   let _spotifySettings = _spotifyOptions.Value
 
   member this.HandleAsync(message: Message) =
-    task {
-      let scopes =
-        [ Scopes.PlaylistModifyPrivate
-          Scopes.PlaylistModifyPublic
-          Scopes.UserLibraryRead ]
-        |> List<string>
+    let scopes =
+      [ Scopes.PlaylistModifyPrivate
+        Scopes.PlaylistModifyPublic
+        Scopes.UserLibraryRead ]
+      |> List<string>
 
-      let loginRequest =
-        LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
+    let loginRequest =
+      LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
 
-      let replyMarkup =
-        InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
-        |> InlineKeyboardMarkup
+    let replyMarkup =
+      InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
+      |> InlineKeyboardMarkup
 
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.LoginToSpotify, replyMarkup = replyMarkup)
-      |> ignore
-    }
+    _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.LoginToSpotify, replyMarkup = replyMarkup)
+    |> Task.map ignore
