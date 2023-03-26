@@ -73,10 +73,7 @@ type Startup() =
       .AddScoped<CallbackQueryService>()
 
     services
-      .AddScoped<PlaylistService>()
-      .AddScoped<HistoryPlaylistsService>()
       .AddScoped<LikedTracksService>()
-      .AddScoped<PlaylistsService>()
       .AddScoped<TargetPlaylistService>()
       .AddScoped<GeneratorService>()
 

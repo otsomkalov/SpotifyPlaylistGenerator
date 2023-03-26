@@ -8,10 +8,7 @@
 
   <ItemGroup>
     <Compile Include="Extensions.fs"/>
-    <Compile Include="Services\PlaylistService.fs"/>
-    <Compile Include="Services\HistoryPlaylistsService.fs"/>
     <Compile Include="Services\LikedTracksService.fs"/>
-    <Compile Include="Services\PlaylistsService.fs"/>
     <Compile Include="Services\TargetPlaylistService.fs"/>
     <Compile Include="Services\GeneratorService.fs"/>
   </ItemGroup>
