@@ -28,3 +28,7 @@ module PlaylistSize =
     | Error e -> ArgumentException(e, nameof size) |> raise
 
   let value (UserSettings.PlaylistSize size) = size
+
+[<RequireQualifiedAccess>]
+module ReadablePlaylistId =
+  let value (ReadablePlaylistId id) = id

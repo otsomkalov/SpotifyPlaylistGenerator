@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SpotifyAPI.Web" Version="6.2.2"/>
     <PackageReference Include="StackExchange.Redis" Version="2.6.96"/>
   </ItemGroup>
 
@@ -13,8 +14,9 @@
     <Compile Include="Helpers.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
-    <Compile Include="Workflows.fs"/>
     <Compile Include="Cache.fs"/>
+    <Compile Include="Spotify.fs"/>
+    <Compile Include="Workflows.fs"/>
   </ItemGroup>
 
   <ItemGroup>

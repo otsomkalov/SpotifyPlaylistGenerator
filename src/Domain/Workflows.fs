@@ -49,3 +49,7 @@ module UserSettings =
 
         do! updateInStorage userId updatedSettings
       }
+
+[<RequireQualifiedAccess>]
+module Playlist =
+  type ListTracks = string -> Task<string list>

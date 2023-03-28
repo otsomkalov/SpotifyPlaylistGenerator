@@ -14,7 +14,6 @@ open Infrastructure.Helpers
 
 type TargetPlaylistService
   (
-    _playlistService: PlaylistService,
     _spotifyClientProvider: SpotifyClientProvider,
     _logger: ILogger<TargetPlaylistService>,
     _context: AppDbContext,
