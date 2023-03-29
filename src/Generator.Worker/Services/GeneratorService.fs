@@ -3,28 +3,31 @@
 
 open Database
 open Domain.Core
+open Domain.Workflows
+open Infrastructure.Workflows
 open Microsoft.Extensions.Logging
-open Shared.Services
 open Shared.QueueMessages
 open Generator.Worker.Extensions
 open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
-open Domain.Workflows
 open Infrastructure.Helpers
 open System.Threading.Tasks
 
 type GeneratorService
   (
-    _likedTracksService: LikedTracksService,
     _targetPlaylistService: TargetPlaylistService,
-    _spotifyClientProvider: SpotifyClientProvider,
     _logger: ILogger<GeneratorService>,
     _bot: ITelegramBotClient,
     _context: AppDbContext
   ) =
 
-  member this.GeneratePlaylistAsync(queueMessage: GeneratePlaylistMessage, listPlaylistTracks: Playlist.ListTracks) =
+  member this.GeneratePlaylistAsync
+    (
+      queueMessage: GeneratePlaylistMessage,
+      listPlaylistTracks: Playlist.ListTracks,
+      listLikedTracks: User.ListLikedTracks
+    ) =
     task {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
 
@@ -40,7 +43,8 @@ type GeneratorService
           .Include(fun x -> x.HistoryPlaylists)
           .FirstOrDefaultAsync(fun u -> u.Id = queueMessage.TelegramId)
 
-      let! likedTracksIds = _likedTracksService.ListIdsAsync queueMessage.TelegramId queueMessage.RefreshCache
+      let! likedTracks = listLikedTracks
+
       let! includedTracks =
         user.SourcePlaylists
         |> Seq.map (fun p -> listPlaylistTracks p.Url)
@@ -55,8 +59,8 @@ type GeneratorService
 
       let excludedTracksIds, includedTracksIds =
         match user.Settings.IncludeLikedTracks |> Option.ofNullable with
-        | Some v when v = true -> excludedTracks, includedTracks @ likedTracksIds
-        | Some v when v = false -> likedTracksIds @ excludedTracks, includedTracks
+        | Some v when v = true -> excludedTracks, includedTracks @ likedTracks
+        | Some v when v = false -> likedTracks @ excludedTracks, includedTracks
         | None -> excludedTracks, includedTracks
 
       _logger.LogInformation(
@@ -65,9 +69,7 @@ type GeneratorService
         excludedTracksIds.Length
       )
 
-      let potentialTracksIds =
-        includedTracksIds
-        |> List.except excludedTracksIds
+      let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks",

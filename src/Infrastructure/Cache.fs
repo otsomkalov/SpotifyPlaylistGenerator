@@ -24,7 +24,7 @@ type LoadAndCacheData<'k> = 'k -> Task<string list>
 let private loadAndCacheData<'k> loadData cacheData : LoadAndCacheData<'k> =
   fun id ->
     task {
-      let! data = loadData id
+      let! data = loadData
 
       do! cacheData id data
 
@@ -46,8 +46,23 @@ let private tryListByKey<'k> (cache: IDatabase) loadAndCacheData : TryListByKey<
 
 type ListOrRefresh<'k> = 'k -> Task<string list>
 
-let listOrRefresh (cache: IDatabase) loadData refreshCache : ListOrRefresh<'k> =
+let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
+  let cacheData = cacheData cache
+
+  fun key ->
+    let loadData = loadData key
+    let loadAndCacheData = loadAndCacheData loadData cacheData
+
+    if refreshCache then
+      loadAndCacheData key
+    else
+      tryListByKey cache loadAndCacheData key
+
+let listOrRefreshByKey (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
+  let cacheData = cacheData cache
+  let loadAndCacheData = loadAndCacheData loadData cacheData
+
   if refreshCache then
-    loadAndCacheData loadData (cacheData cache)
+    loadAndCacheData
   else
-    tryListByKey cache (loadAndCacheData loadData (cacheData cache))
+    tryListByKey cache loadAndCacheData

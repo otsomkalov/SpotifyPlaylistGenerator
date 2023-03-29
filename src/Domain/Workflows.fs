@@ -53,3 +53,7 @@ module UserSettings =
 [<RequireQualifiedAccess>]
 module Playlist =
   type ListTracks = string -> Task<string list>
+
+[<RequireQualifiedAccess>]
+module User =
+  type ListLikedTracks = Task<string list>

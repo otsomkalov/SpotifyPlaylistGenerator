@@ -1,7 +1,6 @@
 ﻿namespace Infrastructure.Workflows
 
 open Database
-open Database.Entities
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -9,6 +8,8 @@ open Infrastructure.Mapping
 open Microsoft.EntityFrameworkCore
 open System.Linq
 open Infrastructure.Helpers
+open SpotifyAPI.Web
+open System.Threading.Tasks
 
 [<RequireQualifiedAccess>]
 module ValidateUserPlaylists =
@@ -59,3 +60,22 @@ module UserSettings =
 
         return ()
       }
+
+[<RequireQualifiedAccess>]
+module User =
+  let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
+    task {
+      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+
+      let! nextTracksIds =
+        if tracks.Next = null then
+          [] |> Task.FromResult
+        else
+          listLikedTracks' client (offset + 50)
+
+      let currentTracksIds = tracks.Items |> List.ofSeq |> List.map (fun x -> x.Track.Id)
+
+      return List.append nextTracksIds currentTracksIds
+    }
+
+  let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks = listLikedTracks' client 0
