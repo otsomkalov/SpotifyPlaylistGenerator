@@ -28,12 +28,13 @@ let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
 
 let listTracks (logger: ILogger) client : Playlist.ListTracks =
   fun playlistId ->
-    async {
+    task {
       try
-        return! listTracks' client playlistId 0 |> Async.AwaitTask
+        return! listTracks' client playlistId 0
       with
       | :? APIException as e when e.Response.StatusCode = HttpStatusCode.NotFound ->
         logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
 
         return []
     }
+    |> Async.AwaitTask

@@ -1,5 +1,6 @@
-﻿namespace Generator
+﻿namespace Generatoropen
 
+open System.Threading.Tasks
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.WebJobs
@@ -30,3 +31,5 @@ type GeneratorFunctions
       Cache.listOrRefreshByKey _cache message.RefreshCache listLikedTracks message.TelegramId
 
     _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks)
+    |> Async.StartAsTask
+    :> Task
