@@ -9,14 +9,15 @@ type CacheData<'k> = 'k -> string list -> Async<unit>
 
 let private cacheData (cache: IDatabase) : CacheData<'k> =
   fun key values ->
-    async {
+    task {
       let values = values |> List.map (string >> RedisValue) |> Array.ofSeq
       let key = RedisKey(key |> string)
-      let! _ = cache.ListLeftPushAsync(key, values) |> Async.AwaitTask
-      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7)) |> Async.AwaitTask
+      let! _ = cache.ListLeftPushAsync(key, values)
+      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7))
 
       return ()
     }
+    |> Async.AwaitTask
 
 type ListDataFunc<'k> = 'k -> Async<string list>
 type LoadAndCacheData<'k> = 'k -> Async<string list>
@@ -51,18 +52,16 @@ let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
 
   fun key ->
     let loadData = loadData key
-    let loadAndCacheData = loadAndCacheData loadData cacheData
 
     if refreshCache then
-      loadAndCacheData key
+      loadAndCacheData loadData cacheData key
     else
-      tryListByKey cache loadAndCacheData key
+      tryListByKey cache (loadAndCacheData loadData cacheData) key
 
 let listOrRefreshByKey (cache: IDatabase) refreshCache (loadData: Async<string list>) : ListOrRefresh<'k> =
   let cacheData = cacheData cache
-  let loadAndCacheData = loadAndCacheData loadData cacheData
 
   if refreshCache then
-    loadAndCacheData
+    loadAndCacheData loadData cacheData
   else
-    tryListByKey cache loadAndCacheData
+    tryListByKey cache (loadAndCacheData loadData cacheData)

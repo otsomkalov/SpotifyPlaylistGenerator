@@ -20,7 +20,7 @@ type TargetPlaylistService
     _cache: IDatabase
   ) =
   member _.SaveTracksAsync (userId: int64) tracksIds =
-    async {
+    task {
       _logger.LogInformation("Saving tracks ids to target playlists")
 
       let! targetPlaylists =
@@ -29,7 +29,6 @@ type TargetPlaylistService
           .AsNoTracking()
           .Where(fun p -> p.UserId = userId)
           .ToListAsync()
-          |> Async.AwaitTask
 
       _logger.LogInformation "Saving tracks to target playlist"
 
@@ -68,5 +67,5 @@ type TargetPlaylistService
               client.Playlists.AddItems(playlist.Url, playlistAddItemsRequest) :> Task ]
             |> Task.WhenAll)
         |> Task.WhenAll
-        |> Async.AwaitTask
     }
+    |> Async.AwaitTask
