@@ -51,18 +51,16 @@ let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
 
   fun key ->
     let loadData = loadData key
-    let loadAndCacheData = loadAndCacheData loadData cacheData
 
     if refreshCache then
-      loadAndCacheData key
+      loadAndCacheData loadData cacheData key
     else
-      tryListByKey cache loadAndCacheData key
+      tryListByKey cache (loadAndCacheData loadData cacheData) key
 
 let listOrRefreshByKey (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
   let cacheData = cacheData cache
-  let loadAndCacheData = loadAndCacheData loadData cacheData
 
   if refreshCache then
-    loadAndCacheData
+    loadAndCacheData loadData cacheData
   else
-    tryListByKey cache loadAndCacheData
+    tryListByKey cache (loadAndCacheData loadData cacheData)
