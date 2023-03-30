@@ -64,12 +64,14 @@ module UserSettings =
 [<RequireQualifiedAccess>]
 module User =
   let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
-    task {
-      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+    async {
+      let! tracks =
+        client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+        |> Async.AwaitTask
 
       let! nextTracksIds =
         if tracks.Next = null then
-          [] |> Task.FromResult
+          [] |> async.Return
         else
           listLikedTracks' client (offset + 50)
 

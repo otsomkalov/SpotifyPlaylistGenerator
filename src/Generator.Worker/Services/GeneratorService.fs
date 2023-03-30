@@ -28,7 +28,7 @@ type GeneratorService
       listPlaylistTracks: Playlist.ListTracks,
       listLikedTracks: User.ListLikedTracks
     ) =
-    task {
+    async {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
 
       (ChatId(queueMessage.TelegramId), "Generating playlist...")
@@ -42,20 +42,21 @@ type GeneratorService
           .Include(fun x -> x.SourcePlaylists)
           .Include(fun x -> x.HistoryPlaylists)
           .FirstOrDefaultAsync(fun u -> u.Id = queueMessage.TelegramId)
+          |> Async.AwaitTask
 
       let! likedTracks = listLikedTracks
 
       let! includedTracks =
         user.SourcePlaylists
         |> Seq.map (fun p -> listPlaylistTracks p.Url)
-        |> Task.WhenAll
-        |> Task.map List.concat
+        |> Async.Parallel
+        |> Async.map List.concat
 
       let! excludedTracks =
         user.HistoryPlaylists
         |> Seq.map (fun p -> listPlaylistTracks p.Url)
-        |> Task.WhenAll
-        |> Task.map List.concat
+        |> Async.Parallel
+        |> Async.map List.concat
 
       let excludedTracksIds, includedTracksIds =
         match user.Settings.IncludeLikedTracks |> Option.ofNullable with

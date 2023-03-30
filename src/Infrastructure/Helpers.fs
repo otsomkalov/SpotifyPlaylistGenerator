@@ -20,3 +20,13 @@ module TaskOption =
         | Some v -> mapping v |> Some
         | None -> None
     }
+
+[<RequireQualifiedAccess>]
+module Async =
+
+  let inline singleton (value: 'value) : Async<'value> = value |> async.Return
+
+  let inline bind ([<InlineIfLambda>] binder: 'input -> Async<'output>) (input: Async<'input>) : Async<'output> = async.Bind(input, binder)
+
+  let inline map ([<InlineIfLambda>] mapper: 'input -> 'output) (input: Async<'input>) : Async<'output> =
+    bind (fun x' -> mapper x' |> singleton) input

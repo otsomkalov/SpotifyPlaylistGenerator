@@ -52,8 +52,8 @@ module UserSettings =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ListTracks = string -> Task<string list>
+  type ListTracks = string -> Async<string list>
 
 [<RequireQualifiedAccess>]
 module User =
-  type ListLikedTracks = Task<string list>
+  type ListLikedTracks = Async<string list>

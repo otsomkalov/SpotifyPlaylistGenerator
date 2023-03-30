@@ -5,25 +5,25 @@ open System.Threading.Tasks
 open Infrastructure.Helpers
 open StackExchange.Redis
 
-type CacheData<'k> = 'k -> string list -> Task<unit>
+type CacheData<'k> = 'k -> string list -> Async<unit>
 
 let private cacheData (cache: IDatabase) : CacheData<'k> =
   fun key values ->
-    task {
+    async {
       let values = values |> List.map (string >> RedisValue) |> Array.ofSeq
       let key = RedisKey(key |> string)
-      let! _ = cache.ListLeftPushAsync(key, values)
-      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7))
+      let! _ = cache.ListLeftPushAsync(key, values) |> Async.AwaitTask
+      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7)) |> Async.AwaitTask
 
       return ()
     }
 
-type ListDataFunc<'k> = 'k -> Task<string list>
-type LoadAndCacheData<'k> = 'k -> Task<string list>
+type ListDataFunc<'k> = 'k -> Async<string list>
+type LoadAndCacheData<'k> = 'k -> Async<string list>
 
-let private loadAndCacheData<'k> loadData cacheData : LoadAndCacheData<'k> =
+let private loadAndCacheData<'k> loadData (cacheData: CacheData<'k>) : LoadAndCacheData<'k> =
   fun id ->
-    task {
+    async {
       let! data = loadData
 
       do! cacheData id data
@@ -31,20 +31,20 @@ let private loadAndCacheData<'k> loadData cacheData : LoadAndCacheData<'k> =
       return data
     }
 
-type TryListByKey<'k> = 'k -> Task<string list>
+type TryListByKey<'k> = 'k -> Async<string list>
 
-let private tryListByKey<'k> (cache: IDatabase) loadAndCacheData : TryListByKey<'k> =
+let private tryListByKey<'k> (cache: IDatabase) (loadAndCacheData: LoadAndCacheData<'k>) : TryListByKey<'k> =
   fun key ->
-    task {
-      let! values = key |> string |> cache.ListRangeAsync
+    async {
+      let! values = key |> string |> cache.ListRangeAsync |> Async.AwaitTask
 
       return!
         match values with
         | [||] -> loadAndCacheData key
-        | v -> v |> List.ofSeq |> List.map string |> Task.FromResult
+        | v -> v |> List.ofSeq |> List.map string |> async.Return
     }
 
-type ListOrRefresh<'k> = 'k -> Task<string list>
+type ListOrRefresh<'k> = 'k -> Async<string list>
 
 let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
   let cacheData = cacheData cache
@@ -58,7 +58,7 @@ let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
     else
       tryListByKey cache loadAndCacheData key
 
-let listOrRefreshByKey (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
+let listOrRefreshByKey (cache: IDatabase) refreshCache (loadData: Async<string list>) : ListOrRefresh<'k> =
   let cacheData = cacheData cache
   let loadAndCacheData = loadAndCacheData loadData cacheData
 
