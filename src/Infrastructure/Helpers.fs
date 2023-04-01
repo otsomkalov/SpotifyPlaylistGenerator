@@ -1,5 +1,8 @@
 ﻿module Infrastructure.Helpers
 
+open System
+open SpotifyAPI.Web
+
 [<RequireQualifiedAccess>]
 module Task =
   let map mapping task' =
@@ -30,3 +33,12 @@ module Async =
 
   let inline map ([<InlineIfLambda>] mapper: 'input -> 'output) (input: Async<'input>) : Async<'output> =
     bind (fun x' -> mapper x' |> singleton) input
+
+module Spotify =
+  let (|ApiException|_|) (ex: exn) =
+    match ex with
+    | :? AggregateException as aggregateException ->
+      aggregateException.InnerExceptions
+      |> Seq.tryPick (fun e -> e :?> APIException |> Option.ofObj)
+    | :? APIException as e -> Some e
+    | _ -> None

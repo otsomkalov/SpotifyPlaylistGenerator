@@ -1,4 +1,4 @@
-﻿namespace Generatoropen
+﻿namespace Generator
 
 open System.Threading.Tasks
 open Infrastructure.Workflows

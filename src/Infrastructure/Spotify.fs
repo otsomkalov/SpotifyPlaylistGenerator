@@ -1,18 +1,21 @@
 ﻿module Infrastructure.Spotify
 
 open System.Net
-open System.Threading.Tasks
 open Domain.Workflows
 open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
+open Infrastructure.Helpers
+open Infrastructure.Helpers.Spotify
 
 let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
-  task {
-    let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+  async {
+    let! tracks =
+      client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+      |> Async.AwaitTask
 
     let! nextTracksIds =
       if tracks.Next = null then
-        [] |> Task.FromResult
+        [] |> async.Return
       else
         listTracks' client playlistId (offset + 100)
 
@@ -28,13 +31,11 @@ let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
 
 let listTracks (logger: ILogger) client : Playlist.ListTracks =
   fun playlistId ->
-    task {
+    async {
       try
         return! listTracks' client playlistId 0
-      with
-      | :? APIException as e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+      with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
         logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
 
         return []
     }
-    |> Async.AwaitTask

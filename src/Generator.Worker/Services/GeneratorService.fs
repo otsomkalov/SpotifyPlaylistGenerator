@@ -12,7 +12,7 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
 open Infrastructure.Helpers
-open System.Threading.Tasks
+open System.Linq
 
 type GeneratorService
   (
@@ -39,8 +39,8 @@ type GeneratorService
         _context
           .Users
           .AsNoTracking()
-          .Include(fun x -> x.SourcePlaylists)
-          .Include(fun x -> x.HistoryPlaylists)
+          .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
+          .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
           .FirstOrDefaultAsync(fun u -> u.Id = queueMessage.TelegramId)
           |> Async.AwaitTask
 
