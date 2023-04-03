@@ -70,7 +70,7 @@ module User =
         |> Async.AwaitTask
 
       let! nextTracksIds =
-        if tracks.Next = null then
+        if Seq.isEmpty tracks.Items then
           [] |> async.Return
         else
           listLikedTracks' client (offset + 50)
