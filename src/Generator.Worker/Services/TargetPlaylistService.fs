@@ -68,3 +68,4 @@ type TargetPlaylistService
             |> Task.WhenAll)
         |> Task.WhenAll
     }
+    |> Async.AwaitTask

@@ -1,5 +1,7 @@
 ﻿namespace Generator
 
+open System.Threading.Tasks
+open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.WebJobs
 open Microsoft.Extensions.Logging
@@ -21,7 +23,13 @@ type GeneratorFunctions
     let client = _spotifyClientProvider.Get message.TelegramId
 
     let listTracks = Spotify.listTracks _logger client
+    let listLikedTracks = User.listLikedTracks client
 
-    let listPlaylistTracks = Cache.listOrRefresh _cache listTracks message.RefreshCache
+    let listPlaylistTracks = Cache.listOrRefresh _cache message.RefreshCache listTracks
 
-    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks)
+    let listLikedTracks =
+      Cache.listOrRefreshByKey _cache message.RefreshCache listLikedTracks message.TelegramId
+
+    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks)
+    |> Async.StartAsTask
+    :> Task
