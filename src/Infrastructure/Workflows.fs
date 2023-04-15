@@ -59,12 +59,14 @@ module User =
 
   let load (context: AppDbContext) : User.Load =
     fun userId ->
+      let userId = userId |> UserId.value
+
       context
         .Users
         .AsNoTracking()
         .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
         .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
         .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
-        .FirstOrDefaultAsync(fun u -> u.Id = (userId |> UserId.value))
+        .FirstOrDefaultAsync(fun u -> u.Id = userId)
         |> Async.AwaitTask
         |> Async.map User.fromDb
