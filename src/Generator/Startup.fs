@@ -78,8 +78,9 @@ type Startup() =
 
     services.AddLocalization()
 
-    services.AddSingletonFunc<ValidateUserPlaylists.LoadUser, AppDbContext>(ValidateUserPlaylists.loadUser)
-    services.AddSingletonFunc<ValidateUserPlaylists.Action, ValidateUserPlaylists.LoadUser>(ValidateUserPlaylists.validateUserPlaylists)
+    services.AddSingletonFunc<User.Load, AppDbContext>(User.load)
+
+    services.AddSingletonFunc<ValidateUserPlaylists.Action, User.Load>(ValidateUserPlaylists.validateUserPlaylists)
 
     services.AddScopedFunc<UserSettings.Load, AppDbContext>(UserSettings.load)
     services.AddScopedFunc<UserSettings.Update, AppDbContext>(UserSettings.update)

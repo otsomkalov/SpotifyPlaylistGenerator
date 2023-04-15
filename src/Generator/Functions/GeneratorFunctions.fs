@@ -9,13 +9,15 @@ open Shared.QueueMessages
 open Shared.Services
 open StackExchange.Redis
 open Generator.Worker.Services
+open Domain.Workflows
 
 type GeneratorFunctions
   (
     _logger: ILogger<GeneratorFunctions>,
     _generatorService: GeneratorService,
     _cache: IDatabase,
-    _spotifyClientProvider: SpotifyClientProvider
+    _spotifyClientProvider: SpotifyClientProvider,
+    loadUser: User.Load
   ) =
 
   [<FunctionName("GenerateAsync")>]
@@ -30,6 +32,6 @@ type GeneratorFunctions
     let listLikedTracks =
       Cache.listOrRefreshByKey _cache message.RefreshCache listLikedTracks message.TelegramId
 
-    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks)
+    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, loadUser)
     |> Async.StartAsTask
     :> Task

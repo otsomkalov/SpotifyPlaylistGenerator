@@ -39,7 +39,9 @@ module UserSettings =
 
 [<RequireQualifiedAccess>]
 module User =
-  let fromDb userId (playlists: SourcePlaylist seq) (targetPlaylists: TargetPlaylist seq) =
-    { Id = userId
-      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds playlists PlaylistType.Source
-      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds targetPlaylists }
+  let fromDb (user: Database.Entities.User) =
+    { Id = user.Id |> UserId
+      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists PlaylistType.Source
+      ExcludedPlaylist = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists PlaylistType.History
+      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds user.TargetPlaylists
+      Settings = UserSettings.fromDb user.Settings }

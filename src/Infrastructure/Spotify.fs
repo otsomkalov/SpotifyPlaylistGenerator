@@ -2,6 +2,7 @@
 
 open System.Net
 open Domain.Workflows
+open Infrastructure.Core
 open Microsoft.Extensions.Logging
 open SpotifyAPI.Web
 open Infrastructure.Helpers
@@ -33,6 +34,8 @@ let listTracks (logger: ILogger) client : Playlist.ListTracks =
   fun playlistId ->
     async {
       try
+        let playlistId = playlistId |> ReadablePlaylistId.value
+
         return! listTracks' client playlistId 0
       with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
         logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)

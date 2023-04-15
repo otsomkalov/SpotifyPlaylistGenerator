@@ -9,31 +9,6 @@ open Microsoft.EntityFrameworkCore
 open System.Linq
 open Infrastructure.Helpers
 open SpotifyAPI.Web
-open System.Threading.Tasks
-
-[<RequireQualifiedAccess>]
-module ValidateUserPlaylists =
-  let loadUser (context: AppDbContext) : ValidateUserPlaylists.LoadUser =
-    fun userId ->
-      task {
-        let rawUserId = (userId |> UserId.value)
-
-        let! sourcePlaylists =
-          context
-            .SourcePlaylists
-            .AsNoTracking()
-            .Where(fun p -> p.UserId = rawUserId && p.Disabled = false)
-            .ToListAsync()
-
-        let! targetPlaylists =
-          context
-            .TargetPlaylists
-            .AsNoTracking()
-            .Where(fun p -> p.UserId = rawUserId && p.Disabled = false)
-            .ToListAsync()
-
-        return User.fromDb userId sourcePlaylists targetPlaylists
-      }
 
 [<RequireQualifiedAccess>]
 module UserSettings =
@@ -81,3 +56,15 @@ module User =
     }
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks = listLikedTracks' client 0
+
+  let load (context: AppDbContext) : User.Load =
+    fun userId ->
+      context
+        .Users
+        .AsNoTracking()
+        .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
+        .FirstOrDefaultAsync(fun u -> u.Id = (userId |> UserId.value))
+        |> Async.AwaitTask
+        |> Async.map User.fromDb

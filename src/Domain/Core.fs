@@ -7,11 +7,6 @@ type ReadablePlaylistId = ReadablePlaylistId of string
 type WritablePlaylistId = WritablePlaylistId of string
 type TrackId = TrackId of string
 
-type User =
-  { Id: UserId
-    IncludedPlaylists: ReadablePlaylistId list
-    TargetPlaylists: WritablePlaylistId list }
-
 [<RequireQualifiedAccess>]
 module ValidateUserPlaylists =
   type Error =
@@ -40,3 +35,10 @@ module UserSettings =
 
   type SetPlaylistSize = UserId -> PlaylistSize -> Task
   type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task
+
+type User =
+  { Id: UserId
+    IncludedPlaylists: ReadablePlaylistId list
+    ExcludedPlaylist: ReadablePlaylistId list
+    TargetPlaylists: WritablePlaylistId list
+    Settings: UserSettings.UserSettings }
