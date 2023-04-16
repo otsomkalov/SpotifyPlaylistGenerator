@@ -4,6 +4,7 @@
 open Database
 open Domain.Core
 open Domain.Workflows
+open Infrastructure.Core
 open Infrastructure.Workflows
 open Microsoft.Extensions.Logging
 open Shared.QueueMessages
@@ -12,21 +13,16 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
 open Infrastructure.Helpers
-open System.Linq
 
 type GeneratorService
-  (
-    _targetPlaylistService: TargetPlaylistService,
-    _logger: ILogger<GeneratorService>,
-    _bot: ITelegramBotClient,
-    _context: AppDbContext
-  ) =
+  (_targetPlaylistService: TargetPlaylistService, _logger: ILogger<GeneratorService>, _bot: ITelegramBotClient, _context: AppDbContext) =
 
   member this.GeneratePlaylistAsync
     (
       queueMessage: GeneratePlaylistMessage,
       listPlaylistTracks: Playlist.ListTracks,
-      listLikedTracks: User.ListLikedTracks
+      listLikedTracks: User.ListLikedTracks,
+      loadUser: User.Load
     ) =
     async {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
@@ -35,34 +31,29 @@ type GeneratorService
       |> _bot.SendTextMessageAsync
       |> ignore
 
-      let! user =
-        _context
-          .Users
-          .AsNoTracking()
-          .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
-          .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
-          .FirstOrDefaultAsync(fun u -> u.Id = queueMessage.TelegramId)
-          |> Async.AwaitTask
+      let userId = queueMessage.TelegramId |> UserId
+
+      let! user = loadUser userId
 
       let! likedTracks = listLikedTracks
 
       let! includedTracks =
-        user.SourcePlaylists
-        |> Seq.map (fun p -> listPlaylistTracks p.Url)
+        user.IncludedPlaylists
+        |> Seq.map listPlaylistTracks
         |> Async.Parallel
         |> Async.map List.concat
 
       let! excludedTracks =
-        user.HistoryPlaylists
-        |> Seq.map (fun p -> listPlaylistTracks p.Url)
+        user.ExcludedPlaylist
+        |> Seq.map listPlaylistTracks
         |> Async.Parallel
         |> Async.map List.concat
 
       let excludedTracksIds, includedTracksIds =
-        match user.Settings.IncludeLikedTracks |> Option.ofNullable with
-        | Some v when v = true -> excludedTracks, includedTracks @ likedTracks
-        | Some v when v = false -> likedTracks @ excludedTracks, includedTracks
-        | None -> excludedTracks, includedTracks
+        match user.Settings.LikedTracksHandling with
+        | UserSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
+        | UserSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
+        | UserSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
@@ -81,7 +72,7 @@ type GeneratorService
       let tracksIdsToImport =
         potentialTracksIds
         |> List.shuffle
-        |> List.take user.Settings.PlaylistSize
+        |> List.take (user.Settings.PlaylistSize |> PlaylistSize.value)
         |> List.map TrackId
 
       do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport

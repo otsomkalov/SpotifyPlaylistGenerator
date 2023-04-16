@@ -4,10 +4,13 @@ open System.Threading.Tasks
 open Domain.Core
 
 [<RequireQualifiedAccess>]
-module ValidateUserPlaylists =
-  type LoadUser = UserId -> Task<User>
+module User =
+  type ListLikedTracks = Async<string list>
+  type Load = UserId -> Async<User>
 
-  let validateUserPlaylists (loadUser: LoadUser) : ValidateUserPlaylists.Action =
+[<RequireQualifiedAccess>]
+module ValidateUserPlaylists =
+  let validateUserPlaylists (loadUser: User.Load) : ValidateUserPlaylists.Action =
     fun userId ->
       task {
         let! user = loadUser userId
@@ -52,8 +55,4 @@ module UserSettings =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ListTracks = string -> Async<string list>
-
-[<RequireQualifiedAccess>]
-module User =
-  type ListLikedTracks = Async<string list>
+  type ListTracks = ReadablePlaylistId -> Async<string list>
