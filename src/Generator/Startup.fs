@@ -73,7 +73,6 @@ type Startup() =
       .AddScoped<CallbackQueryService>()
 
     services
-      .AddScoped<TargetPlaylistService>()
       .AddScoped<GeneratorService>()
 
     services.AddLocalization()

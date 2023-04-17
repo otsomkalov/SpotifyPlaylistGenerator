@@ -14,15 +14,15 @@ open Telegram.Bot.Types
 open Microsoft.EntityFrameworkCore
 open Infrastructure.Helpers
 
-type GeneratorService
-  (_targetPlaylistService: TargetPlaylistService, _logger: ILogger<GeneratorService>, _bot: ITelegramBotClient, _context: AppDbContext) =
+type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClient) =
 
   member this.GeneratePlaylistAsync
     (
       queueMessage: GeneratePlaylistMessage,
       listPlaylistTracks: Playlist.ListTracks,
       listLikedTracks: User.ListLikedTracks,
-      loadUser: User.Load
+      loadUser: User.Load,
+      updateTargetPlaylist: Playlist.UpdatePlaylist
     ) =
     async {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
@@ -75,7 +75,8 @@ type GeneratorService
         |> List.take (user.Settings.PlaylistSize |> PlaylistSize.value)
         |> List.map TrackId
 
-      do! _targetPlaylistService.SaveTracksAsync queueMessage.TelegramId tracksIdsToImport
+      for playlist in user.TargetPlaylists do
+        do! updateTargetPlaylist playlist tracksIdsToImport
 
       (ChatId(queueMessage.TelegramId), "Playlist generated!")
       |> _bot.SendTextMessageAsync
