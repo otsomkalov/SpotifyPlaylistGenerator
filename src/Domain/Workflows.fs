@@ -57,4 +57,4 @@ module UserSettings =
 module Playlist =
   type ListTracks = ReadablePlaylistId -> Async<string list>
 
-  type UpdatePlaylist = TargetPlaylist -> TrackId list -> Async<unit>
+  type Update = TargetPlaylist -> TrackId list -> Async<unit>

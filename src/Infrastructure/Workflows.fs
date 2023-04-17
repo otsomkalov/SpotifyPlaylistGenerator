@@ -76,7 +76,7 @@ module User =
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
-  let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdatePlaylist =
+  let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.Update =
     fun playlist tracksIds ->
       let tracksIds = tracksIds |> List.map TrackId.value
       let playlistId = playlist.Id |> WritablePlaylistId.value

@@ -22,7 +22,7 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       listPlaylistTracks: Playlist.ListTracks,
       listLikedTracks: User.ListLikedTracks,
       loadUser: User.Load,
-      updateTargetPlaylist: Playlist.UpdatePlaylist
+      updateTargetPlaylist: Playlist.Update
     ) =
     async {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
