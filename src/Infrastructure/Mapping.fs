@@ -7,9 +7,8 @@ open Domain.Core
 
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
-  let filterMapPlaylistsIds (playlists: SourcePlaylist seq) type' =
+  let filterMapPlaylistsIds (playlists: #Playlist seq) =
     playlists
-    |> Seq.where (fun p -> p.PlaylistType = type')
     |> Seq.map (fun p -> ReadablePlaylistId p.Url)
     |> Seq.toList
 
@@ -41,7 +40,7 @@ module UserSettings =
 module User =
   let fromDb (user: Database.Entities.User) =
     { Id = user.Id |> UserId
-      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists PlaylistType.Source
-      ExcludedPlaylist = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists PlaylistType.History
+      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists
+      ExcludedPlaylist = ReadablePlaylistId.filterMapPlaylistsIds user.HistoryPlaylists
       TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds user.TargetPlaylists
       Settings = UserSettings.fromDb user.Settings }
