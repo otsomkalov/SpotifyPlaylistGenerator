@@ -1,5 +1,6 @@
 ﻿namespace Infrastructure.Workflows
 
+open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Database
@@ -86,7 +87,6 @@ module TargetPlaylist =
 
       if playlist.Overwrite then
         task {
-          let replaceItemsRequest = spotifyTracksIds |> PlaylistReplaceItemsRequest
 
           let transaction = cache.CreateTransaction()
 
@@ -95,12 +95,15 @@ module TargetPlaylist =
           let addTask =
             transaction.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) :> Task
 
+          let expireTask = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
+
           let! _ = transaction.ExecuteAsync()
 
           let! _ = deleteTask
           let! _ = addTask
+          let! _ = expireTask
 
-          let! _ = client.Playlists.ReplaceItems(playlistId, replaceItemsRequest)
+          let! _ = client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
 
           ()
         }
