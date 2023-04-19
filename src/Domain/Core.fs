@@ -7,6 +7,11 @@ type ReadablePlaylistId = ReadablePlaylistId of string
 type WritablePlaylistId = WritablePlaylistId of string
 type TrackId = TrackId of string
 
+type TargetPlaylist = {
+  Id: WritablePlaylistId
+  Overwrite: bool
+}
+
 [<RequireQualifiedAccess>]
 module ValidateUserPlaylists =
   type Error =
@@ -40,5 +45,5 @@ type User =
   { Id: UserId
     IncludedPlaylists: ReadablePlaylistId list
     ExcludedPlaylist: ReadablePlaylistId list
-    TargetPlaylists: WritablePlaylistId list
+    TargetPlaylists: TargetPlaylist list
     Settings: UserSettings.UserSettings }

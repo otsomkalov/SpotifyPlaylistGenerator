@@ -7,15 +7,17 @@ open Domain.Core
 
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
-  let filterMapPlaylistsIds (playlists: #Playlist seq) =
-    playlists
-    |> Seq.map (fun p -> ReadablePlaylistId p.Url)
-    |> Seq.toList
+  let fromDb (playlists: #Playlist seq) =
+    playlists |> Seq.map (fun p -> ReadablePlaylistId p.Url) |> Seq.toList
 
 [<RequireQualifiedAccess>]
-module WritablePlaylistId =
-  let filterMapPlaylistsIds (playlists: TargetPlaylist seq) =
-    playlists |> Seq.map (fun p -> WritablePlaylistId p.Url) |> Seq.toList
+module TargetPlaylist =
+  let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
+    { Id = playlist.Url |> WritablePlaylistId
+      Overwrite = playlist.Overwrite }
+
+  let mapPlaylists (playlists: Database.Entities.TargetPlaylist seq) =
+    playlists |> Seq.map fromDb |> Seq.toList
 
 module UserSettings =
   let fromDb (settings: Settings) : UserSettings.UserSettings =
@@ -40,7 +42,7 @@ module UserSettings =
 module User =
   let fromDb (user: Database.Entities.User) =
     { Id = user.Id |> UserId
-      IncludedPlaylists = ReadablePlaylistId.filterMapPlaylistsIds user.SourcePlaylists
-      ExcludedPlaylist = ReadablePlaylistId.filterMapPlaylistsIds user.HistoryPlaylists
-      TargetPlaylists = WritablePlaylistId.filterMapPlaylistsIds user.TargetPlaylists
+      IncludedPlaylists = ReadablePlaylistId.fromDb user.SourcePlaylists
+      ExcludedPlaylist = ReadablePlaylistId.fromDb user.HistoryPlaylists
+      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists
       Settings = UserSettings.fromDb user.Settings }

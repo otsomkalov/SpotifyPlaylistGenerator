@@ -32,3 +32,7 @@ module PlaylistSize =
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
   let value (ReadablePlaylistId id) = id
+
+[<RequireQualifiedAccess>]
+module WritablePlaylistId =
+  let value (WritablePlaylistId id) = id

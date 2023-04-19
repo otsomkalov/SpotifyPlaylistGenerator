@@ -32,6 +32,8 @@ type GeneratorFunctions
     let listLikedTracks =
       Cache.listOrRefreshByKey _cache message.RefreshCache listLikedTracks message.TelegramId
 
-    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, loadUser)
+    let updateTargetPlaylist = TargetPlaylist.update _cache client
+
+    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, loadUser, updateTargetPlaylist)
     |> Async.StartAsTask
     :> Task

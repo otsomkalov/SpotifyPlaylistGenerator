@@ -1,8 +1,8 @@
 ﻿module Infrastructure.Cache
 
 open System
-open System.Threading.Tasks
 open Infrastructure.Helpers
+open Infrastructure.Core
 open StackExchange.Redis
 
 type CacheData<'k> = 'k -> string list -> Async<unit>
@@ -53,6 +53,8 @@ let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
   fun key ->
     let loadData = loadData key
     let loadAndCacheData = loadAndCacheData loadData cacheData
+
+    let key = key |> ReadablePlaylistId.value
 
     if refreshCache then
       loadAndCacheData key

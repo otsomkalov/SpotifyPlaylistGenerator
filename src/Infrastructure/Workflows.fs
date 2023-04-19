@@ -1,5 +1,8 @@
 ﻿namespace Infrastructure.Workflows
 
+open System
+open System.Collections.Generic
+open System.Threading.Tasks
 open Database
 open Domain.Core
 open Domain.Workflows
@@ -8,14 +11,16 @@ open Infrastructure.Mapping
 open Microsoft.EntityFrameworkCore
 open System.Linq
 open Infrastructure.Helpers
+open Microsoft.Extensions.Caching.Distributed
 open SpotifyAPI.Web
+open StackExchange.Redis
+open StackExchange.Redis
 
 [<RequireQualifiedAccess>]
 module UserSettings =
   let load (context: AppDbContext) : UserSettings.Load =
     let loadFromDb userId =
-      context
-        .Users
+      context.Users
         .AsNoTracking()
         .Where(fun u -> u.Id = userId)
         .Select(fun u -> u.Settings)
@@ -61,12 +66,52 @@ module User =
     fun userId ->
       let userId = userId |> UserId.value
 
-      context
-        .Users
+      context.Users
         .AsNoTracking()
         .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
         .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
         .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
         .FirstOrDefaultAsync(fun u -> u.Id = userId)
+      |> Async.AwaitTask
+      |> Async.map User.fromDb
+
+[<RequireQualifiedAccess>]
+module TargetPlaylist =
+  let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.Update =
+    fun playlist tracksIds ->
+      let tracksIds = tracksIds |> List.map TrackId.value
+      let playlistId = playlist.Id |> WritablePlaylistId.value
+
+      let spotifyTracksIds =
+        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+      if playlist.Overwrite then
+        task {
+
+          let transaction = cache.CreateTransaction()
+
+          let deleteTask = transaction.KeyDeleteAsync(playlistId) :> Task
+
+          let addTask =
+            transaction.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) :> Task
+
+          let expireTask = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
+
+          let! _ = transaction.ExecuteAsync()
+
+          let! _ = deleteTask
+          let! _ = addTask
+          let! _ = expireTask
+
+          let! _ = client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
+
+          ()
+        }
         |> Async.AwaitTask
-        |> Async.map User.fromDb
+      else
+        let playlistAddItemsRequest = spotifyTracksIds |> PlaylistAddItemsRequest
+
+        [ cache.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) :> Task
+          client.Playlists.AddItems(playlistId, playlistAddItemsRequest) :> Task ]
+        |> Task.WhenAll
+        |> Async.AwaitTask
