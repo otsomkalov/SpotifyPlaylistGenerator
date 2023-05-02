@@ -3,6 +3,8 @@
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
+open SpotifyAPI.Web
+open Infrastructure
 open Database
 open Domain.Core
 open Domain.Workflows
@@ -11,10 +13,10 @@ open Infrastructure.Mapping
 open Microsoft.EntityFrameworkCore
 open System.Linq
 open Infrastructure.Helpers
-open Microsoft.Extensions.Caching.Distributed
-open SpotifyAPI.Web
+open Microsoft.Extensions.Logging
 open StackExchange.Redis
-open StackExchange.Redis
+open System.Net
+open Infrastructure.Helpers.Spotify
 
 [<RequireQualifiedAccess>]
 module UserSettings =
@@ -50,12 +52,13 @@ module User =
         |> Async.AwaitTask
 
       let! nextTracksIds =
-        if Seq.isEmpty tracks.Items then
+        if isNull tracks.Next then
           [] |> async.Return
         else
           listLikedTracks' client (offset + 50)
 
-      let currentTracksIds = tracks.Items |> List.ofSeq |> List.map (fun x -> x.Track.Id)
+      let currentTracksIds =
+        tracks.Items |> Seq.map (fun x -> x.Track) |> Spotify.getTracksIds
 
       return List.append nextTracksIds currentTracksIds
     }
@@ -115,3 +118,36 @@ module TargetPlaylist =
           client.Playlists.AddItems(playlistId, playlistAddItemsRequest) :> Task ]
         |> Task.WhenAll
         |> Async.AwaitTask
+
+[<RequireQualifiedAccess>]
+module Playlist =
+  let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
+    async {
+      let! tracks =
+        client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+        |> Async.AwaitTask
+
+      let! nextTracksIds =
+        if isNull tracks.Next then
+          [] |> async.Return
+        else
+          listTracks' client playlistId (offset + 100)
+
+      let currentTracksIds =
+        tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> Spotify.getTracksIds
+
+      return List.append nextTracksIds currentTracksIds
+    }
+
+  let listTracks (logger: ILogger) client : Playlist.ListTracks =
+    fun playlistId ->
+      async {
+        try
+          let playlistId = playlistId |> ReadablePlaylistId.value
+
+          return! listTracks' client playlistId 0
+        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+          logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
+
+          return []
+      }
