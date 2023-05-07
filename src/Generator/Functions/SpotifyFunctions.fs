@@ -1,5 +1,6 @@
 ﻿namespace Generator
 
+open System
 open Database
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
@@ -20,8 +21,7 @@ type SpotifyFunctions
 
   let _spotifySettings = _spotifyOptions.Value
 
-  let _telegramSettings =
-    _telegramOptions.Value
+  let _telegramSettings = _telegramOptions.Value
 
   [<FunctionName("HandleCallbackAsync")>]
   member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "spotify/callback")>] request: HttpRequest) =
@@ -33,18 +33,23 @@ type SpotifyFunctions
         |> AuthorizationCodeTokenRequest
         |> OAuthClient().RequestToken
 
-      let spotifyClient =
-        (_spotifySettings.ClientId, _spotifySettings.ClientSecret, tokenResponse)
-        |> AuthorizationCodeAuthenticator
-        |> SpotifyClientConfig
+      let authenticator =
+        AuthorizationCodeAuthenticator(_spotifySettings.ClientId, _spotifySettings.ClientSecret, tokenResponse)
+
+      let retryHandler =
+        SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
+
+      let config =
+        SpotifyClientConfig
           .CreateDefault()
-          .WithAuthenticator
-        |> SpotifyClient
+          .WithAuthenticator(authenticator)
+          .WithRetryHandler(retryHandler)
+
+      let spotifyClient = config |> SpotifyClient
 
       let! spotifyUserProfile = spotifyClient.UserProfile.Current()
 
-      (spotifyUserProfile.Id, spotifyClient)
-      |> _spotifyClientProvider.SetClient
+      (spotifyUserProfile.Id, spotifyClient) |> _spotifyClientProvider.SetClient
 
       return RedirectResult($"{_telegramSettings.BotUrl}?start={spotifyUserProfile.Id}", true)
     }
