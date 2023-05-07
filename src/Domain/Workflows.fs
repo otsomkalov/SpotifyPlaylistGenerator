@@ -58,3 +58,8 @@ module Playlist =
   type ListTracks = ReadablePlaylistId -> Async<string list>
 
   type Update = TargetPlaylist -> TrackId list -> Async<unit>
+
+[<RequireQualifiedAccess>]
+module TargetPlaylist =
+  type AppendToTargetPlaylist = int -> Task<unit>
+  type OverwriteTargetPlaylist = int -> Task<unit>

@@ -119,6 +119,38 @@ module TargetPlaylist =
         |> Task.WhenAll
         |> Async.AwaitTask
 
+  let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
+    fun targetPlaylistId ->
+      task{
+        let! targetPlaylist =
+          context.TargetPlaylists
+            .FirstOrDefaultAsync(fun p -> p.Id = targetPlaylistId)
+
+        targetPlaylist.Overwrite <- true
+
+        context.Update(targetPlaylist) |> ignore
+
+        let! _ = context.SaveChangesAsync()
+
+        return ()
+      }
+
+  let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
+    fun targetPlaylistId ->
+      task{
+        let! targetPlaylist =
+          context.TargetPlaylists
+            .FirstOrDefaultAsync(fun p -> p.Id = targetPlaylistId)
+
+        targetPlaylist.Overwrite <- false
+
+        context.Update(targetPlaylist) |> ignore
+
+        let! _ = context.SaveChangesAsync()
+
+        return ()
+      }
+
 [<RequireQualifiedAccess>]
 module Playlist =
   let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =

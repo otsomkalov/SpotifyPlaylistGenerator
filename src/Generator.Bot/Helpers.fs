@@ -36,3 +36,11 @@ let (|Int|_|) (str: string) =
   match Int32.TryParse(str) with
   | true, value -> Some(value)
   | _ -> None
+
+let (|CallbackQueryData|_|) (str: string) =
+  match str.Split("|") with
+  | [|entityType; entityId; entityAction|] ->
+    match entityId with
+    | Int id -> Some (entityType, id, entityAction)
+    | _ -> None
+  | _ -> None
