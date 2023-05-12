@@ -4,47 +4,29 @@ open Database
 open Database.Entities
 open Telegram.Bot
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
+open Telegram.Bot.Types.ReplyMarkups
 
 type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext) =
-  let updateExistingTargetPlaylistAsync (playlist: Playlist) playlistId =
-    task {
-      playlist.Url <- playlistId
-
-      _context.Update(playlist) |> ignore
-
-      return ()
-    }
-
-  let createTargetPlaylistAsync playlistId userId =
-    task {
-      let! _ =
-        TargetPlaylist(Url = playlistId, UserId = userId, Overwrite = true)
-        |> _context.TargetPlaylists.AddAsync
-
-      return ()
-    }
-
   let setTargetPlaylistAsync (message: Message) playlistId =
     task {
-      let! existingTargetPlaylist =
-        _context
-          .TargetPlaylists
-          .AsNoTracking()
-          .FirstOrDefaultAsync(fun p ->
-            p.UserId = message.From.Id)
-
-      let addOrUpdateTargetPlaylistTask =
-        if isNull existingTargetPlaylist then
-          createTargetPlaylistAsync playlistId message.From.Id
-        else
-          updateExistingTargetPlaylistAsync existingTargetPlaylist playlistId
-
-      do! addOrUpdateTargetPlaylistTask
+      let! targetPlaylist =
+        TargetPlaylist(Url = playlistId, UserId = message.From.Id, Overwrite = false)
+        |> _context.TargetPlaylists.AddAsync
 
       let! _ = _context.SaveChangesAsync()
 
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Target playlist successfully set!", replyToMessageId = message.MessageId)
+      let replyMarkup =
+        InlineKeyboardMarkup(
+          [ InlineKeyboardButton("Append", CallbackData = $"tp|{targetPlaylist.Entity.Id}|a")
+            InlineKeyboardButton("Overwrite", CallbackData = $"tp|{targetPlaylist.Entity.Id}|o") ]
+        )
+
+      _bot.SendTextMessageAsync(
+        ChatId(message.Chat.Id),
+        "Target playlist successfully added! Do you want to overwrite or append tracks to it?",
+        replyMarkup = replyMarkup,
+        replyToMessageId = message.MessageId
+      )
       |> ignore
     }
 
