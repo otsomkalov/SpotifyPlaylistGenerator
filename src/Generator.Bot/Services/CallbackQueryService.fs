@@ -29,7 +29,7 @@ type CallbackQueryService
     task{
       do! Infrastructure.Workflows.TargetPlaylist.overwriteTargetPlaylist _context playlistId
 
-      let! _ = _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Target playlist will be appended with generated tracks")
+      let! _ = _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Target playlist will be overwritten with generated tracks")
 
       return ()
     }
