@@ -1,23 +1,74 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
+open Resources
+open System
+open System.Threading.Tasks
 open Database
-open Database.Entities
+open Domain.Core
+open Domain.Workflows
+open Generator.Bot.Services
+open Infrastructure.Core
+open Microsoft.Extensions.Localization
+open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
+open Generator.Bot.Helpers
+open Infrastructure.Workflows
 
-type AddSourcePlaylistCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _playlistCommandHandler: PlaylistCommandHandler) =
-
-  let addSourcePlaylistAsync (message: Message) playlistId =
-    task {
-      let! _ =
-        SourcePlaylist(Url = playlistId, UserId = message.From.Id)
-        |> _context.SourcePlaylists.AddAsync
-
-      let! _ = _context.SaveChangesAsync()
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Source playlist successfully added!", replyToMessageId = message.MessageId)
-      |> ignore
-    }
-
+type AddSourcePlaylistCommandHandler
+  (
+    _bot: ITelegramBotClient,
+    _context: AppDbContext,
+    _playlistCommandHandler: PlaylistCommandHandler,
+    _emptyCommandDataHandler: EmptyCommandDataHandler,
+    _spotifyClientProvider: SpotifyClientProvider,
+    _localizer: IStringLocalizer<Messages>
+  ) =
   member this.HandleAsync(message: Message) =
-    _playlistCommandHandler.HandleAsync message addSourcePlaylistAsync
+
+    match message.Text with
+    | CommandData data ->
+      let userId = UserId message.From.Id
+      let client = _spotifyClientProvider.Get message.From.Id
+
+      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+
+      let parsePlaylistId = Playlist.parseId
+
+      let includeInStorage = Playlist.includeInStorage _context userId
+
+      let includePlaylist =
+        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+
+      let rawPlaylistId = Playlist.RawPlaylistId data
+
+      async {
+        let! includePlaylistResult = rawPlaylistId |> includePlaylist
+
+        return!
+          match includePlaylistResult with
+          | Ok _ ->
+            _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Source playlist successfully added!", replyToMessageId = message.MessageId)
+            :> Task
+            |> Async.AwaitTask
+          | Error error ->
+            match error with
+            | Playlist.IdParsing _ ->
+              _bot.SendTextMessageAsync(
+                ChatId(message.Chat.Id),
+                String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
+                replyToMessageId = message.MessageId
+              )
+              :> Task
+              |> Async.AwaitTask
+            | Playlist.MissingFromSpotify (Playlist.MissingFromSpotifyError id) ->
+              _bot.SendTextMessageAsync(
+                ChatId(message.Chat.Id),
+                String.Format(Messages.PlaylistNotFoundInSpotify, id),
+                replyToMessageId = message.MessageId
+              )
+              :> Task
+              |> Async.AwaitTask
+      }
+      |> Async.StartAsTask
+    | _ -> _emptyCommandDataHandler.HandleAsync message

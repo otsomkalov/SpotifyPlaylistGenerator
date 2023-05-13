@@ -107,6 +107,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ➕ Include playlist.
+        /// </summary>
+        public static string IncludePlaylist {
+            get {
+                return ResourceManager.GetString("IncludePlaylist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➖ Liked tracks are excluded.
         /// </summary>
         public static string LikedTracksExcluded {
@@ -152,6 +161,24 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot parse provided playlist id: {0}.
+        /// </summary>
+        public static string PlaylistIdCannotBeParsed {
+            get {
+                return ResourceManager.GetString("PlaylistIdCannotBeParsed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist with id {0} not found is Spotify!.
+        /// </summary>
+        public static string PlaylistNotFoundInSpotify {
+            get {
+                return ResourceManager.GetString("PlaylistNotFoundInSpotify", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to New playlist size is set!.
         /// </summary>
         public static string PlaylistSizeSet {
@@ -175,6 +202,15 @@ namespace Resources {
         public static string PlaylistSizeTooSmall {
             get {
                 return ResourceManager.GetString("PlaylistSizeTooSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send included playlist.
+        /// </summary>
+        public static string SendIncludedPlaylist {
+            get {
+                return ResourceManager.GetString("SendIncludedPlaylist", resourceCulture);
             }
         }
         

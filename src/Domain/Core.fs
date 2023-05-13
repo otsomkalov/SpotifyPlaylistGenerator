@@ -47,3 +47,15 @@ type User =
     ExcludedPlaylist: ReadablePlaylistId list
     TargetPlaylists: TargetPlaylist list
     Settings: UserSettings.UserSettings }
+
+[<RequireQualifiedAccess>]
+module Playlist =
+  type RawPlaylistId = RawPlaylistId of string
+  type IdParsingError = IdParsingError of unit
+  type MissingFromSpotifyError = MissingFromSpotifyError of string
+
+  type IncludePlaylistError =
+    | IdParsing of IdParsingError
+    | MissingFromSpotify of MissingFromSpotifyError
+
+  type IncludePlaylist = RawPlaylistId -> Async<Result<unit, IncludePlaylistError>>

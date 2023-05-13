@@ -1,7 +1,6 @@
 ﻿namespace Generator.Worker.Services
 
 
-open Database
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -11,8 +10,7 @@ open Shared.QueueMessages
 open Generator.Worker.Extensions
 open Telegram.Bot
 open Telegram.Bot.Types
-open Microsoft.EntityFrameworkCore
-open Infrastructure.Helpers
+open Domain.Extensions
 
 type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClient) =
 
