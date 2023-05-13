@@ -1,6 +1,7 @@
 ﻿module Infrastructure.Helpers
 
 open System
+open System.Threading.Tasks
 open SpotifyAPI.Web
 
 [<RequireQualifiedAccess>]
@@ -24,16 +25,6 @@ module TaskOption =
         | None -> None
     }
 
-[<RequireQualifiedAccess>]
-module Async =
-
-  let inline singleton (value: 'value) : Async<'value> = value |> async.Return
-
-  let inline bind ([<InlineIfLambda>] binder: 'input -> Async<'output>) (input: Async<'input>) : Async<'output> = async.Bind(input, binder)
-
-  let inline map ([<InlineIfLambda>] mapper: 'input -> 'output) (input: Async<'input>) : Async<'output> =
-    bind (fun x' -> mapper x' |> singleton) input
-
 module Spotify =
   let (|ApiException|_|) (ex: exn) =
     match ex with
@@ -42,3 +33,6 @@ module Spotify =
       |> Seq.tryPick (fun e -> e :?> APIException |> Option.ofObj)
     | :? APIException as e -> Some e
     | _ -> None
+
+module ValueTask =
+  let asTask (valueTask: ValueTask<'a>) = valueTask.AsTask()

@@ -2,6 +2,7 @@
 
 open System.Threading.Tasks
 open Domain.Core
+open Domain.Extensions
 
 [<RequireQualifiedAccess>]
 module User =
@@ -58,6 +59,31 @@ module Playlist =
   type ListTracks = ReadablePlaylistId -> Async<string list>
 
   type Update = TargetPlaylist -> TrackId list -> Async<unit>
+
+  type ParsedPlaylistId = ParsedPlaylistId of string
+
+  type ParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IdParsingError>
+
+  type TryParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IncludePlaylistError>
+
+  type CheckExistsInSpotify = ParsedPlaylistId -> Async<Result<ReadablePlaylistId, Playlist.MissingFromSpotifyError>>
+
+  type IncludeInStorage = ReadablePlaylistId -> Async<unit>
+
+  let includePlaylist
+    (parseId: ParseId)
+    (existsInSpotify: CheckExistsInSpotify)
+    (includeInStorage: IncludeInStorage)
+    : Playlist.IncludePlaylist =
+    let parseId = parseId >> Result.mapError Playlist.IncludePlaylistError.IdParsing
+
+    let existsInSpotify =
+      existsInSpotify
+      >> AsyncResult.mapError Playlist.IncludePlaylistError.MissingFromSpotify
+
+    parseId
+    >> Result.asyncBind existsInSpotify
+    >> AsyncResult.asyncMap includeInStorage
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =

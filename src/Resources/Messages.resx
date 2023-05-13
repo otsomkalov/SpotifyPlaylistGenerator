@@ -74,4 +74,16 @@
     <data name="LikedTracksIgnored" xml:space="preserve">
         <value>❌ Liked tracks are ignored</value>
     </data>
+    <data name="IncludePlaylist" xml:space="preserve">
+        <value>➕ Include playlist</value>
+    </data>
+    <data name="SendIncludedPlaylist" xml:space="preserve">
+        <value>Send included playlist</value>
+    </data>
+    <data name="PlaylistIdCannotBeParsed">
+        <value>Cannot parse provided playlist id: {0}</value>
+    </data>
+    <data name="PlaylistNotFoundInSpotify">
+        <value>Playlist with id {0} not found is Spotify!</value>
+    </data>
 </root>

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Extensions.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Workflows.fs"/>
   </ItemGroup>

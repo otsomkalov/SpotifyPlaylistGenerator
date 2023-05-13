@@ -1,5 +1,6 @@
 ﻿module Infrastructure.Core
 
+open Domain.Workflows
 open Resources
 open System
 open Domain.Core
@@ -15,6 +16,17 @@ module TrackId =
   let value (TrackId id) = id
 
 [<RequireQualifiedAccess>]
+module ReadablePlaylistId =
+  let value (ReadablePlaylistId id) = id
+
+[<RequireQualifiedAccess>]
+module RawPlaylistId =
+  let value (Playlist.RawPlaylistId rawId) = rawId
+
+module ParsedPlaylistId =
+  let value (Playlist.ParsedPlaylistId id) = id
+
+[<RequireQualifiedAccess>]
 module PlaylistSize =
   let tryCreate size =
     match size with
@@ -28,10 +40,6 @@ module PlaylistSize =
     | Error e -> ArgumentException(e, nameof size) |> raise
 
   let value (UserSettings.PlaylistSize size) = size
-
-[<RequireQualifiedAccess>]
-module ReadablePlaylistId =
-  let value (ReadablePlaylistId id) = id
 
 [<RequireQualifiedAccess>]
 module WritablePlaylistId =

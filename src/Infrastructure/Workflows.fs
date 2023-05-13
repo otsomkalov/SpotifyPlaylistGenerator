@@ -3,8 +3,11 @@
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
+open Database.Entities
 open SpotifyAPI.Web
 open Infrastructure
+open System.Net
+open System.Text.RegularExpressions
 open Database
 open Domain.Core
 open Domain.Workflows
@@ -15,8 +18,8 @@ open System.Linq
 open Infrastructure.Helpers
 open Microsoft.Extensions.Logging
 open StackExchange.Redis
-open System.Net
 open Infrastructure.Helpers.Spotify
+open Domain.Extensions
 
 [<RequireQualifiedAccess>]
 module UserSettings =
@@ -182,4 +185,57 @@ module Playlist =
           logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
 
           return []
+      }
+
+  let parseId: Playlist.ParseId =
+    fun rawPlaylistId ->
+      let getPlaylistIdFromUri (uri: Uri) = uri.Segments |> Array.last
+
+      let (|Uri|_|) text =
+        match Uri.TryCreate(text, UriKind.Absolute) with
+        | true, uri -> Some uri
+        | _ -> None
+
+      let (|PlaylistId|_|) text =
+        if Regex.IsMatch(text, "[A-z0-9]{22}") then
+          Some text
+        else
+          None
+
+      let (|SpotifyUri|_|) (text: string) =
+        match text.Split(":") with
+        | [| "spotify"; "playlist"; id |] -> Some(id)
+        | _ -> None
+
+      match rawPlaylistId |> RawPlaylistId.value with
+      | SpotifyUri id -> id |> Playlist.ParsedPlaylistId |> Ok
+      | Uri uri -> uri |> getPlaylistIdFromUri |> Playlist.ParsedPlaylistId |> Ok
+      | PlaylistId id -> id |> Playlist.ParsedPlaylistId |> Ok
+      | _ -> Playlist.IdParsingError() |> Error
+
+  let checkPlaylistExistsInSpotify (client: ISpotifyClient) : Playlist.CheckExistsInSpotify =
+    fun playlistId ->
+      let rawPlaylistId = playlistId |> ParsedPlaylistId.value
+
+      async {
+        try
+          let! playlist = rawPlaylistId |> client.Playlists.Get |> Async.AwaitTask
+
+          return playlist.Id |> ReadablePlaylistId.ReadablePlaylistId |> Ok
+        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+          return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
+      }
+
+  let includeInStorage (context: AppDbContext) userId : Playlist.IncludeInStorage =
+    fun playlistId ->
+      async {
+        let! _ =
+          SourcePlaylist(Url = (playlistId |> ReadablePlaylistId.value), UserId = (userId |> UserId.value))
+          |> context.SourcePlaylists.AddAsync
+          |> ValueTask.asTask
+          |> Async.AwaitTask
+
+        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
+
+        return ()
       }
