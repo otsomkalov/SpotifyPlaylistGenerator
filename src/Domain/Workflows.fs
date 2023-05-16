@@ -69,6 +69,7 @@ module Playlist =
   type CheckExistsInSpotify = ParsedPlaylistId -> Async<Result<ReadablePlaylistId, Playlist.MissingFromSpotifyError>>
 
   type IncludeInStorage = ReadablePlaylistId -> Async<unit>
+  type ExcludeInStorage = ReadablePlaylistId -> Async<unit>
 
   let includePlaylist
     (parseId: ParseId)
@@ -84,6 +85,21 @@ module Playlist =
     parseId
     >> Result.asyncBind existsInSpotify
     >> AsyncResult.asyncMap includeInStorage
+
+  let excludePlaylist
+    (parseId: ParseId)
+    (existsInSpotify: CheckExistsInSpotify)
+    (excludeInStorage: ExcludeInStorage)
+    : Playlist.ExcludePlaylist =
+    let parseId = parseId >> Result.mapError Playlist.ExcludePlaylistError.IdParsing
+
+    let existsInSpotify =
+      existsInSpotify
+      >> AsyncResult.mapError Playlist.ExcludePlaylistError.MissingFromSpotify
+
+    parseId
+    >> Result.asyncBind existsInSpotify
+    >> AsyncResult.asyncMap excludeInStorage
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
