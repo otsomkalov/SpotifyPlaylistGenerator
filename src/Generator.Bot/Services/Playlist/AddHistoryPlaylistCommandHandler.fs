@@ -23,17 +23,6 @@ type AddHistoryPlaylistCommandHandler
     _spotifyClientProvider: SpotifyClientProvider,
     _emptyCommandDataHandler: EmptyCommandDataHandler
   ) =
-  let addHistoryPlaylistAsync (message: Message) playlistId =
-    task {
-      let! _ =
-        HistoryPlaylist(Url = playlistId, UserId = message.From.Id)
-        |> _context.HistoryPlaylists.AddAsync
-
-      let! _ = _context.SaveChangesAsync()
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "History playlist successfully added!", replyToMessageId = message.MessageId)
-      |> ignore
-    }
 
   member this.HandleAsync(message: Message) =
     match message.Text with
@@ -79,5 +68,6 @@ type AddHistoryPlaylistCommandHandler
               )
               :> Task
               |> Async.AwaitTask
-      } |> Async.StartAsTask
+      }
+      |> Async.StartAsTask
     | _ -> _emptyCommandDataHandler.HandleAsync message
