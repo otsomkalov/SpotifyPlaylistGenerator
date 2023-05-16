@@ -4,19 +4,70 @@ open Database
 open Database.Entities
 open Telegram.Bot
 open Telegram.Bot.Types
+open Resources
+open System
+open System.Threading.Tasks
+open Domain.Core
+open Domain.Workflows
+open Generator.Bot.Services
+open Infrastructure.Core
+open Shared.Services
+open Generator.Bot.Helpers
+open Infrastructure.Workflows
 
-type AddHistoryPlaylistCommandHandler(_playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext, _bot: ITelegramBotClient) =
-  let addHistoryPlaylistAsync (message: Message) playlistId =
-    task {
-      let! _ =
-        HistoryPlaylist(Url = playlistId, UserId = message.From.Id)
-        |> _context.HistoryPlaylists.AddAsync
-
-      let! _ = _context.SaveChangesAsync()
-
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "History playlist successfully added!", replyToMessageId = message.MessageId)
-      |> ignore
-    }
+type AddHistoryPlaylistCommandHandler
+  (
+    _playlistCommandHandler: PlaylistCommandHandler,
+    _context: AppDbContext,
+    _bot: ITelegramBotClient,
+    _spotifyClientProvider: SpotifyClientProvider,
+    _emptyCommandDataHandler: EmptyCommandDataHandler
+  ) =
 
   member this.HandleAsync(message: Message) =
-    _playlistCommandHandler.HandleAsync message addHistoryPlaylistAsync
+    match message.Text with
+    | CommandData data ->
+      let userId = UserId message.From.Id
+      let client = _spotifyClientProvider.Get message.From.Id
+
+      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+
+      let parsePlaylistId = Playlist.parseId
+
+      let includeInStorage = Playlist.excludeInStorage _context userId
+
+      let includePlaylist =
+        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+
+      let rawPlaylistId = Playlist.RawPlaylistId data
+
+      async {
+        let! excludePlaylistResult = rawPlaylistId |> includePlaylist
+
+        return!
+          match excludePlaylistResult with
+          | Ok _ ->
+            _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "History playlist successfully added!", replyToMessageId = message.MessageId)
+            :> Task
+            |> Async.AwaitTask
+          | Error error ->
+            match error with
+            | Playlist.IdParsing _ ->
+              _bot.SendTextMessageAsync(
+                ChatId(message.Chat.Id),
+                String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
+                replyToMessageId = message.MessageId
+              )
+              :> Task
+              |> Async.AwaitTask
+            | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+              _bot.SendTextMessageAsync(
+                ChatId(message.Chat.Id),
+                String.Format(Messages.PlaylistNotFoundInSpotify, id),
+                replyToMessageId = message.MessageId
+              )
+              :> Task
+              |> Async.AwaitTask
+      }
+      |> Async.StartAsTask
+    | _ -> _emptyCommandDataHandler.HandleAsync message

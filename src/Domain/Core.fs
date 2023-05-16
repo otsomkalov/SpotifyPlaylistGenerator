@@ -58,4 +58,9 @@ module Playlist =
     | IdParsing of IdParsingError
     | MissingFromSpotify of MissingFromSpotifyError
 
+  type ExcludePlaylistError =
+    | IdParsing of IdParsingError
+    | MissingFromSpotify of MissingFromSpotifyError
+
   type IncludePlaylist = RawPlaylistId -> Async<Result<unit, IncludePlaylistError>>
+  type ExcludePlaylist = RawPlaylistId -> Async<Result<unit, ExcludePlaylistError>>

@@ -239,3 +239,17 @@ module Playlist =
 
         return ()
       }
+
+  let excludeInStorage (context: AppDbContext) userId : Playlist.ExcludeInStorage =
+    fun playlistId ->
+      async {
+        let! _ =
+          HistoryPlaylist(Url = (playlistId |> ReadablePlaylistId.value), UserId = (userId |> UserId.value))
+          |> context.HistoryPlaylists.AddAsync
+          |> ValueTask.asTask
+          |> Async.AwaitTask
+
+        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
+
+        return ()
+      }
