@@ -16,7 +16,6 @@
     <Compile Include="Services\Playlist\PlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs"/>
-    <Compile Include="Services\Playlist\SetHistoryPlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\AddHistoryPlaylistCommandHandler.fs"/>
     <Compile Include="Services\UnauthorizedUserCommandHandler.fs"/>
     <Compile Include="Services\StartCommandHandler.fs"/>
