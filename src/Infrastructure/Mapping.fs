@@ -8,12 +8,12 @@ open Domain.Core
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
   let fromDb (playlists: #Playlist seq) =
-    playlists |> Seq.map (fun p -> ReadablePlaylistId p.Url) |> Seq.toList
+    playlists |> Seq.map (fun p -> p.Url |> PlaylistId |> ReadablePlaylistId ) |> Seq.toList
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
   let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
-    { Id = playlist.Url |> WritablePlaylistId
+    { Id = playlist.Url |> PlaylistId |> WritablePlaylistId
       Overwrite = playlist.Overwrite }
 
   let mapPlaylists (playlists: Database.Entities.TargetPlaylist seq) =
@@ -23,8 +23,8 @@ module UserSettings =
   let fromDb (settings: Settings) : UserSettings.UserSettings =
     { LikedTracksHandling =
         (match settings.IncludeLikedTracks |> Option.ofNullable with
-         | Some v when v = true -> UserSettings.LikedTracksHandling.Include
-         | Some v when v = false -> UserSettings.LikedTracksHandling.Exclude
+         | Some true -> UserSettings.LikedTracksHandling.Include
+         | Some false -> UserSettings.LikedTracksHandling.Exclude
          | None -> UserSettings.LikedTracksHandling.Ignore)
       PlaylistSize = settings.PlaylistSize |> PlaylistSize.create }
 

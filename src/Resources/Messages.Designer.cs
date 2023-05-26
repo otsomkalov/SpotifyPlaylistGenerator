@@ -170,6 +170,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to You don&apos;t have permission to modify this playlist.
+        /// </summary>
+        public static string PlaylistIsReadonly {
+            get {
+                return ResourceManager.GetString("PlaylistIsReadonly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Playlist with id {0} not found is Spotify!.
         /// </summary>
         public static string PlaylistNotFoundInSpotify {

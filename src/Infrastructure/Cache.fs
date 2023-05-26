@@ -54,7 +54,7 @@ let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
     let loadData = loadData key
     let loadAndCacheData = loadAndCacheData loadData cacheData
 
-    let key = key |> ReadablePlaylistId.value
+    let key = key |> ReadablePlaylistId.value |> SpotifyPlaylistId.value
 
     if refreshCache then
       loadAndCacheData key
