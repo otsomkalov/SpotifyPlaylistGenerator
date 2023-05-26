@@ -6,7 +6,7 @@ open System
 open Domain.Core
 
 [<RequireQualifiedAccess>]
-module SpotifyPlaylistId =
+module PlaylistId =
   let value (PlaylistId id) = id
 
 [<RequireQualifiedAccess>]

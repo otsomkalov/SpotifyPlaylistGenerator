@@ -49,7 +49,7 @@ type SetTargetPlaylistCommandHandler
         return!
           match targetPlaylistResult with
           | Ok id ->
-            let id = id |> WritablePlaylistId.value |> SpotifyPlaylistId.value
+            let id = id |> WritablePlaylistId.value |> PlaylistId.value
 
             let replyMarkup =
               InlineKeyboardMarkup(

@@ -47,8 +47,8 @@ type CallbackQueryService
         | CallbackQueryConstants.ignoreLikedTracks ->
           _setIncludeLikedTracksCommandHandler.HandleAsync UserSettings.LikedTracksHandling.Ignore
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
-        | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> WritablePlaylistId)
-        | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> WritablePlaylistId)
+        | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
+        | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
 
       return! processCallbackQueryDataTask callbackQuery
     }
