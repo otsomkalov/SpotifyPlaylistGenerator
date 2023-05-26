@@ -9,7 +9,7 @@ open Telegram.Bot.Types.ReplyMarkups
 type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandHandler: PlaylistCommandHandler, _context: AppDbContext) =
   let setTargetPlaylistAsync (message: Message) playlistId =
     task {
-      let! targetPlaylist =
+      let! _ =
         TargetPlaylist(Url = playlistId, UserId = message.From.Id, Overwrite = false)
         |> _context.TargetPlaylists.AddAsync
 
@@ -17,8 +17,8 @@ type SetTargetPlaylistCommandHandler(_bot: ITelegramBotClient, _playlistCommandH
 
       let replyMarkup =
         InlineKeyboardMarkup(
-          [ InlineKeyboardButton("Append", CallbackData = $"tp|{targetPlaylist.Entity.Id}|a")
-            InlineKeyboardButton("Overwrite", CallbackData = $"tp|{targetPlaylist.Entity.Id}|o") ]
+          [ InlineKeyboardButton("Append", CallbackData = $"tp|{playlistId}|a")
+            InlineKeyboardButton("Overwrite", CallbackData = $"tp|{playlistId}|o") ]
         )
 
       _bot.SendTextMessageAsync(
