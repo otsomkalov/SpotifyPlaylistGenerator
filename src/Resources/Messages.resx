@@ -86,4 +86,7 @@
     <data name="PlaylistNotFoundInSpotify">
         <value>Playlist with id {0} not found is Spotify!</value>
     </data>
+    <data name="PlaylistIsReadonly">
+        <value>You don't have permission to modify this playlist</value>
+    </data>
 </root>

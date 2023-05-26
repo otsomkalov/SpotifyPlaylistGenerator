@@ -86,7 +86,7 @@ module TargetPlaylist =
   let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.Update =
     fun playlist tracksIds ->
       let tracksIds = tracksIds |> List.map TrackId.value
-      let playlistId = playlist.Id |> WritablePlaylistId.value
+      let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
 
       let spotifyTracksIds =
         tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
@@ -124,13 +124,11 @@ module TargetPlaylist =
 
   let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
     fun userId targetPlaylistId ->
-      task{
-        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value
+      task {
+        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
         let userId = userId |> UserId.value
 
-        let! targetPlaylist =
-          context.TargetPlaylists
-            .FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
+        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
 
         targetPlaylist.Overwrite <- true
 
@@ -143,13 +141,11 @@ module TargetPlaylist =
 
   let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
     fun userId targetPlaylistId ->
-      task{
-        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value
+      task {
+        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
         let userId = userId |> UserId.value
 
-        let! targetPlaylist =
-          context.TargetPlaylists
-            .FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
+        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
 
         targetPlaylist.Overwrite <- false
 
@@ -184,7 +180,7 @@ module Playlist =
     fun playlistId ->
       async {
         try
-          let playlistId = playlistId |> ReadablePlaylistId.value
+          let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
 
           return! listTracks' client playlistId 0
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
@@ -227,16 +223,31 @@ module Playlist =
         try
           let! playlist = rawPlaylistId |> client.Playlists.Get |> Async.AwaitTask
 
-          return playlist.Id |> ReadablePlaylistId.ReadablePlaylistId |> Ok
+          return
+            { Id = playlist.Id |> PlaylistId
+              OwnerId = playlist.Owner.Id }
+            |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
+      }
+
+  let checkWriteAccess (client: ISpotifyClient) : Playlist.CheckWriteAccess =
+    fun playlist ->
+      async {
+        let! currentUser = client.UserProfile.Current() |> Async.AwaitTask
+
+        return
+          if playlist.OwnerId = currentUser.Id then
+            playlist.Id |> WritablePlaylistId |> Ok
+          else
+            Playlist.AccessError() |> Error
       }
 
   let includeInStorage (context: AppDbContext) userId : Playlist.IncludeInStorage =
     fun playlistId ->
       async {
         let! _ =
-          SourcePlaylist(Url = (playlistId |> ReadablePlaylistId.value), UserId = (userId |> UserId.value))
+          SourcePlaylist(Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
           |> context.SourcePlaylists.AddAsync
           |> ValueTask.asTask
           |> Async.AwaitTask
@@ -250,7 +261,7 @@ module Playlist =
     fun playlistId ->
       async {
         let! _ =
-          HistoryPlaylist(Url = (playlistId |> ReadablePlaylistId.value), UserId = (userId |> UserId.value))
+          HistoryPlaylist(Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
           |> context.HistoryPlaylists.AddAsync
           |> ValueTask.asTask
           |> Async.AwaitTask
@@ -258,4 +269,18 @@ module Playlist =
         let! _ = context.SaveChangesAsync() |> Async.AwaitTask
 
         return ()
+      }
+
+  let targetInStorage (context: AppDbContext) userId : Playlist.TargetInStorage =
+    fun playlistId ->
+      async {
+        let! _ =
+          TargetPlaylist(Url = (playlistId |> WritablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
+          |> context.TargetPlaylists.AddAsync
+          |> ValueTask.asTask
+          |> Async.AwaitTask
+
+        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
+
+        return playlistId
       }

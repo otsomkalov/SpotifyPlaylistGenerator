@@ -6,6 +6,10 @@ open System
 open Domain.Core
 
 [<RequireQualifiedAccess>]
+module PlaylistId =
+  let value (PlaylistId id) = id
+
+[<RequireQualifiedAccess>]
 module UserId =
 
   let value (UserId id) = id

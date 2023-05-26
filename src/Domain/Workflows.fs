@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Extensions
+open Microsoft.FSharp.Control
 
 [<RequireQualifiedAccess>]
 module User =
@@ -66,10 +67,13 @@ module Playlist =
 
   type TryParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IncludePlaylistError>
 
-  type CheckExistsInSpotify = ParsedPlaylistId -> Async<Result<ReadablePlaylistId, Playlist.MissingFromSpotifyError>>
+  type CheckExistsInSpotify = ParsedPlaylistId -> Async<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
+
+  type CheckWriteAccess = SpotifyPlaylist -> Async<Result<WritablePlaylistId, Playlist.AccessError>>
 
   type IncludeInStorage = ReadablePlaylistId -> Async<unit>
   type ExcludeInStorage = ReadablePlaylistId -> Async<unit>
+  type TargetInStorage = WritablePlaylistId -> Async<WritablePlaylistId>
 
   let includePlaylist
     (parseId: ParseId)
@@ -84,6 +88,7 @@ module Playlist =
 
     parseId
     >> Result.asyncBind existsInSpotify
+    >> AsyncResult.map (fun p -> ReadablePlaylistId p.Id)
     >> AsyncResult.asyncMap includeInStorage
 
   let excludePlaylist
@@ -99,7 +104,29 @@ module Playlist =
 
     parseId
     >> Result.asyncBind existsInSpotify
+    >> AsyncResult.map (fun p -> ReadablePlaylistId p.Id)
     >> AsyncResult.asyncMap excludeInStorage
+
+  let targetPlaylist
+    (parseId: ParseId)
+    (existsInSpotify: CheckExistsInSpotify)
+    (checkWriteAccess: CheckWriteAccess)
+    (targetInStorage: TargetInStorage)
+    : Playlist.TargetPlaylist =
+    let parseId = parseId >> Result.mapError Playlist.TargetPlaylistError.IdParsing
+
+    let existsInSpotify =
+      existsInSpotify
+      >> AsyncResult.mapError Playlist.TargetPlaylistError.MissingFromSpotify
+
+    let checkWriteAccess =
+      checkWriteAccess
+      >> AsyncResult.mapError Playlist.TargetPlaylistError.AccessError
+
+    parseId
+    >> Result.asyncBind existsInSpotify
+    >> AsyncResult.bind checkWriteAccess
+    >> AsyncResult.asyncMap targetInStorage
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
