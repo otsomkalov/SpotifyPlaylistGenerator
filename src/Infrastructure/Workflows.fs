@@ -123,9 +123,12 @@ module TargetPlaylist =
         |> Async.AwaitTask
 
   let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
-    fun targetPlaylistId ->
+    fun userId targetPlaylistId ->
       task {
-        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Id = targetPlaylistId)
+        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value
+        let userId = userId |> UserId.value
+
+        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
 
         targetPlaylist.Overwrite <- true
 
@@ -137,9 +140,12 @@ module TargetPlaylist =
       }
 
   let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
-    fun targetPlaylistId ->
+    fun userId targetPlaylistId ->
       task {
-        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Id = targetPlaylistId)
+        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value
+        let userId = userId |> UserId.value
+
+        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
 
         targetPlaylist.Overwrite <- false
 
