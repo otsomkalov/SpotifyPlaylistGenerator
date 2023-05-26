@@ -40,7 +40,5 @@ let (|Int|_|) (str: string) =
 let (|CallbackQueryData|_|) (str: string) =
   match str.Split("|") with
   | [|entityType; entityId; entityAction|] ->
-    match entityId with
-    | Int id -> Some (entityType, id, entityAction)
-    | _ -> None
+    Some (entityType, entityId, entityAction)
   | _ -> None
