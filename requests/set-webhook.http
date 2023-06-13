@@ -5,4 +5,4 @@ Content-Type: multipart/form-data; boundary=WebAppBoundary
 Content-Disposition: form-data; name="url"
 Content-Type: text/plain
 
-https://c921-194-44-22-59.ngrok-free.app/api/telegram/update
+{{url}}/api/telegram/update
