@@ -12,7 +12,7 @@ type SetIncludeLikedTracksCommandHandler
     _bot: ITelegramBotClient,
     _context: AppDbContext,
     _getSettingsMessageCommandHandler: GetSettingsMessageCommandHandler,
-    setLikedTracksHandling: UserSettings.SetLikedTracksHandling
+    setLikedTracksHandling: PresetSettings.SetLikedTracksHandling
   ) =
   member this.HandleAsync likedTracksHandling (callbackQuery: CallbackQuery) =
     let setLikedTracksHandling =

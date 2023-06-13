@@ -20,7 +20,8 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       listPlaylistTracks: Playlist.ListTracks,
       listLikedTracks: User.ListLikedTracks,
       loadUser: User.Load,
-      updateTargetPlaylist: Playlist.Update
+      updateTargetPlaylist: Playlist.Update,
+      loadPreset: Preset.Load
     ) =
     async {
       _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", queueMessage.TelegramId)
@@ -32,6 +33,7 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       let userId = queueMessage.TelegramId |> UserId
 
       let! user = loadUser userId
+      let! preset = loadPreset (queueMessage.PresetId |> PresetId)
 
       let! likedTracks = listLikedTracks
 
@@ -48,10 +50,10 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
         |> Async.map List.concat
 
       let excludedTracksIds, includedTracksIds =
-        match user.Settings.LikedTracksHandling with
-        | UserSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
-        | UserSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
-        | UserSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
+        match preset.Settings.LikedTracksHandling with
+        | PresetSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
+        | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
+        | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
       _logger.LogInformation(
         "User with Telegram id {TelegramId} has {TracksToExcludeCount} tracks to exclude",
@@ -70,7 +72,7 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       let tracksIdsToImport =
         potentialTracksIds
         |> List.shuffle
-        |> List.take (user.Settings.PlaylistSize |> PlaylistSize.value)
+        |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
         |> List.map TrackId
 
       for playlist in user.TargetPlaylists do

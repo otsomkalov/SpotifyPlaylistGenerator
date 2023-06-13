@@ -22,24 +22,37 @@ open Infrastructure.Helpers.Spotify
 open Domain.Extensions
 
 [<RequireQualifiedAccess>]
-module UserSettings =
-  let load (context: AppDbContext) : UserSettings.Load =
+module PresetSettings =
+  let load (context: AppDbContext) : PresetSettings.Load =
     let loadFromDb userId =
       context.Users
         .AsNoTracking()
+        .Include(fun u -> u.CurrentPreset)
+        .ThenInclude(fun p -> p.Settings)
         .Where(fun u -> u.Id = userId)
-        .Select(fun u -> u.Settings)
+        .Select(fun u -> u.CurrentPreset.Settings)
         .FirstOrDefaultAsync()
 
-    UserId.value >> loadFromDb >> Task.map UserSettings.fromDb
+    UserId.value >> loadFromDb >> Task.map PresetSettings.fromDb
 
-  let update (context: AppDbContext) : UserSettings.Update =
+  let update (context: AppDbContext) : PresetSettings.Update =
     fun userId settings ->
       task {
-        let settings = settings |> UserSettings.toDb
+        let userId = userId |> UserId.value
 
-        context.Users.Update(Database.Entities.User(Id = (userId |> UserId.value), Settings = settings))
-        |> ignore
+        let! dbPreset =
+          context.Users
+            .Include(fun u -> u.CurrentPreset)
+            .ThenInclude(fun p -> p.Settings)
+            .Where(fun u -> u.Id = userId)
+            .Select(fun u -> u.CurrentPreset)
+            .FirstOrDefaultAsync()
+
+        let updatedDbSettings = settings |> PresetSettings.toDb
+
+        dbPreset.Settings <- updatedDbSettings
+
+        context.Presets.Update(dbPreset) |> ignore
 
         let! _ = context.SaveChangesAsync()
 
@@ -80,6 +93,18 @@ module User =
         .FirstOrDefaultAsync(fun u -> u.Id = userId)
       |> Async.AwaitTask
       |> Async.map User.fromDb
+
+  let getCurrentPresetId (context: AppDbContext) : User.GetCurrentPresetId =
+    fun userId ->
+      let userId = userId |> UserId.value
+
+      context.Users
+        .AsNoTracking()
+        .Where(fun u -> u.Id = userId)
+        .Select(fun u -> u.CurrentPresetId)
+        .FirstOrDefaultAsync()
+      |> Async.AwaitTask
+      |> Async.map PresetId.create
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
@@ -125,7 +150,9 @@ module TargetPlaylist =
   let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
     fun userId targetPlaylistId ->
       task {
-        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
+        let targetPlaylistId =
+          targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
+
         let userId = userId |> UserId.value
 
         let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
@@ -142,7 +169,9 @@ module TargetPlaylist =
   let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
     fun userId targetPlaylistId ->
       task {
-        let targetPlaylistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
+        let targetPlaylistId =
+          targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
+
         let userId = userId |> UserId.value
 
         let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
@@ -284,3 +313,12 @@ module Playlist =
 
         return playlistId
       }
+
+[<RequireQualifiedAccess>]
+module Preset =
+  let load (context: AppDbContext) : Preset.Load =
+    let loadDbPreset presetId =
+      context.Presets.AsNoTracking().FirstOrDefaultAsync(fun p -> p.Id = presetId)
+      |> Async.AwaitTask
+
+    PresetId.value >> loadDbPreset >> Async.map Preset.fromDb

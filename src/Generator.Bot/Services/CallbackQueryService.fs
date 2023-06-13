@@ -41,11 +41,11 @@ type CallbackQueryService
 
         match callbackQuery.Data with
         | CallbackQueryConstants.includeLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync UserSettings.LikedTracksHandling.Include
+          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Include
         | CallbackQueryConstants.excludeLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync UserSettings.LikedTracksHandling.Exclude
+          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Exclude
         | CallbackQueryConstants.ignoreLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync UserSettings.LikedTracksHandling.Ignore
+          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Ignore
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
         | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)

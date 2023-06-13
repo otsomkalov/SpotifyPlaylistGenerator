@@ -17,7 +17,8 @@ type GeneratorFunctions
     _generatorService: GeneratorService,
     _cache: IDatabase,
     _spotifyClientProvider: SpotifyClientProvider,
-    loadUser: User.Load
+    loadUser: User.Load,
+    loadPreset: Preset.Load
   ) =
 
   [<FunctionName("GenerateAsync")>]
@@ -34,6 +35,6 @@ type GeneratorFunctions
 
     let updateTargetPlaylist = TargetPlaylist.update _cache client
 
-    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, loadUser, updateTargetPlaylist)
+    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, loadUser, updateTargetPlaylist, loadPreset)
     |> Async.StartAsTask
     :> Task

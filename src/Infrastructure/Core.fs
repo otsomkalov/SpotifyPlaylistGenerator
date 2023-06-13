@@ -36,15 +36,24 @@ module PlaylistSize =
     match size with
     | s when s <= 0 -> Error(Messages.PlaylistSizeTooSmall)
     | s when s >= 10000 -> Error(Messages.PlaylistSizeTooBig)
-    | _ -> Ok(UserSettings.PlaylistSize(size))
+    | _ -> Ok(PresetSettings.PlaylistSize(size))
 
   let create size =
     match tryCreate size with
     | Ok size -> size
     | Error e -> ArgumentException(e, nameof size) |> raise
 
-  let value (UserSettings.PlaylistSize size) = size
+  let value (PresetSettings.PlaylistSize size) = size
 
 [<RequireQualifiedAccess>]
 module WritablePlaylistId =
   let value (WritablePlaylistId id) = id
+
+[<RequireQualifiedAccess>]
+module PresetId =
+  let create id =
+    match id |> Option.ofNullable with
+    | Some id -> PresetId id
+    | None -> raise (ArgumentNullException(nameof id, "Given null preset id"))
+
+  let value (PresetId id) = id

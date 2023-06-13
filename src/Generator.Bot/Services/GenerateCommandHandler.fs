@@ -10,6 +10,9 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Shared.QueueMessages
 open Generator.Bot.Helpers
+open Microsoft.EntityFrameworkCore
+open Domain.Extensions
+open Infrastructure.Core
 
 type GenerateCommandHandler
   (
@@ -17,7 +20,8 @@ type GenerateCommandHandler
     _bot: ITelegramBotClient,
     _context: AppDbContext,
     _queueClient: QueueClient,
-    validateUserPlaylists: ValidateUserPlaylists.Action
+    validateUserPlaylists: ValidateUserPlaylists.Action,
+    getCurrentPresetId: Domain.Workflows.User.GetCurrentPresetId
   ) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
@@ -40,6 +44,7 @@ type GenerateCommandHandler
 
   let sendGenerateMessageAsync (message: Message) queueMessage =
     task {
+
       do! sendSQSMessageAsync queueMessage
 
       _bot.SendTextMessageAsync(
@@ -50,36 +55,44 @@ type GenerateCommandHandler
       |> ignore
     }
 
-  let handleCommandDataAsync (message: Message) refreshCache =
+  let handleCommandDataAsync (message: Message) refreshCache currentPresetId =
     let queueMessage =
       { TelegramId = message.From.Id
-        RefreshCache = refreshCache }
+        RefreshCache = refreshCache
+        PresetId = currentPresetId }
 
     sendGenerateMessageAsync message queueMessage
 
-  let handleEmptyCommandAsync (message: Message) =
+  let handleEmptyCommandAsync (message: Message) currentPresetId =
     let queueMessage =
       { TelegramId = message.From.Id
-        RefreshCache = false }
+        RefreshCache = false
+        PresetId = currentPresetId }
 
     sendGenerateMessageAsync message queueMessage
 
-  let validateCommandDataAsync (message: Message) data =
+  let validateCommandDataAsync (message: Message) data currentPresetId =
     match data with
-    | Bool value -> handleCommandDataAsync message value
+    | Bool value -> handleCommandDataAsync message value currentPresetId
     | _ -> handleWrongCommandDataAsync message
 
   let handleCommandAsync (message: Message) =
-    match message.Text with
-    | CommandData data -> validateCommandDataAsync message data
-    | _ -> handleEmptyCommandAsync message
+    task {
+      let userId = message.From.Id |> UserId
+
+      let! currentPresetId = getCurrentPresetId userId |> Async.map PresetId.value |> Async.StartAsTask
+
+      return!
+        match message.Text with
+        | CommandData data -> validateCommandDataAsync message data currentPresetId
+        | _ -> handleEmptyCommandAsync message currentPresetId
+    }
 
   let handleUserPlaylistsValidationErrorAsync (message: Message) errors =
     task {
       let errorsText =
         errors
-        |> Seq.map (
-          function
+        |> Seq.map (function
           | ValidateUserPlaylists.NoIncludedPlaylists -> "No included playlists!"
           | ValidateUserPlaylists.NoTargetPlaylists -> "No target playlists!")
         |> String.concat Environment.NewLine

@@ -29,7 +29,7 @@ module ValidateUserPlaylists =
   type Action = UserId -> Task<Result>
 
 [<RequireQualifiedAccess>]
-module UserSettings =
+module PresetSettings =
   [<RequireQualifiedAccess>]
   type LikedTracksHandling =
     | Include
@@ -38,19 +38,25 @@ module UserSettings =
 
   type PlaylistSize = PlaylistSize of int
 
-  type UserSettings =
+  type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
       PlaylistSize: PlaylistSize }
 
   type SetPlaylistSize = UserId -> PlaylistSize -> Task
   type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task
 
+type PresetId = PresetId of int
+
+type Preset ={
+  Id: PresetId
+  Settings: PresetSettings.PresetSettings
+}
+
 type User =
   { Id: UserId
     IncludedPlaylists: ReadablePlaylistId list
     ExcludedPlaylist: ReadablePlaylistId list
-    TargetPlaylists: TargetPlaylist list
-    Settings: UserSettings.UserSettings }
+    TargetPlaylists: TargetPlaylist list }
 
 [<RequireQualifiedAccess>]
 module Playlist =

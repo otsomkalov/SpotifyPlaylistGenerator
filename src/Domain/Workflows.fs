@@ -9,6 +9,11 @@ open Microsoft.FSharp.Control
 module User =
   type ListLikedTracks = Async<string list>
   type Load = UserId -> Async<User>
+  type GetCurrentPresetId = UserId -> Async<PresetId>
+
+[<RequireQualifiedAccess>]
+module Preset =
+  type Load = PresetId -> Async<Preset>
 
 [<RequireQualifiedAccess>]
 module ValidateUserPlaylists =
@@ -29,28 +34,27 @@ module ValidateUserPlaylists =
       }
 
 [<RequireQualifiedAccess>]
-module UserSettings =
-  type Load = UserId -> Task<UserSettings.UserSettings>
+module PresetSettings =
+  type Load = UserId -> Task<PresetSettings.PresetSettings>
 
-  type Update = UserId -> UserSettings.UserSettings -> Task
+  type Update = UserId -> PresetSettings.PresetSettings -> Task
 
-  let setPlaylistSize (loadUserSettings: Load) (updateUserSettings: Update) : UserSettings.SetPlaylistSize =
+  let setPlaylistSize (loadPresetSettings: Load) (updatePresetSettings: Update) : PresetSettings.SetPlaylistSize =
     fun userId playlistSize ->
       task {
-        let! userSettings = loadUserSettings userId
+        let! presetSettings = loadPresetSettings userId
 
-        let updatedSettings = { userSettings with PlaylistSize = playlistSize }
+        let updatedSettings = { presetSettings with PlaylistSize = playlistSize }
 
-        do! updateUserSettings userId updatedSettings
+        do! updatePresetSettings userId updatedSettings
       }
 
-  let setLikedTracksHandling (loadUserSettings: Load) (updateInStorage: Update) : UserSettings.SetLikedTracksHandling =
+  let setLikedTracksHandling (loadPresetSettings: Load) (updateInStorage: Update) : PresetSettings.SetLikedTracksHandling =
     fun userId likedTracksHandling ->
       task {
-        let! userSettings = loadUserSettings userId
+        let! presetSettings = loadPresetSettings userId
 
-        let updatedSettings =
-          { userSettings with LikedTracksHandling = likedTracksHandling }
+        let updatedSettings = { presetSettings with LikedTracksHandling = likedTracksHandling }
 
         do! updateInStorage userId updatedSettings
       }

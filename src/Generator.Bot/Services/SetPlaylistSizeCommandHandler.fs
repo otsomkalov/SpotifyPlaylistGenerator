@@ -11,7 +11,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Helpers
 open Infrastructure.Core
 
-type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler, setPlaylistSize: UserSettings.SetPlaylistSize) =
+type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler, setPlaylistSize: PresetSettings.SetPlaylistSize) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
       _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.WrongPlaylistSize, replyToMessageId = message.MessageId)
