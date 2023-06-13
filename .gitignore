@@ -379,3 +379,5 @@ terraform.rc
 **/.terraform.lock.hcl
 
 **/.azurite
+
+**/*.private.env.json

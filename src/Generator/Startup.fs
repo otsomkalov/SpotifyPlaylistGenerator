@@ -77,14 +77,17 @@ type Startup() =
     services.AddLocalization()
 
     services.AddSingletonFunc<User.Load, AppDbContext>(User.load)
+    services.AddSingletonFunc<User.GetCurrentPresetId, AppDbContext>(User.getCurrentPresetId)
+
+    services.AddSingletonFunc<Preset.Load, AppDbContext>(Preset.load)
 
     services.AddSingletonFunc<ValidateUserPlaylists.Action, User.Load>(ValidateUserPlaylists.validateUserPlaylists)
 
-    services.AddScopedFunc<UserSettings.Load, AppDbContext>(UserSettings.load)
-    services.AddScopedFunc<UserSettings.Update, AppDbContext>(UserSettings.update)
-    services.AddScopedFunc<UserSettings.SetPlaylistSize, UserSettings.Load, UserSettings.Update>(UserSettings.setPlaylistSize)
+    services.AddScopedFunc<PresetSettings.Load, AppDbContext>(PresetSettings.load)
+    services.AddScopedFunc<PresetSettings.Update, AppDbContext>(PresetSettings.update)
+    services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
 
-    services.AddScopedFunc<UserSettings.SetLikedTracksHandling, UserSettings.Load, UserSettings.Update>(UserSettings.setLikedTracksHandling)
+    services.AddScopedFunc<PresetSettings.SetLikedTracksHandling, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setLikedTracksHandling)
 
     ()
 

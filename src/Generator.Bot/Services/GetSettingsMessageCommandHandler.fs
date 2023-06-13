@@ -1,29 +1,30 @@
 ﻿namespace Generator.Bot.Services
 
 open Database
+open Domain.Core
 open Generator.Bot.Constants
+open Infrastructure.Core
+open Infrastructure.Workflows
 open Resources
 open System
 open Telegram.Bot.Types.ReplyMarkups
-open Microsoft.EntityFrameworkCore
 
 type GetSettingsMessageCommandHandler(_context: AppDbContext) =
   member this.HandleAsync(userId: int64) =
-    task{
-      let! user =
-        _context
-          .Users
-          .AsNoTracking()
-          .FirstOrDefaultAsync(fun u -> u.Id = userId)
+    task {
+      let! settings = PresetSettings.load _context (UserId userId)
 
       let messageText, buttonText, buttonData =
-        match user.Settings.IncludeLikedTracks |> Option.ofNullable with
-        | Some v when v = true -> Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, CallbackQueryConstants.excludeLikedTracks
-        | Some v when v = false -> Messages.LikedTracksExcluded, Messages.IgnoreLikedTracks, CallbackQueryConstants.ignoreLikedTracks
-        | None -> Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, CallbackQueryConstants.includeLikedTracks
+        match settings.LikedTracksHandling with
+        | PresetSettings.LikedTracksHandling.Include ->
+          Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, CallbackQueryConstants.excludeLikedTracks
+        | PresetSettings.LikedTracksHandling.Exclude ->
+          Messages.LikedTracksExcluded, Messages.IgnoreLikedTracks, CallbackQueryConstants.ignoreLikedTracks
+        | PresetSettings.LikedTracksHandling.Ignore ->
+          Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, CallbackQueryConstants.includeLikedTracks
 
       let text =
-        String.Format(Messages.CurrentSettings, messageText, user.Settings.PlaylistSize)
+        String.Format(Messages.CurrentSettings, messageText, (settings.PlaylistSize |> PlaylistSize.value))
 
       let replyMarkup =
         InlineKeyboardMarkup(

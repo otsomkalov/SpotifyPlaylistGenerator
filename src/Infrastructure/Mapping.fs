@@ -8,7 +8,9 @@ open Domain.Core
 [<RequireQualifiedAccess>]
 module ReadablePlaylistId =
   let fromDb (playlists: #Playlist seq) =
-    playlists |> Seq.map (fun p -> p.Url |> PlaylistId |> ReadablePlaylistId ) |> Seq.toList
+    playlists
+    |> Seq.map (fun p -> p.Url |> PlaylistId |> ReadablePlaylistId)
+    |> Seq.toList
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
@@ -19,22 +21,22 @@ module TargetPlaylist =
   let mapPlaylists (playlists: Database.Entities.TargetPlaylist seq) =
     playlists |> Seq.map fromDb |> Seq.toList
 
-module UserSettings =
-  let fromDb (settings: Settings) : UserSettings.UserSettings =
+module PresetSettings =
+  let fromDb (settings: Settings) : PresetSettings.PresetSettings =
     { LikedTracksHandling =
         (match settings.IncludeLikedTracks |> Option.ofNullable with
-         | Some true -> UserSettings.LikedTracksHandling.Include
-         | Some false -> UserSettings.LikedTracksHandling.Exclude
-         | None -> UserSettings.LikedTracksHandling.Ignore)
+         | Some true -> PresetSettings.LikedTracksHandling.Include
+         | Some false -> PresetSettings.LikedTracksHandling.Exclude
+         | None -> PresetSettings.LikedTracksHandling.Ignore)
       PlaylistSize = settings.PlaylistSize |> PlaylistSize.create }
 
-  let toDb (settings: UserSettings.UserSettings) : Settings =
+  let toDb (settings: PresetSettings.PresetSettings) : Settings =
     Settings(
       IncludeLikedTracks =
         (match settings.LikedTracksHandling with
-         | UserSettings.LikedTracksHandling.Include -> Nullable true
-         | UserSettings.LikedTracksHandling.Exclude -> Nullable false
-         | UserSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
+         | PresetSettings.LikedTracksHandling.Include -> Nullable true
+         | PresetSettings.LikedTracksHandling.Exclude -> Nullable false
+         | PresetSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
       PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value)
     )
 
@@ -44,5 +46,10 @@ module User =
     { Id = user.Id |> UserId
       IncludedPlaylists = ReadablePlaylistId.fromDb user.SourcePlaylists
       ExcludedPlaylist = ReadablePlaylistId.fromDb user.HistoryPlaylists
-      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists
-      Settings = UserSettings.fromDb user.Settings }
+      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists }
+
+[<RequireQualifiedAccess>]
+module Preset =
+  let fromDb (preset: Database.Entities.Preset) =
+    { Id = preset.Id |> PresetId
+      Settings = preset.Settings |> PresetSettings.fromDb }
