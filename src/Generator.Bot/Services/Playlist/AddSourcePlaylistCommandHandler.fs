@@ -35,7 +35,9 @@ type AddSourcePlaylistCommandHandler
 
       let parsePlaylistId = Playlist.parseId
 
-      let includeInStorage = Playlist.includeInStorage _context userId
+      let loadCurrentPreset = User.loadCurrentPreset _context
+
+      let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
 
       let includePlaylist =
         Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage

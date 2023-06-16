@@ -76,12 +76,9 @@ type Startup() =
 
     services.AddLocalization()
 
-    services.AddSingletonFunc<User.Load, AppDbContext>(User.load)
-    services.AddSingletonFunc<User.GetCurrentPresetId, AppDbContext>(User.getCurrentPresetId)
+    services.AddSingletonFunc<User.LoadCurrentPreset, AppDbContext>(User.loadCurrentPreset)
 
     services.AddSingletonFunc<Preset.Load, AppDbContext>(Preset.load)
-
-    services.AddSingletonFunc<ValidateUserPlaylists.Action, User.Load>(ValidateUserPlaylists.validateUserPlaylists)
 
     services.AddScopedFunc<PresetSettings.Load, AppDbContext>(PresetSettings.load)
     services.AddScopedFunc<PresetSettings.Update, AppDbContext>(PresetSettings.update)

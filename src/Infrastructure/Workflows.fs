@@ -81,30 +81,23 @@ module User =
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks = listLikedTracks' client 0
 
-  let load (context: AppDbContext) : User.Load =
+  let loadCurrentPreset (context: AppDbContext) : User.LoadCurrentPreset =
     fun userId ->
       let userId = userId |> UserId.value
 
       context.Users
         .AsNoTracking()
-        .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
-        .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
-        .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
-        .FirstOrDefaultAsync(fun u -> u.Id = userId)
-      |> Async.AwaitTask
-      |> Async.map User.fromDb
-
-  let getCurrentPresetId (context: AppDbContext) : User.GetCurrentPresetId =
-    fun userId ->
-      let userId = userId |> UserId.value
-
-      context.Users
-        .AsNoTracking()
+        .Include(fun u -> u.CurrentPreset)
+        .ThenInclude(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun u -> u.CurrentPreset)
+        .ThenInclude(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun u -> u.CurrentPreset)
+        .ThenInclude(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
         .Where(fun u -> u.Id = userId)
-        .Select(fun u -> u.CurrentPresetId)
+        .Select(fun u -> u.CurrentPreset)
         .FirstOrDefaultAsync()
       |> Async.AwaitTask
-      |> Async.map PresetId.create
+      |> Async.map Preset.fromDb
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
@@ -155,7 +148,13 @@ module TargetPlaylist =
 
         let userId = userId |> UserId.value
 
-        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
+        let! targetPlaylist =
+          context.Users
+            .Where(fun u -> u.Id = userId)
+            .Include(fun u -> u.CurrentPreset)
+            .ThenInclude(fun p -> p.TargetPlaylists.Where(fun tp -> tp.Url = targetPlaylistId))
+            .SelectMany(fun u -> u.CurrentPreset.TargetPlaylists)
+            .FirstOrDefaultAsync()
 
         targetPlaylist.Overwrite <- true
 
@@ -174,7 +173,13 @@ module TargetPlaylist =
 
         let userId = userId |> UserId.value
 
-        let! targetPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun p -> p.Url = targetPlaylistId && p.UserId = userId)
+        let! targetPlaylist =
+          context.Users
+            .Where(fun u -> u.Id = userId)
+            .Include(fun u -> u.CurrentPreset)
+            .ThenInclude(fun p -> p.TargetPlaylists.Where(fun tp -> tp.Url = targetPlaylistId))
+            .SelectMany(fun u -> u.CurrentPreset.TargetPlaylists)
+            .FirstOrDefaultAsync()
 
         targetPlaylist.Overwrite <- false
 
@@ -272,11 +277,16 @@ module Playlist =
             Playlist.AccessError() |> Error
       }
 
-  let includeInStorage (context: AppDbContext) userId : Playlist.IncludeInStorage =
+  let includeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.IncludeInStorage =
     fun playlistId ->
       async {
+        let! currentPreset = loadCurrentPreset userId
+
         let! _ =
-          SourcePlaylist(Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
+          SourcePlaylist(
+            Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value),
+            PresetId = (currentPreset.Id |> PresetId.value)
+          )
           |> context.SourcePlaylists.AddAsync
           |> ValueTask.asTask
           |> Async.AwaitTask
@@ -286,25 +296,33 @@ module Playlist =
         return ()
       }
 
-  let excludeInStorage (context: AppDbContext) userId : Playlist.ExcludeInStorage =
+  let excludeInStorage (context: AppDbContext) userId  (loadCurrentPreset: User.LoadCurrentPreset): Playlist.ExcludeInStorage =
     fun playlistId ->
-      async {
-        let! _ =
-          HistoryPlaylist(Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
-          |> context.HistoryPlaylists.AddAsync
-          |> ValueTask.asTask
-          |> Async.AwaitTask
+      task {
+        let! currentPreset = loadCurrentPreset userId
 
-        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
+        let! _ =
+          HistoryPlaylist(
+            Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value),
+            PresetId = (currentPreset.Id |> PresetId.value)
+          )
+          |> context.HistoryPlaylists.AddAsync
+
+        let! _ = context.SaveChangesAsync()
 
         return ()
-      }
+      } |> Async.AwaitTask
 
   let targetInStorage (context: AppDbContext) userId : Playlist.TargetInStorage =
     fun playlistId ->
       async {
+        let! currentPreset = User.loadCurrentPreset context userId
+
         let! _ =
-          TargetPlaylist(Url = (playlistId |> WritablePlaylistId.value |> PlaylistId.value), UserId = (userId |> UserId.value))
+          TargetPlaylist(
+            Url = (playlistId |> WritablePlaylistId.value |> PlaylistId.value),
+            PresetId = (currentPreset.Id |> PresetId.value)
+          )
           |> context.TargetPlaylists.AddAsync
           |> ValueTask.asTask
           |> Async.AwaitTask
@@ -318,7 +336,12 @@ module Playlist =
 module Preset =
   let load (context: AppDbContext) : Preset.Load =
     let loadDbPreset presetId =
-      context.Presets.AsNoTracking().FirstOrDefaultAsync(fun p -> p.Id = presetId)
+      context.Presets.AsNoTracking()
+        .AsNoTracking()
+        .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
+        .FirstOrDefaultAsync(fun p -> p.Id = presetId)
       |> Async.AwaitTask
 
     PresetId.value >> loadDbPreset >> Async.map Preset.fromDb

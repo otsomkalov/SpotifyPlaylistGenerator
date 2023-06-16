@@ -41,15 +41,10 @@ module PresetSettings =
     )
 
 [<RequireQualifiedAccess>]
-module User =
-  let fromDb (user: Database.Entities.User) =
-    { Id = user.Id |> UserId
+module Preset =
+  let fromDb (user: Database.Entities.Preset) : Preset =
+    { Id = user.Id |> PresetId
       IncludedPlaylists = ReadablePlaylistId.fromDb user.SourcePlaylists
       ExcludedPlaylist = ReadablePlaylistId.fromDb user.HistoryPlaylists
-      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists }
-
-[<RequireQualifiedAccess>]
-module Preset =
-  let fromDb (preset: Database.Entities.Preset) =
-    { Id = preset.Id |> PresetId
-      Settings = preset.Settings |> PresetSettings.fromDb }
+      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists
+      Settings = PresetSettings.fromDb user.Settings }

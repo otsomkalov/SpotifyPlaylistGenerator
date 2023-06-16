@@ -13,9 +13,9 @@ public class Preset
 
     public string Name { get; set; }
 
-    public virtual long UserId { get; set; }
-
     public Settings Settings { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual IEnumerable<SourcePlaylist> SourcePlaylists { get; set; }
+    public virtual IEnumerable<HistoryPlaylist> HistoryPlaylists { get; set; }
+    public virtual IEnumerable<TargetPlaylist> TargetPlaylists { get; set; }
 }

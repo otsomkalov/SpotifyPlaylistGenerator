@@ -17,18 +17,6 @@ type TargetPlaylist =
     Overwrite: bool }
 
 [<RequireQualifiedAccess>]
-module ValidateUserPlaylists =
-  type Error =
-    | NoIncludedPlaylists
-    | NoTargetPlaylists
-
-  type Result =
-    | Ok
-    | Errors of Error list
-
-  type Action = UserId -> Task<Result>
-
-[<RequireQualifiedAccess>]
 module PresetSettings =
   [<RequireQualifiedAccess>]
   type LikedTracksHandling =
@@ -47,16 +35,14 @@ module PresetSettings =
 
 type PresetId = PresetId of int
 
-type Preset ={
-  Id: PresetId
-  Settings: PresetSettings.PresetSettings
-}
-
-type User =
-  { Id: UserId
+type Preset =
+  { Id: PresetId
+    Settings: PresetSettings.PresetSettings
     IncludedPlaylists: ReadablePlaylistId list
     ExcludedPlaylist: ReadablePlaylistId list
     TargetPlaylists: TargetPlaylist list }
+
+type User = { Id: UserId }
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -82,3 +68,18 @@ module Playlist =
   type IncludePlaylist = RawPlaylistId -> Async<Result<unit, IncludePlaylistError>>
   type ExcludePlaylist = RawPlaylistId -> Async<Result<unit, ExcludePlaylistError>>
   type TargetPlaylist = RawPlaylistId -> Async<Result<WritablePlaylistId, TargetPlaylistError>>
+
+[<RequireQualifiedAccess>]
+module Preset =
+
+  [<RequireQualifiedAccess>]
+  type ValidationError =
+    | NoIncludedPlaylists
+    | NoTargetPlaylists
+
+  [<RequireQualifiedAccess>]
+  type ValidationResult =
+    | Ok
+    | Errors of ValidationError list
+
+  type Validate = Preset -> ValidationResult

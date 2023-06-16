@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
+open System.Collections.Generic
 open Database
 open Database.Entities
 open Microsoft.Extensions.Logging
@@ -61,7 +62,10 @@ type StartCommandHandler
 
   let createUserAsync userId =
     task {
-      let! _ = Database.Entities.User(Id = userId, CurrentPreset = Preset()) |> _context.Users.AddAsync
+      let preset = Preset(Name = "Default")
+      let user = Database.Entities.User(Id = userId, CurrentPreset = preset)
+
+      let _ = user |> _context.Users.AddAsync
 
       let! _ = _context.SaveChangesAsync()
 
