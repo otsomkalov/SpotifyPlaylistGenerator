@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Database.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230616175701_ImprovedPresets")]
+    [Migration("20230617080452_ImprovedPresets")]
     partial class ImprovedPresets
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -64,7 +64,12 @@ namespace Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Presets");
                 });
@@ -77,13 +82,12 @@ namespace Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("CurrentPresetId")
+                    b.Property<int?>("CurrentPresetId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CurrentPresetId")
-                        .IsUnique();
+                    b.HasIndex("CurrentPresetId");
 
                     b.ToTable("Users");
                 });
@@ -120,6 +124,12 @@ namespace Database.Migrations
 
             modelBuilder.Entity("Database.Entities.Preset", b =>
                 {
+                    b.HasOne("Database.Entities.User", "User")
+                        .WithMany("Presets")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.OwnsOne("Database.Entities.Settings", "Settings", b1 =>
                         {
                             b1.Property<int>("PresetId")
@@ -143,15 +153,15 @@ namespace Database.Migrations
 
                     b.Navigation("Settings")
                         .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Database.Entities.User", b =>
                 {
                     b.HasOne("Database.Entities.Preset", "CurrentPreset")
                         .WithOne()
-                        .HasForeignKey("Database.Entities.User", "CurrentPresetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Database.Entities.User", "CurrentPresetId");
 
                     b.Navigation("CurrentPreset");
                 });
@@ -196,6 +206,11 @@ namespace Database.Migrations
                     b.Navigation("SourcePlaylists");
 
                     b.Navigation("TargetPlaylists");
+                });
+
+            modelBuilder.Entity("Database.Entities.User", b =>
+                {
+                    b.Navigation("Presets");
                 });
 #pragma warning restore 612, 618
         }

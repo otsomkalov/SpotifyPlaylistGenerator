@@ -4,7 +4,9 @@ public class User
 {
     public long Id { get; set; }
 
-    public int CurrentPresetId { get; set; }
+    public int? CurrentPresetId { get; set; }
 
-    public virtual Preset CurrentPreset { get; set; }
+    public virtual Preset? CurrentPreset { get; set; }
+
+    public IEnumerable<Preset> Presets { get; set; }
 }
