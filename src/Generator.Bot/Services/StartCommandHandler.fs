@@ -63,8 +63,15 @@ type StartCommandHandler
   let createUserAsync userId =
     task {
       let user = Database.Entities.User(Id = userId)
+      let preset = Preset(Name = "Default", User = user)
 
-      let _ = user |> _context.Users.AddAsync
+      let _ = preset |> _context.Presets.AddAsync
+
+      let! _ = _context.SaveChangesAsync()
+
+      user.CurrentPreset <- preset
+
+      let _ = _context.Users.Update(user)
 
       let! _ = _context.SaveChangesAsync()
 

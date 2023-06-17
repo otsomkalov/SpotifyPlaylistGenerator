@@ -8,5 +8,5 @@ public class User
 
     public virtual Preset? CurrentPreset { get; set; }
 
-    public IEnumerable<Preset> Presets { get; set; }
+    public virtual IEnumerable<Preset> Presets { get; set; }
 }
