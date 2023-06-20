@@ -5,14 +5,15 @@ open System.Text.Json
 open Azure.Storage.Queues
 open Database
 open Domain.Core
+open Infrastructure.Workflows
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Shared.QueueMessages
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
-open Domain.Extensions
 open Infrastructure.Core
+open Domain.Workflows
 
 type GenerateCommandHandler
   (
@@ -20,8 +21,7 @@ type GenerateCommandHandler
     _bot: ITelegramBotClient,
     _context: AppDbContext,
     _queueClient: QueueClient,
-    validateUserPlaylists: ValidateUserPlaylists.Action,
-    getCurrentPresetId: Domain.Workflows.User.GetCurrentPresetId
+    loadCurrentPreset: Domain.Workflows.User.LoadCurrentPreset
   ) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
@@ -76,16 +76,14 @@ type GenerateCommandHandler
     | Bool value -> handleCommandDataAsync message value currentPresetId
     | _ -> handleWrongCommandDataAsync message
 
-  let handleCommandAsync (message: Message) =
+  let handleCommandAsync (message: Message) presetId =
     task {
-      let userId = message.From.Id |> UserId
-
-      let! currentPresetId = getCurrentPresetId userId |> Async.map PresetId.value |> Async.StartAsTask
+      let presetId = presetId |> PresetId.value
 
       return!
         match message.Text with
-        | CommandData data -> validateCommandDataAsync message data currentPresetId
-        | _ -> handleEmptyCommandAsync message currentPresetId
+        | CommandData data -> validateCommandDataAsync message data presetId
+        | _ -> handleEmptyCommandAsync message presetId
     }
 
   let handleUserPlaylistsValidationErrorAsync (message: Message) errors =
@@ -93,8 +91,8 @@ type GenerateCommandHandler
       let errorsText =
         errors
         |> Seq.map (function
-          | ValidateUserPlaylists.NoIncludedPlaylists -> "No included playlists!"
-          | ValidateUserPlaylists.NoTargetPlaylists -> "No target playlists!")
+          | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
+          | Preset.ValidationError.NoTargetPlaylists -> "No target playlists!")
         |> String.concat Environment.NewLine
 
       _bot.SendTextMessageAsync(ChatId(message.Chat.Id), errorsText, replyToMessageId = message.MessageId)
@@ -103,10 +101,12 @@ type GenerateCommandHandler
 
   member this.HandleAsync(message: Message) =
     task {
-      let! validationResult = validateUserPlaylists (message.From.Id |> UserId)
+      let! preset = loadCurrentPreset (message.From.Id |> UserId)
+
+      let validationResult = Preset.validate preset
 
       return!
         match validationResult with
-        | ValidateUserPlaylists.Ok -> handleCommandAsync message
-        | ValidateUserPlaylists.Errors errors -> handleUserPlaylistsValidationErrorAsync message errors
+        | Preset.ValidationResult.Ok -> handleCommandAsync message preset.Id
+        | Preset.ValidationResult.Errors errors -> handleUserPlaylistsValidationErrorAsync message errors
     }

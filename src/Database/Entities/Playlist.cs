@@ -15,11 +15,11 @@ public abstract class Playlist
 
     public string Url { get; set; }
 
-    public long UserId { get; init; }
-
     public bool Disabled { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual int PresetId { get; set; }
+
+    public virtual Preset Preset { get; set; }
 }
 
 public class SourcePlaylist : Playlist

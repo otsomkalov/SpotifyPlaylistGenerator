@@ -22,7 +22,8 @@ type AddSourcePlaylistCommandHandler
     _playlistCommandHandler: PlaylistCommandHandler,
     _emptyCommandDataHandler: EmptyCommandDataHandler,
     _spotifyClientProvider: SpotifyClientProvider,
-    _localizer: IStringLocalizer<Messages>
+    _localizer: IStringLocalizer<Messages>,
+    loadCurrentPreset: User.LoadCurrentPreset
   ) =
   member this.HandleAsync(message: Message) =
 
@@ -35,7 +36,8 @@ type AddSourcePlaylistCommandHandler
 
       let parsePlaylistId = Playlist.parseId
 
-      let includeInStorage = Playlist.includeInStorage _context userId
+
+      let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
 
       let includePlaylist =
         Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage

@@ -8,30 +8,22 @@ open Microsoft.FSharp.Control
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = Async<string list>
-  type Load = UserId -> Async<User>
-  type GetCurrentPresetId = UserId -> Async<PresetId>
+  type LoadCurrentPreset = UserId -> Async<Preset>
 
 [<RequireQualifiedAccess>]
 module Preset =
   type Load = PresetId -> Async<Preset>
 
-[<RequireQualifiedAccess>]
-module ValidateUserPlaylists =
-  let validateUserPlaylists (loadUser: User.Load) : ValidateUserPlaylists.Action =
-    fun userId ->
-      task {
-        let! user = loadUser userId
-
-        return
-          match user.IncludedPlaylists, user.TargetPlaylists with
-          | [], [] ->
-            [ ValidateUserPlaylists.NoIncludedPlaylists
-              ValidateUserPlaylists.NoTargetPlaylists ]
-            |> ValidateUserPlaylists.Errors
-          | [], _ -> [ ValidateUserPlaylists.NoIncludedPlaylists ] |> ValidateUserPlaylists.Errors
-          | _, [] -> [ ValidateUserPlaylists.NoTargetPlaylists ] |> ValidateUserPlaylists.Errors
-          | _, _ -> ValidateUserPlaylists.Ok
-      }
+  let validate: Preset.Validate =
+    fun preset ->
+      match preset.IncludedPlaylists, preset.TargetPlaylists with
+      | [], [] ->
+        [ Preset.ValidationError.NoIncludedPlaylists
+          Preset.ValidationError.NoTargetPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | [], _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
+      | _, [] -> [ Preset.ValidationError.NoTargetPlaylists ] |> Preset.ValidationResult.Errors
+      | _, _ -> Preset.ValidationResult.Ok
 
 [<RequireQualifiedAccess>]
 module PresetSettings =

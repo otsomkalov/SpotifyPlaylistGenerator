@@ -18,4 +18,10 @@ public class Preset
     public Settings Settings { get; set; }
 
     public virtual User User { get; set; }
+
+    public virtual IEnumerable<SourcePlaylist> SourcePlaylists { get; set; }
+
+    public virtual IEnumerable<HistoryPlaylist> HistoryPlaylists { get; set; }
+
+    public virtual IEnumerable<TargetPlaylist> TargetPlaylists { get; set; }
 }

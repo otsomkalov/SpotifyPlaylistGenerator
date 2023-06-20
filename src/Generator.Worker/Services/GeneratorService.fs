@@ -19,7 +19,6 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       queueMessage: GeneratePlaylistMessage,
       listPlaylistTracks: Playlist.ListTracks,
       listLikedTracks: User.ListLikedTracks,
-      loadUser: User.Load,
       updateTargetPlaylist: Playlist.Update,
       loadPreset: Preset.Load
     ) =
@@ -30,21 +29,18 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
       |> _bot.SendTextMessageAsync
       |> ignore
 
-      let userId = queueMessage.TelegramId |> UserId
-
-      let! user = loadUser userId
       let! preset = loadPreset (queueMessage.PresetId |> PresetId)
 
       let! likedTracks = listLikedTracks
 
       let! includedTracks =
-        user.IncludedPlaylists
+        preset.IncludedPlaylists
         |> Seq.map listPlaylistTracks
         |> Async.Parallel
         |> Async.map List.concat
 
       let! excludedTracks =
-        user.ExcludedPlaylist
+        preset.ExcludedPlaylist
         |> Seq.map listPlaylistTracks
         |> Async.Parallel
         |> Async.map List.concat
@@ -75,7 +71,7 @@ type GeneratorService(_logger: ILogger<GeneratorService>, _bot: ITelegramBotClie
         |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
         |> List.map TrackId
 
-      for playlist in user.TargetPlaylists do
+      for playlist in preset.TargetPlaylists do
         do! updateTargetPlaylist playlist tracksIdsToImport
 
       (ChatId(queueMessage.TelegramId), "Playlist generated!")

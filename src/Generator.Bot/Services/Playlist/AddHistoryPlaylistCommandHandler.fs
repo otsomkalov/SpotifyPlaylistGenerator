@@ -1,7 +1,6 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
 open Database
-open Database.Entities
 open Telegram.Bot
 open Telegram.Bot.Types
 open Resources
@@ -21,7 +20,8 @@ type AddHistoryPlaylistCommandHandler
     _context: AppDbContext,
     _bot: ITelegramBotClient,
     _spotifyClientProvider: SpotifyClientProvider,
-    _emptyCommandDataHandler: EmptyCommandDataHandler
+    _emptyCommandDataHandler: EmptyCommandDataHandler,
+    loadCurrentPreset: User.LoadCurrentPreset
   ) =
 
   member this.HandleAsync(message: Message) =
@@ -34,7 +34,7 @@ type AddHistoryPlaylistCommandHandler
 
       let parsePlaylistId = Playlist.parseId
 
-      let includeInStorage = Playlist.excludeInStorage _context userId
+      let includeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
 
       let includePlaylist =
         Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage

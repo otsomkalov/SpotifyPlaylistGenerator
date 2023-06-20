@@ -9,8 +9,4 @@ public class User
     public virtual Preset? CurrentPreset { get; set; }
 
     public virtual IEnumerable<Preset> Presets { get; set; }
-
-    public virtual IEnumerable<SourcePlaylist> SourcePlaylists { get; set; }
-    public virtual IEnumerable<HistoryPlaylist> HistoryPlaylists { get; set; }
-    public virtual IEnumerable<TargetPlaylist> TargetPlaylists { get; set; }
 }
