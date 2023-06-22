@@ -161,6 +161,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 🗄️ My presets.
+        /// </summary>
+        public static string MyPresets {
+            get {
+                return ResourceManager.GetString("MyPresets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot parse provided playlist id: {0}.
         /// </summary>
         public static string PlaylistIdCannotBeParsed {

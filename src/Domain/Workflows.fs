@@ -10,6 +10,9 @@ module User =
   type ListLikedTracks = Async<string list>
   type LoadCurrentPreset = UserId -> Async<Preset>
 
+  type ListPresets = UserId -> Async<SimplePreset seq>
+  type LoadPreset = PresetId -> Async<SimplePreset>
+
 [<RequireQualifiedAccess>]
 module Preset =
   type Load = PresetId -> Async<Preset>

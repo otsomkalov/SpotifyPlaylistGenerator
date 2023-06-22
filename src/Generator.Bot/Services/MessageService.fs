@@ -1,6 +1,8 @@
 ﻿namespace Generator.Bot.Services
 
 open System.Threading.Tasks
+open Domain.Core
+open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Shared.Services
@@ -20,12 +22,15 @@ type MessageService
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     _settingsCommandHandler: SettingsCommandHandler,
-    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler
+    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
+    sendUserPresets: Telegram.SendUserPresets
   ) =
 
+  let sendUserPresets (message: Message) =
+    sendUserPresets (message.From.Id |> UserId)
+
   let validateUserLogin handleCommandFunction (message: Message) =
-    let spotifyClient =
-      _spotifyClientProvider.Get message.From.Id
+    let spotifyClient = _spotifyClientProvider.Get message.From.Id
 
     if spotifyClient = null then
       _unauthorizedUserCommandHandler.HandleAsync message
@@ -44,6 +49,7 @@ type MessageService
     | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
     | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
     | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
+    | Equals Messages.MyPresets -> sendUserPresets
     | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
     | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 

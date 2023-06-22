@@ -42,9 +42,15 @@ module PresetSettings =
 
 [<RequireQualifiedAccess>]
 module Preset =
-  let fromDb (user: Database.Entities.Preset) : Preset =
-    { Id = user.Id |> PresetId
-      IncludedPlaylists = ReadablePlaylistId.fromDb user.SourcePlaylists
-      ExcludedPlaylist = ReadablePlaylistId.fromDb user.HistoryPlaylists
-      TargetPlaylists = TargetPlaylist.mapPlaylists user.TargetPlaylists
-      Settings = PresetSettings.fromDb user.Settings }
+  let fromDb (preset: Database.Entities.Preset) : Preset =
+    { Id = preset.Id |> PresetId
+      IncludedPlaylists = ReadablePlaylistId.fromDb preset.SourcePlaylists
+      ExcludedPlaylist = ReadablePlaylistId.fromDb preset.HistoryPlaylists
+      TargetPlaylists = TargetPlaylist.mapPlaylists preset.TargetPlaylists
+      Settings = PresetSettings.fromDb preset.Settings }
+
+[<RequireQualifiedAccess>]
+module SimplePreset =
+  let fromDb (preset: Database.Entities.Preset) : SimplePreset =
+    { Id = preset.Id |> PresetId
+      Name = preset.Name }
