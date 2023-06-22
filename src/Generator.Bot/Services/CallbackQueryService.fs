@@ -41,12 +41,7 @@ type CallbackQueryService
     }
 
   let showSelectedPreset userId presetId (callbackQuery: CallbackQuery) =
-    task{
-      let! result =  sendPresetInfo callbackQuery.Message.MessageId userId presetId
-
-      return result
-
-    }
+    sendPresetInfo callbackQuery.Message.MessageId userId presetId
 
   let setCurrentPreset userId presetId (callbackQuery: CallbackQuery) =
     setCurrentPreset callbackQuery.Id userId presetId

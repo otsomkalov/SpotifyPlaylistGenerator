@@ -36,7 +36,7 @@ let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: User.LoadPreset) : Sen
       let! preset = loadPreset presetId |> Async.StartAsTask
 
       let keyboardMarkup =
-        [ InlineKeyboardButton("Generate", CallbackData = $"p|{presetId |> PresetId.value}|g") ]
+        [ InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId |> PresetId.value}|c") ]
         |> InlineKeyboardMarkup
 
       do!
