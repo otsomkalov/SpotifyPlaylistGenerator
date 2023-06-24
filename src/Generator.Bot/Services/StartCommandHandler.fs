@@ -24,7 +24,12 @@ type StartCommandHandler
   let sendMessageAsync (message: Message) =
     task {
       let replyMarkup =
-        ReplyKeyboardMarkup(seq { seq { KeyboardButton(Messages.Settings) } })
+        ReplyKeyboardMarkup(
+          seq {
+            seq { KeyboardButton(Messages.MyPresets) }
+            seq { KeyboardButton(Messages.Settings) }
+          }
+        )
 
       _bot.SendTextMessageAsync(
         ChatId(message.Chat.Id),

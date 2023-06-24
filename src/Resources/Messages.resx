@@ -89,4 +89,7 @@
     <data name="PlaylistIsReadonly">
         <value>You don't have permission to modify this playlist</value>
     </data>
+    <data name="MyPresets" xml:space="preserve">
+        <value>🗄️ My presets</value>
+    </data>
 </root>

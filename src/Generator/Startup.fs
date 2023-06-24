@@ -6,6 +6,7 @@ open System
 open Azure.Storage.Queues
 open Database
 open Domain.Core
+open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Generator.Worker.Services
@@ -19,6 +20,7 @@ open Shared.Settings
 open Generator.Extensions.ServiceCollection
 open Domain.Workflows
 open StackExchange.Redis
+open Telegram.Bot
 
 type Startup() =
   inherit FunctionsStartup()
@@ -77,6 +79,8 @@ type Startup() =
     services.AddLocalization()
 
     services.AddSingletonFunc<User.LoadCurrentPreset, AppDbContext>(User.loadCurrentPreset)
+    services.AddSingletonFunc<User.ListPresets, AppDbContext>(User.listPresets)
+    services.AddSingletonFunc<User.LoadPreset, AppDbContext>(User.loadPreset)
 
     services.AddSingletonFunc<Preset.Load, AppDbContext>(Preset.load)
 
@@ -85,6 +89,10 @@ type Startup() =
     services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
 
     services.AddScopedFunc<PresetSettings.SetLikedTracksHandling, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setLikedTracksHandling)
+
+    services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
+    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, User.LoadPreset>(Telegram.sendPresetInfo)
+    services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
 
     ()
 

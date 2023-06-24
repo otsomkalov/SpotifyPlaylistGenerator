@@ -35,6 +35,11 @@ module PresetSettings =
 
 type PresetId = PresetId of int
 
+type SimplePreset ={
+  Id: PresetId
+  Name: string
+}
+
 type Preset =
   { Id: PresetId
     Settings: PresetSettings.PresetSettings
