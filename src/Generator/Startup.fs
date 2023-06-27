@@ -9,7 +9,6 @@ open Domain.Core
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
-open Generator.Worker.Services
 open Infrastructure.Workflows
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
@@ -72,9 +71,6 @@ type Startup() =
 
       .AddScoped<MessageService>()
       .AddScoped<CallbackQueryService>()
-
-    services
-      .AddScoped<GeneratorService>()
 
     services.AddLocalization()
 

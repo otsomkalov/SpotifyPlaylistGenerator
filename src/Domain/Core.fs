@@ -33,6 +33,10 @@ module PresetSettings =
   type SetPlaylistSize = UserId -> PlaylistSize -> Task
   type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task
 
+[<RequireQualifiedAccess>]
+module PlaylistSize =
+  let value (PresetSettings.PlaylistSize size) = size
+
 type PresetId = PresetId of int
 
 type SimplePreset ={
@@ -73,6 +77,9 @@ module Playlist =
   type IncludePlaylist = RawPlaylistId -> Async<Result<unit, IncludePlaylistError>>
   type ExcludePlaylist = RawPlaylistId -> Async<Result<unit, ExcludePlaylistError>>
   type TargetPlaylist = RawPlaylistId -> Async<Result<WritablePlaylistId, TargetPlaylistError>>
+
+  type GenerateError = GenerateError of string
+  type Generate = PresetId -> Async<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
 module Preset =

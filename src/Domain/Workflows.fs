@@ -127,6 +127,53 @@ module Playlist =
     >> AsyncResult.bind checkWriteAccess
     >> AsyncResult.asyncMap targetInStorage
 
+  type Shuffler = string list -> string list
+
+  let generate
+    (listPlaylistTracks: ListTracks)
+    (listLikedTracks: User.ListLikedTracks)
+    (loadPreset: Preset.Load)
+    (updateTargetPlaylist: Update)
+    (shuffler: Shuffler)
+    : Playlist.Generate =
+    fun presetId ->
+      async {
+        let! preset = loadPreset presetId
+
+        let! likedTracks = listLikedTracks
+
+        let! includedTracks =
+          preset.IncludedPlaylists
+          |> Seq.map listPlaylistTracks
+          |> Async.Parallel
+          |> Async.map List.concat
+
+        let! excludedTracks =
+          preset.ExcludedPlaylist
+          |> Seq.map listPlaylistTracks
+          |> Async.Parallel
+          |> Async.map List.concat
+
+        let excludedTracksIds, includedTracksIds =
+          match preset.Settings.LikedTracksHandling with
+          | PresetSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
+          | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
+          | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
+
+        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
+
+        let tracksIdsToImport =
+          potentialTracksIds
+          |> shuffler
+          |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
+          |> List.map TrackId
+
+        for playlist in preset.TargetPlaylists do
+          do! updateTargetPlaylist playlist tracksIdsToImport
+
+        return Ok()
+      }
+
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
   type AppendToTargetPlaylist = UserId -> WritablePlaylistId -> Task<unit>

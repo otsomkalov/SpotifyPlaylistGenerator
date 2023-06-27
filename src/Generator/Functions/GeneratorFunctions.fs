@@ -1,6 +1,5 @@
 ﻿namespace Generator
 
-open System.Threading.Tasks
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.WebJobs
@@ -8,16 +7,21 @@ open Microsoft.Extensions.Logging
 open Shared.QueueMessages
 open Shared.Services
 open StackExchange.Redis
-open Generator.Worker.Services
 open Domain.Workflows
+open Domain.Core
+open Infrastructure.Helpers
+open Generator.Worker.Extensions
+open Telegram.Bot
+open Telegram.Bot.Types
+open Domain.Extensions
 
 type GeneratorFunctions
   (
     _logger: ILogger<GeneratorFunctions>,
-    _generatorService: GeneratorService,
     _cache: IDatabase,
     _spotifyClientProvider: SpotifyClientProvider,
-    loadPreset: Preset.Load
+    loadPreset: Preset.Load,
+    _bot: ITelegramBotClient
   ) =
 
   [<FunctionName("GenerateAsync")>]
@@ -34,6 +38,25 @@ type GeneratorFunctions
 
     let updateTargetPlaylist = TargetPlaylist.update _cache client
 
-    _generatorService.GeneratePlaylistAsync(message, listPlaylistTracks, listLikedTracks, updateTargetPlaylist, loadPreset)
-    |> Async.StartAsTask
-    :> Task
+    _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
+
+    (ChatId(message.TelegramId), "Generating playlist...")
+    |> _bot.SendTextMessageAsync
+    |> ignore
+
+    let generatePlaylist =
+      Domain.Workflows.Playlist.generate listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
+
+    task {
+      let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
+
+      let messageText =
+        match generatePlaylistResult with
+        | Ok _ -> "Playlist generated!"
+        | Error(Playlist.GenerateError e) -> e
+
+      return!
+        (ChatId(message.TelegramId), messageText)
+        |> _bot.SendTextMessageAsync
+        |> Task.map ignore
+    }
