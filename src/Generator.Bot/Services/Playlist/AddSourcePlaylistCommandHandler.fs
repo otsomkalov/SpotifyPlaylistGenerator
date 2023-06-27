@@ -25,52 +25,48 @@ type AddSourcePlaylistCommandHandler
     _localizer: IStringLocalizer<Messages>,
     loadCurrentPreset: User.LoadCurrentPreset
   ) =
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync data (message: Message) =
 
-    match message.Text with
-    | CommandData data ->
-      let userId = UserId message.From.Id
-      let client = _spotifyClientProvider.Get message.From.Id
+    let userId = UserId message.From.Id
+    let client = _spotifyClientProvider.Get message.From.Id
 
-      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+    let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
-      let parsePlaylistId = Playlist.parseId
+    let parsePlaylistId = Playlist.parseId
 
+    let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
 
-      let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
+    let includePlaylist =
+      Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
 
-      let includePlaylist =
-        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+    let rawPlaylistId = Playlist.RawPlaylistId data
 
-      let rawPlaylistId = Playlist.RawPlaylistId data
+    async {
+      let! includePlaylistResult = rawPlaylistId |> includePlaylist
 
-      async {
-        let! includePlaylistResult = rawPlaylistId |> includePlaylist
-
-        return!
-          match includePlaylistResult with
-          | Ok _ ->
-            _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Source playlist successfully added!", replyToMessageId = message.MessageId)
+      return!
+        match includePlaylistResult with
+        | Ok _ ->
+          _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "Source playlist successfully added!", replyToMessageId = message.MessageId)
+          :> Task
+          |> Async.AwaitTask
+        | Error error ->
+          match error with
+          | Playlist.IdParsing _ ->
+            _bot.SendTextMessageAsync(
+              ChatId(message.Chat.Id),
+              String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
+              replyToMessageId = message.MessageId
+            )
             :> Task
             |> Async.AwaitTask
-          | Error error ->
-            match error with
-            | Playlist.IdParsing _ ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
-            | Playlist.MissingFromSpotify (Playlist.MissingFromSpotifyError id) ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistNotFoundInSpotify, id),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
-      }
-      |> Async.StartAsTask
-    | _ -> _emptyCommandDataHandler.HandleAsync message
+          | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+            _bot.SendTextMessageAsync(
+              ChatId(message.Chat.Id),
+              String.Format(Messages.PlaylistNotFoundInSpotify, id),
+              replyToMessageId = message.MessageId
+            )
+            :> Task
+            |> Async.AwaitTask
+    }
+    |> Async.StartAsTask
