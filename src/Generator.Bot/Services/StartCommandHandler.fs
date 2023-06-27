@@ -27,6 +27,7 @@ type StartCommandHandler
         ReplyKeyboardMarkup(
           seq {
             seq { KeyboardButton(Messages.MyPresets) }
+            seq { KeyboardButton(Messages.IncludePlaylist) }
             seq { KeyboardButton(Messages.Settings) }
           }
         )
