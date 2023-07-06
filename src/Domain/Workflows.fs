@@ -3,7 +3,16 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Extensions
+open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Control
+
+[<RequireQualifiedAccess>]
+module UserId =
+  let value (UserId id) = id
+
+[<RequireQualifiedAccess>]
+module PresetId =
+  let value (PresetId id) = id
 
 [<RequireQualifiedAccess>]
 module User =
@@ -130,6 +139,7 @@ module Playlist =
   type Shuffler = string list -> string list
 
   let generate
+    (logger: ILogger)
     (listPlaylistTracks: ListTracks)
     (listLikedTracks: User.ListLikedTracks)
     (loadPreset: Preset.Load)
@@ -148,6 +158,13 @@ module Playlist =
           |> Async.Parallel
           |> Async.map List.concat
 
+        logger.LogInformation(
+          "User with Telegram id {TelegramId} has {SourceTracksCount} source tracks in preset {PresetId}",
+          preset.UserId |> UserId.value,
+          includedTracks.Length,
+          presetId |> PresetId.value
+        )
+
         let! excludedTracks =
           preset.ExcludedPlaylist
           |> Seq.map listPlaylistTracks
@@ -160,7 +177,28 @@ module Playlist =
           | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
           | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
+        logger.LogInformation(
+          "User with Telegram id {TelegramId} has {IncludedTracksCount} included tracks in preset {PresetId}",
+          preset.UserId |> UserId.value,
+          includedTracksIds.Length,
+          presetId |> PresetId.value
+        )
+
+        logger.LogInformation(
+          "User with Telegram id {TelegramId} has {ExcludedTracksCount} excluded tracks in preset {PresetId}",
+          preset.UserId |> UserId.value,
+          excludedTracksIds.Length,
+          presetId |> PresetId.value
+        )
+
         let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
+
+        logger.LogInformation(
+          "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks in preset {PresetId}",
+          preset.UserId |> UserId.value,
+          potentialTracksIds.Length,
+          presetId |> PresetId.value
+        )
 
         let tracksIdsToImport =
           potentialTracksIds

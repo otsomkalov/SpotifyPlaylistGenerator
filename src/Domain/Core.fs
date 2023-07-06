@@ -49,7 +49,8 @@ type Preset =
     Settings: PresetSettings.PresetSettings
     IncludedPlaylists: ReadablePlaylistId list
     ExcludedPlaylist: ReadablePlaylistId list
-    TargetPlaylists: TargetPlaylist list }
+    TargetPlaylists: TargetPlaylist list
+    UserId: UserId }
 
 type User = { Id: UserId }
 
