@@ -10,11 +10,6 @@ module PlaylistId =
   let value (PlaylistId id) = id
 
 [<RequireQualifiedAccess>]
-module UserId =
-
-  let value (UserId id) = id
-
-[<RequireQualifiedAccess>]
 module TrackId =
 
   let value (TrackId id) = id
@@ -55,5 +50,3 @@ module PresetId =
     match id |> Option.ofNullable with
     | Some id -> PresetId id
     | None -> raise (ArgumentNullException(nameof id, "Given null preset id"))
-
-  let value (PresetId id) = id

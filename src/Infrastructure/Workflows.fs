@@ -233,7 +233,10 @@ module Playlist =
 
           return! listTracks' client playlistId 0
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
+          logger.LogInformation(
+            "Playlist with id {PlaylistId} not found in Spotify",
+            playlistId |> ReadablePlaylistId.value |> PlaylistId.value
+          )
 
           return []
       }

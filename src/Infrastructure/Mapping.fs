@@ -47,7 +47,8 @@ module Preset =
       IncludedPlaylists = ReadablePlaylistId.fromDb preset.SourcePlaylists
       ExcludedPlaylist = ReadablePlaylistId.fromDb preset.HistoryPlaylists
       TargetPlaylists = TargetPlaylist.mapPlaylists preset.TargetPlaylists
-      Settings = PresetSettings.fromDb preset.Settings }
+      Settings = PresetSettings.fromDb preset.Settings
+      UserId = preset.UserId |> UserId }
 
 [<RequireQualifiedAccess>]
 module SimplePreset =

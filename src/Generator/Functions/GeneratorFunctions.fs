@@ -17,7 +17,6 @@ open Domain.Extensions
 
 type GeneratorFunctions
   (
-    _logger: ILogger<GeneratorFunctions>,
     _cache: IDatabase,
     _spotifyClientProvider: SpotifyClientProvider,
     loadPreset: Preset.Load,
@@ -25,10 +24,10 @@ type GeneratorFunctions
   ) =
 
   [<FunctionName("GenerateAsync")>]
-  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage) =
+  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, logger: ILogger) =
     let client = _spotifyClientProvider.Get message.TelegramId
 
-    let listTracks = Playlist.listTracks _logger client
+    let listTracks = Playlist.listTracks logger client
     let listLikedTracks = User.listLikedTracks client
 
     let listPlaylistTracks = Cache.listOrRefresh _cache message.RefreshCache listTracks
@@ -38,14 +37,14 @@ type GeneratorFunctions
 
     let updateTargetPlaylist = TargetPlaylist.update _cache client
 
-    _logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
+    logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
 
     (ChatId(message.TelegramId), "Generating playlist...")
     |> _bot.SendTextMessageAsync
     |> ignore
 
     let generatePlaylist =
-      Domain.Workflows.Playlist.generate listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
+      Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
 
     task {
       let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
