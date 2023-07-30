@@ -28,20 +28,20 @@ type AddSourcePlaylistCommandHandler
   member this.HandleAsync data (message: Message) =
 
     let userId = UserId message.From.Id
-    let client = _spotifyClientProvider.Get message.From.Id
-
-    let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
-
-    let parsePlaylistId = Playlist.parseId
-
-    let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
-
-    let includePlaylist =
-      Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
-
-    let rawPlaylistId = Playlist.RawPlaylistId data
-
     async {
+      let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+
+      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+
+      let parsePlaylistId = Playlist.parseId
+
+      let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
+
+      let includePlaylist =
+        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+
+      let rawPlaylistId = Playlist.RawPlaylistId data
+
       let! includePlaylistResult = rawPlaylistId |> includePlaylist
 
       return!

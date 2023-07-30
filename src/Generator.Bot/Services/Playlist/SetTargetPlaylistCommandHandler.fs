@@ -28,22 +28,23 @@ type SetTargetPlaylistCommandHandler
     match message.Text with
     | CommandData data ->
       let userId = UserId message.From.Id
-      let client = _spotifyClientProvider.Get message.From.Id
-
-      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
-
-      let parsePlaylistId = Playlist.parseId
-
-      let targetInStorage = Playlist.targetInStorage _context userId
-
-      let checkWriteAccess = Playlist.checkWriteAccess client
-
-      let targetPlaylist =
-        Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify checkWriteAccess targetInStorage
-
-      let rawPlaylistId = Playlist.RawPlaylistId data
 
       async {
+        let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+
+        let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+
+        let parsePlaylistId = Playlist.parseId
+
+        let targetInStorage = Playlist.targetInStorage _context userId
+
+        let checkWriteAccess = Playlist.checkWriteAccess client
+
+        let targetPlaylist =
+          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify checkWriteAccess targetInStorage
+
+        let rawPlaylistId = Playlist.RawPlaylistId data
+
         let! targetPlaylistResult = rawPlaylistId |> targetPlaylist
 
         return!

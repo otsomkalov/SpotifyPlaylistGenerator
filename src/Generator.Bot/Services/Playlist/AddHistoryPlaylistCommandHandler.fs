@@ -1,6 +1,7 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
 open Database
+open Domain.Extensions
 open Telegram.Bot
 open Telegram.Bot.Types
 open Resources
@@ -28,20 +29,21 @@ type AddHistoryPlaylistCommandHandler
     match message.Text with
     | CommandData data ->
       let userId = UserId message.From.Id
-      let client = _spotifyClientProvider.Get message.From.Id
-
-      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
-
-      let parsePlaylistId = Playlist.parseId
-
-      let includeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
-
-      let includePlaylist =
-        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
-
-      let rawPlaylistId = Playlist.RawPlaylistId data
 
       async {
+        let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+
+        let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+
+        let parsePlaylistId = Playlist.parseId
+
+        let includeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
+
+        let includePlaylist =
+          Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+
+        let rawPlaylistId = Playlist.RawPlaylistId data
+
         let! excludePlaylistResult = rawPlaylistId |> includePlaylist
 
         return!
