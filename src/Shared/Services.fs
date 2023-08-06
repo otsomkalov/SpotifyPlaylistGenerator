@@ -1,32 +1,36 @@
 ﻿namespace Shared.Services
 
 open System.Collections.Generic
+open System.Threading.Tasks
 open SpotifyAPI.Web
+open StackExchange.Redis
+open Infrastructure.Spotify
 
-type SpotifyClientProvider() =
-  let _clientsBySpotifyId =
-    Dictionary<string, ISpotifyClient>()
-
+type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, createClientFromTokenResponse: CreateClientFromTokenResponse) =
   let _clientsByTelegramId =
     Dictionary<int64, ISpotifyClient>()
 
-  member this.Get telegramId =
+  member this.GetAsync telegramId : Task<ISpotifyClient> =
     if _clientsByTelegramId.ContainsKey(telegramId) then
-      _clientsByTelegramId[telegramId]
+      _clientsByTelegramId[telegramId] |> Task.FromResult
     else
-      null
+      let cache = connectionMultiplexer.GetDatabase(1)
 
-  member this.Get spotifyId =
-    if _clientsBySpotifyId.ContainsKey(spotifyId) then
-      _clientsBySpotifyId[spotifyId]
-    else
-      null
+      task {
+        let! tokenValue = telegramId |> string |> cache.StringGetAsync
 
-  member this.SetClient(spotifyId: string, client: ISpotifyClient) =
-    if _clientsBySpotifyId.ContainsKey(spotifyId) then
-      ()
-    else
-      (spotifyId, client) |> _clientsBySpotifyId.Add
+        return!
+          match tokenValue.IsNullOrEmpty with
+          | true -> Task.FromResult null
+          | false ->
+            let client =
+              AuthorizationCodeTokenResponse(RefreshToken = tokenValue)
+              |> createClientFromTokenResponse
+
+            this.SetClient(telegramId, client)
+
+            client |> Task.FromResult
+      }
 
   member this.SetClient(telegramId: int64, client: ISpotifyClient) =
     if _clientsByTelegramId.ContainsKey(telegramId) then

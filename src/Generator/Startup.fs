@@ -9,6 +9,7 @@ open Domain.Core
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
+open Infrastructure
 open Infrastructure.Workflows
 open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
@@ -27,9 +28,7 @@ type Startup() =
   let configureRedisCache (serviceProvider: IServiceProvider) =
     let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
 
-    let multiplexer = ConnectionMultiplexer.Connect(settings.ConnectionString)
-
-    multiplexer.GetDatabase()
+    ConnectionMultiplexer.Connect(settings.ConnectionString) :> IConnectionMultiplexer
 
   let configureQueueClient (sp: IServiceProvider) =
     let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
@@ -48,7 +47,7 @@ type Startup() =
 
     services |> Startup.addSettings configuration |> Startup.addServices
 
-    services.AddSingleton<IDatabase>(configureRedisCache)
+    services.AddSingleton<IConnectionMultiplexer>(configureRedisCache)
 
     services.AddSingleton<QueueClient>(configureQueueClient)
 
@@ -89,6 +88,13 @@ type Startup() =
     services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
     services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, User.LoadPreset>(Telegram.sendPresetInfo)
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
+
+    services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
+    services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)
+
+    services.AddSingletonFunc<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
+
+    services.AddSingletonFunc<Spotify.TokenProvider.CacheToken, IConnectionMultiplexer>(Spotify.TokenProvider.cacheToken)
 
     ()
 

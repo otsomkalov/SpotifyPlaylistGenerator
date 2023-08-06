@@ -15,8 +15,10 @@
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
     <Compile Include="Cache.fs"/>
+    <Compile Include="Settings.fs"/>
     <Compile Include="Spotify.fs"/>
     <Compile Include="Workflows.fs"/>
+    <Compile Include="State.fs"/>
   </ItemGroup>
 
   <ItemGroup>

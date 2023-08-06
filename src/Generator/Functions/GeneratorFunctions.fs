@@ -17,36 +17,38 @@ open Domain.Extensions
 
 type GeneratorFunctions
   (
-    _cache: IDatabase,
     _spotifyClientProvider: SpotifyClientProvider,
     loadPreset: Preset.Load,
-    _bot: ITelegramBotClient
+    _bot: ITelegramBotClient,
+    connectionMultiplexer: IConnectionMultiplexer
   ) =
 
   [<FunctionName("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, logger: ILogger) =
-    let client = _spotifyClientProvider.Get message.TelegramId
-
-    let listTracks = Playlist.listTracks logger client
-    let listLikedTracks = User.listLikedTracks client
-
-    let listPlaylistTracks = Cache.listOrRefresh _cache message.RefreshCache listTracks
-
-    let listLikedTracks =
-      Cache.listOrRefreshByKey _cache message.RefreshCache listLikedTracks message.TelegramId
-
-    let updateTargetPlaylist = TargetPlaylist.update _cache client
-
-    logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
-
-    (ChatId(message.TelegramId), "Generating playlist...")
-    |> _bot.SendTextMessageAsync
-    |> ignore
-
-    let generatePlaylist =
-      Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
+    let cache = connectionMultiplexer.GetDatabase 0
 
     task {
+      let! client = _spotifyClientProvider.GetAsync message.TelegramId
+
+      let listTracks = Playlist.listTracks logger client
+      let listLikedTracks = User.listLikedTracks client
+
+      let listPlaylistTracks = Cache.listOrRefresh cache message.RefreshCache listTracks
+
+      let listLikedTracks =
+        Cache.listOrRefreshByKey cache message.RefreshCache listLikedTracks message.TelegramId
+
+      let updateTargetPlaylist = TargetPlaylist.update cache client
+
+      logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
+
+      (ChatId(message.TelegramId), "Generating playlist...")
+      |> _bot.SendTextMessageAsync
+      |> ignore
+
+      let generatePlaylist =
+        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
+
       let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
 
       let messageText =

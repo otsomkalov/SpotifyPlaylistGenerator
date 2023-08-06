@@ -1,16 +1,20 @@
 ﻿namespace Generator.Bot.Services
 
-open System.Collections.Generic
+open Resources
 open Database
 open Database.Entities
+open Domain.Core
+open Domain.Workflows
+open Infrastructure
+open Infrastructure.Spotify
 open Microsoft.Extensions.Logging
 open Shared.Services
+open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
 open Telegram.Bot.Types.ReplyMarkups
-open Resources
 
 type StartCommandHandler
   (
@@ -18,7 +22,10 @@ type StartCommandHandler
     _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _logger: ILogger<StartCommandHandler>
+    _logger: ILogger<StartCommandHandler>,
+    getState: State.GetState,
+    createClientFromTokenResponse: CreateClientFromTokenResponse,
+    cacheToken: TokenProvider.CacheToken
   ) =
 
   let sendMessageAsync (message: Message) =
@@ -41,30 +48,29 @@ type StartCommandHandler
       |> ignore
     }
 
-  let setSpotifyClient (message: Message) (data: string) =
-    (message.From.Id, data |> _spotifyClientProvider.Get)
-    |> _spotifyClientProvider.SetClient
+  let handleCommandDataAsync (message: Message) (stateKey: string) =
+    let userId = message.From.Id |> UserId
 
-    sendMessageAsync message
-
-  let handleCommandDataAsync' (message: Message) (spotifyId: string) =
-    task {
-      let spotifyClient = _spotifyClientProvider.Get message.From.Id
+    task{
+      let! state = getState (stateKey |> State.StateKey.parse)
 
       return!
-        if spotifyClient = null then
-          setSpotifyClient message spotifyId
-        else
-          sendMessageAsync message
+        match state with
+        | Some s ->
+          task{
+            do! cacheToken userId s
+
+            let spotifyClient =
+              AuthorizationCodeTokenResponse(RefreshToken = s)
+              |> createClientFromTokenResponse
+
+            do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
+
+            return! sendMessageAsync message
+          }
+        | None ->
+          _unauthorizedUserCommandHandler.HandleAsync message
     }
-
-  let handleCommandDataAsync (message: Message) (spotifyId: string) =
-    let spotifyClient = _spotifyClientProvider.Get spotifyId
-
-    if spotifyClient = null then
-      _unauthorizedUserCommandHandler.HandleAsync message
-    else
-      handleCommandDataAsync' message spotifyId
 
   let createUserAsync userId =
     task {
@@ -96,5 +102,5 @@ type StartCommandHandler
 
   member this.HandleAsync(message: Message) =
     match message.Text with
-    | CommandData spotifyId -> handleCommandDataAsync message spotifyId
+    | CommandData stateKey -> handleCommandDataAsync message stateKey
     | _ -> handleEmptyCommandAsync message

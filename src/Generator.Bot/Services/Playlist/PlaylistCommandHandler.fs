@@ -16,8 +16,8 @@ type PlaylistCommandHandler
 
   let validatePlaylistExistsAsync (message: Message) (uri: Uri) handlePlaylistUriFunction =
     task {
-      let spotifyClient =
-        _spotifyClientProvider.Get message.From.Id
+      let! spotifyClient =
+        _spotifyClientProvider.GetAsync message.From.Id
 
       let playlistId = uri.Segments |> Seq.last
 

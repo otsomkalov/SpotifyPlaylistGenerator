@@ -39,12 +39,15 @@ type MessageService
     | _ -> _emptyCommandDataHandler.HandleAsync message
 
   let validateUserLogin handleCommandFunction (message: Message) =
-    let spotifyClient = _spotifyClientProvider.Get message.From.Id
+    task{
+      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
 
-    if spotifyClient = null then
-      _unauthorizedUserCommandHandler.HandleAsync message
-    else
-      handleCommandFunction message
+      return!
+        if spotifyClient = null then
+          _unauthorizedUserCommandHandler.HandleAsync message
+        else
+          handleCommandFunction message
+    }
 
   let askForIncludedPlaylist (message: Message) =
     task {
