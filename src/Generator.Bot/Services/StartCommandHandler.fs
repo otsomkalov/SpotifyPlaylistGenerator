@@ -1,5 +1,7 @@
 ﻿namespace Generator.Bot.Services
 
+open System.Threading.Tasks
+open Generator.Bot
 open Resources
 open Database
 open Database.Entities
@@ -16,16 +18,19 @@ open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
 open Telegram.Bot.Types.ReplyMarkups
 
+type StartCommand = { AuthState: Telegram.AuthState; Text: string }
+type ProcessStartCommand = StartCommand -> Task<unit>
+
 type StartCommandHandler
   (
     _bot: ITelegramBotClient,
     _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _logger: ILogger<StartCommandHandler>,
     getState: State.GetState,
     createClientFromTokenResponse: CreateClientFromTokenResponse,
-    cacheToken: TokenProvider.CacheToken
+    cacheToken: TokenProvider.CacheToken,
+    checkAuth: Telegram.CheckAuth
   ) =
 
   let sendMessageAsync (message: Message) =
@@ -100,7 +105,44 @@ type StartCommandHandler
       return! _unauthorizedUserCommandHandler.HandleAsync message
     }
 
+  let overwriteToken (message: Message) stateKey =
+    let userId = message.From.Id |> UserId
+
+    task {
+      let! state = getState (stateKey |> State.StateKey.parse)
+
+      return!
+        match state with
+        | Some state ->
+          task{
+            do! cacheToken userId state
+
+            let spotifyClient =
+              AuthorizationCodeTokenResponse(RefreshToken = state)
+              |> createClientFromTokenResponse
+
+            do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
+
+            return! sendMessageAsync message
+          }
+        | None ->
+          _unauthorizedUserCommandHandler.HandleAsync message
+    }
+
   member this.HandleAsync(message: Message) =
-    match message.Text with
-    | CommandData stateKey -> handleCommandDataAsync message stateKey
-    | _ -> handleEmptyCommandAsync message
+    let userId = message.From.Id |> UserId
+
+    task{
+      let! authState = checkAuth userId
+
+      return!
+        match authState with
+        | Telegram.Authorized ->
+          match message.Text with
+          | CommandData stateKey -> overwriteToken message stateKey
+          | _ -> sendMessageAsync message
+        | Telegram.Unauthorized ->
+          match message.Text with
+          | CommandData stateKey -> overwriteToken message stateKey
+          | _ -> handleEmptyCommandAsync message
+    }

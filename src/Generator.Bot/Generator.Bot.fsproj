@@ -10,9 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Telegram.fs"/>
     <Compile Include="Constants.fs"/>
     <Compile Include="Helpers.fs"/>
+    <Compile Include="Telegram.fs"/>
     <Compile Include="Services\EmptyCommandDataHandler.fs"/>
     <Compile Include="Services\Playlist\PlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs"/>
