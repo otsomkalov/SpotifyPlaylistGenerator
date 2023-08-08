@@ -13,6 +13,7 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
+open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
 
 type SetTargetPlaylistCommandHandler
@@ -49,10 +50,10 @@ type SetTargetPlaylistCommandHandler
 
         return!
           match targetPlaylistResult with
-          | Ok id ->
-            let id = id |> WritablePlaylistId.value |> PlaylistId.value
-
+          | Ok playlist ->
             let replyMarkup =
+              let id = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
+
               InlineKeyboardMarkup(
                 [ InlineKeyboardButton("Append", CallbackData = $"tp|{id}|a")
                   InlineKeyboardButton("Overwrite", CallbackData = $"tp|{id}|o") ]
@@ -60,7 +61,8 @@ type SetTargetPlaylistCommandHandler
 
             _bot.SendTextMessageAsync(
               ChatId(message.Chat.Id),
-              "Target playlist successfully added! Do you want to overwrite or append tracks to it?",
+              $"Target playlist *{playlist.Name |> Generator.Bot.Telegram.escapeMarkdownString}* successfully added\! Do you want to overwrite or append tracks to it?",
+              ParseMode.MarkdownV2,
               replyMarkup = replyMarkup,
               replyToMessageId = message.MessageId
             )

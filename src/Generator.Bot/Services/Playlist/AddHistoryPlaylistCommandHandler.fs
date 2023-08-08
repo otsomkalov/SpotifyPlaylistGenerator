@@ -14,6 +14,8 @@ open Infrastructure.Core
 open Shared.Services
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
+open Telegram.Bot.Types.Enums
+open Telegram.Bot.Types.ReplyMarkups
 
 type AddHistoryPlaylistCommandHandler
   (
@@ -48,8 +50,13 @@ type AddHistoryPlaylistCommandHandler
 
         return!
           match excludePlaylistResult with
-          | Ok _ ->
-            _bot.SendTextMessageAsync(ChatId(message.Chat.Id), "History playlist successfully added!", replyToMessageId = message.MessageId)
+          | Ok playlist ->
+            _bot.SendTextMessageAsync(
+              ChatId(message.Chat.Id),
+              $"*{playlist.Name |> Generator.Bot.Telegram.escapeMarkdownString}* successfully excluded\!",
+              ParseMode.MarkdownV2,
+              replyToMessageId = message.MessageId
+            )
             :> Task
             |> Async.AwaitTask
           | Error error ->

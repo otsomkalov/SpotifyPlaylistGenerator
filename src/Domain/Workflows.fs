@@ -73,15 +73,13 @@ module Playlist =
 
   type ParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IdParsingError>
 
-  type TryParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IncludePlaylistError>
-
   type CheckExistsInSpotify = ParsedPlaylistId -> Async<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
 
-  type CheckWriteAccess = SpotifyPlaylist -> Async<Result<WritablePlaylistId, Playlist.AccessError>>
+  type CheckWriteAccess = SpotifyPlaylist -> Async<Result<WritablePlaylist, Playlist.AccessError>>
 
-  type IncludeInStorage = ReadablePlaylistId -> Async<unit>
-  type ExcludeInStorage = ReadablePlaylistId -> Async<unit>
-  type TargetInStorage = WritablePlaylistId -> Async<WritablePlaylistId>
+  type IncludeInStorage = ReadablePlaylist -> Async<ReadablePlaylist>
+  type ExcludeInStorage = ReadablePlaylist -> Async<ReadablePlaylist>
+  type TargetInStorage = WritablePlaylist -> Async<WritablePlaylist>
 
   let includePlaylist
     (parseId: ParseId)
@@ -96,7 +94,7 @@ module Playlist =
 
     parseId
     >> Result.asyncBind existsInSpotify
-    >> AsyncResult.map (fun p -> ReadablePlaylistId p.Id)
+    >> AsyncResult.map ReadablePlaylist.fromSpotifyPlaylist
     >> AsyncResult.asyncMap includeInStorage
 
   let excludePlaylist
@@ -112,7 +110,7 @@ module Playlist =
 
     parseId
     >> Result.asyncBind existsInSpotify
-    >> AsyncResult.map (fun p -> ReadablePlaylistId p.Id)
+    >> AsyncResult.map ReadablePlaylist.fromSpotifyPlaylist
     >> AsyncResult.asyncMap excludeInStorage
 
   let targetPlaylist
