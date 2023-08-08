@@ -10,7 +10,34 @@ type TrackId = TrackId of string
 
 type SpotifyPlaylist =
   { Id: PlaylistId
+    Name: string
     OwnerId: string }
+
+type ReadablePlaylist ={
+  Id: ReadablePlaylistId
+  Name: string
+}
+
+[<RequireQualifiedAccess>]
+module ReadablePlaylist =
+  let fromSpotifyPlaylist (spotifyPlaylist: SpotifyPlaylist) =
+    {
+      Id = spotifyPlaylist.Id |> ReadablePlaylistId
+      Name = spotifyPlaylist.Name
+    }
+
+type WritablePlaylist ={
+  Id: WritablePlaylistId
+  Name: string
+}
+
+[<RequireQualifiedAccess>]
+module WritablePlaylist =
+  let fromSpotifyPlaylist (spotifyPlaylist: SpotifyPlaylist) =
+    {
+      Id = spotifyPlaylist.Id |> WritablePlaylistId
+      Name = spotifyPlaylist.Name
+    }
 
 type TargetPlaylist =
   { Id: WritablePlaylistId
@@ -75,9 +102,9 @@ module Playlist =
     | MissingFromSpotify of MissingFromSpotifyError
     | AccessError of AccessError
 
-  type IncludePlaylist = RawPlaylistId -> Async<Result<unit, IncludePlaylistError>>
-  type ExcludePlaylist = RawPlaylistId -> Async<Result<unit, ExcludePlaylistError>>
-  type TargetPlaylist = RawPlaylistId -> Async<Result<WritablePlaylistId, TargetPlaylistError>>
+  type IncludePlaylist = RawPlaylistId -> Async<Result<ReadablePlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = RawPlaylistId -> Async<Result<ReadablePlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = RawPlaylistId -> Async<Result<WritablePlaylist, TargetPlaylistError>>
 
   type GenerateError = GenerateError of string
   type Generate = PresetId -> Async<Result<unit, GenerateError>>

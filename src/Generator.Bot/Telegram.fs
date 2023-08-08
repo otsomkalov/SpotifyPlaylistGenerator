@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Generator.Bot.Telegram
 
+open System.Text.RegularExpressions
 open System.Threading.Tasks
 open Database
 open Domain.Core
@@ -80,3 +81,5 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
   >> Task.map (function
     | null -> Unauthorized
     | _ -> Authorized)
+
+let escapeMarkdownString (str: string) = Regex.Replace(str, "(.)", "\$1")

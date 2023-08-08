@@ -277,6 +277,7 @@ module Playlist =
 
           return
             { Id = playlist.Id |> PlaylistId
+              Name = playlist.Name
               OwnerId = playlist.Owner.Id }
             |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
@@ -290,19 +291,20 @@ module Playlist =
 
         return
           if playlist.OwnerId = currentUser.Id then
-            playlist.Id |> WritablePlaylistId |> Ok
+            playlist |> WritablePlaylist.fromSpotifyPlaylist |> Ok
           else
             Playlist.AccessError() |> Error
       }
 
   let includeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.IncludeInStorage =
-    fun playlistId ->
+    fun playlist ->
       async {
         let! currentPreset = loadCurrentPreset userId
 
         let! _ =
           SourcePlaylist(
-            Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value),
+            Name = playlist.Name,
+            Url = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
             PresetId = (currentPreset.Id |> PresetId.value)
           )
           |> context.SourcePlaylists.AddAsync
@@ -311,34 +313,36 @@ module Playlist =
 
         let! _ = context.SaveChangesAsync() |> Async.AwaitTask
 
-        return ()
+        return playlist
       }
 
   let excludeInStorage (context: AppDbContext) userId  (loadCurrentPreset: User.LoadCurrentPreset): Playlist.ExcludeInStorage =
-    fun playlistId ->
+    fun playlist ->
       task {
         let! currentPreset = loadCurrentPreset userId
 
         let! _ =
           HistoryPlaylist(
-            Url = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value),
+            Name = playlist.Name,
+            Url = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
             PresetId = (currentPreset.Id |> PresetId.value)
           )
           |> context.HistoryPlaylists.AddAsync
 
         let! _ = context.SaveChangesAsync()
 
-        return ()
+        return playlist
       } |> Async.AwaitTask
 
   let targetInStorage (context: AppDbContext) userId : Playlist.TargetInStorage =
-    fun playlistId ->
+    fun playlist ->
       async {
         let! currentPreset = User.loadCurrentPreset context userId
 
         let! _ =
           TargetPlaylist(
-            Url = (playlistId |> WritablePlaylistId.value |> PlaylistId.value),
+            Name = playlist.Name,
+            Url = (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value),
             PresetId = (currentPreset.Id |> PresetId.value)
           )
           |> context.TargetPlaylists.AddAsync
@@ -347,7 +351,7 @@ module Playlist =
 
         let! _ = context.SaveChangesAsync() |> Async.AwaitTask
 
-        return playlistId
+        return playlist
       }
 
 [<RequireQualifiedAccess>]
