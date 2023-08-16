@@ -36,3 +36,8 @@ module Spotify =
 
 module ValueTask =
   let asTask (valueTask: ValueTask<'a>) = valueTask.AsTask()
+
+[<RequireQualifiedAccess>]
+module List =
+  let takeSafe count list =
+    if list |> List.length < count then list else list |> List.take count

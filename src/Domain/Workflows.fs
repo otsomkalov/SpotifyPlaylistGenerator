@@ -152,6 +152,7 @@ module Playlist =
 
         let! includedTracks =
           preset.IncludedPlaylists
+          |> Seq.map (fun p -> p.Id)
           |> Seq.map listPlaylistTracks
           |> Async.Parallel
           |> Async.map List.concat

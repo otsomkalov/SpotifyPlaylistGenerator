@@ -31,6 +31,8 @@ type WritablePlaylist ={
   Name: string
 }
 
+type IncludedPlaylist = ReadablePlaylist
+
 [<RequireQualifiedAccess>]
 module WritablePlaylist =
   let fromSpotifyPlaylist (spotifyPlaylist: SpotifyPlaylist) =
@@ -73,8 +75,9 @@ type SimplePreset ={
 
 type Preset =
   { Id: PresetId
+    Name: string
     Settings: PresetSettings.PresetSettings
-    IncludedPlaylists: ReadablePlaylistId list
+    IncludedPlaylists: IncludedPlaylist list
     ExcludedPlaylist: ReadablePlaylistId list
     TargetPlaylists: TargetPlaylist list
     UserId: UserId }

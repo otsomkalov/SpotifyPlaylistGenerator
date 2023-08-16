@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Azure.Storage.Queues
 open Database
+open Domain
 open Domain.Core
 open Generator.Bot
 open Generator.Bot.Constants
@@ -10,6 +11,7 @@ open Infrastructure.Workflows
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
+open Domain.Extensions
 
 type CallbackQueryService
   (
@@ -19,7 +21,9 @@ type CallbackQueryService
     _bot: ITelegramBotClient,
     sendPresetInfo: Telegram.SendPresetInfo,
     _queueClient: QueueClient,
-    setCurrentPreset: Telegram.SetCurrentPreset
+    setCurrentPreset: Telegram.SetCurrentPreset,
+    showIncludedPlaylists: Telegram.ShowIncludedPlaylist,
+    loadPreset: Workflows.Preset.Load
   ) =
 
   let appendToTargetPlaylist userId playlistId (callbackQuery: CallbackQuery) =
@@ -40,12 +44,24 @@ type CallbackQueryService
       return ()
     }
 
+  let showIncludedPlaylists userId presetId (callbackQuery: CallbackQuery) =
+    let showIncludedPlaylists' =
+      showIncludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+
+    presetId |> (loadPreset >> Async.bind showIncludedPlaylists' >> Async.StartAsTask)
+
+  let showIncludedPlaylist (callbackQuery: CallbackQuery) =
+    task{
+      do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
+
+      return ()
+    }
+
   let showSelectedPreset userId presetId (callbackQuery: CallbackQuery) =
     sendPresetInfo callbackQuery.Message.MessageId userId presetId
 
   let setCurrentPreset userId presetId (callbackQuery: CallbackQuery) =
     setCurrentPreset callbackQuery.Id userId presetId
-
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     task {
@@ -62,8 +78,10 @@ type CallbackQueryService
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
         | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
+        | CallbackQueryData("ip", id, "i") -> showIncludedPlaylist
         | PresetAction(id, "i") -> showSelectedPreset userId (id |> PresetId)
         | PresetAction(id, "c") -> setCurrentPreset userId (id |> PresetId)
+        | PresetAction(id, "ip") -> showIncludedPlaylists userId (id |> PresetId)
 
       return! processCallbackQueryDataTask callbackQuery
     }
