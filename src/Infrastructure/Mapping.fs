@@ -5,12 +5,17 @@ open Database.Entities
 open Infrastructure.Core
 open Domain.Core
 
-[<RequireQualifiedAccess>]
 module ReadablePlaylistId =
   let fromDb (playlists: #Playlist seq) =
     playlists
     |> Seq.map (fun p -> p.Url |> PlaylistId |> ReadablePlaylistId)
     |> Seq.toList
+
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  let fromDb (playlist: SourcePlaylist) : IncludedPlaylist =
+    { Id = playlist.Url |> PlaylistId |> ReadablePlaylistId
+      Name = playlist.Name }
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
@@ -43,8 +48,12 @@ module PresetSettings =
 [<RequireQualifiedAccess>]
 module Preset =
   let fromDb (preset: Database.Entities.Preset) : Preset =
+    let mapPlaylists playlists =
+      playlists |> Seq.map IncludedPlaylist.fromDb |> Seq.toList
+
     { Id = preset.Id |> PresetId
-      IncludedPlaylists = ReadablePlaylistId.fromDb preset.SourcePlaylists
+      Name = preset.Name
+      IncludedPlaylists = mapPlaylists preset.SourcePlaylists
       ExcludedPlaylist = ReadablePlaylistId.fromDb preset.HistoryPlaylists
       TargetPlaylists = TargetPlaylist.mapPlaylists preset.TargetPlaylists
       Settings = PresetSettings.fromDb preset.Settings

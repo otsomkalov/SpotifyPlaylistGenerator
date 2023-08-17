@@ -45,7 +45,7 @@ let (|CallbackQueryData|_|) (str: string) =
 let (|PresetAction|_|) (str: string) =
   match str.Split("|") with
   | [| entityType; entityId; entityAction |] ->
-    match entityId with
-    | Int id -> Some(id, entityAction)
+    match entityType, entityId with
+    | "p", Int id -> Some(id, entityAction)
     | _ -> None
   | _ -> None

@@ -11,12 +11,17 @@ open Infrastructure.Helpers
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
+open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
 open Microsoft.EntityFrameworkCore
+
+[<Literal>]
+let keyboardColumns = 4
 
 type SendUserPresets = UserId -> Task<unit>
 type SendPresetInfo = int -> UserId -> PresetId -> Task<unit>
 type SetCurrentPreset = string -> UserId -> PresetId -> Task<unit>
+type ShowIncludedPlaylist = int -> UserId -> Preset -> Task<unit>
 
 type AuthState =
   | Authorized
@@ -44,8 +49,13 @@ let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: User.LoadPreset) : Sen
     task {
       let! preset = loadPreset presetId |> Async.StartAsTask
 
+      let presetId = presetId |> PresetId.value
+
       let keyboardMarkup =
-        [ InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId |> PresetId.value}|c") ]
+        seq {
+          seq { InlineKeyboardButton("Included playlists", CallbackData = $"p|{presetId}|ip") }
+          seq { InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId}|c") }
+        }
         |> InlineKeyboardMarkup
 
       do!
@@ -83,3 +93,28 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
     | _ -> Authorized)
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "(.)", "\$1")
+
+let showIncludedPlaylists (bot: ITelegramBotClient) : ShowIncludedPlaylist =
+  let createButtonFromPlaylist =
+    fun (playlist : IncludedPlaylist) -> InlineKeyboardButton(playlist.Name, CallbackData = $"ip|{playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value}|i")
+
+  fun messageId userId preset ->
+    task{
+      let playlistButtons =
+        [0..keyboardColumns..preset.IncludedPlaylists.Length]
+        |> List.map (fun idx -> preset.IncludedPlaylists |> List.skip idx |> List.takeSafe keyboardColumns)
+        |> List.map (Seq.map createButtonFromPlaylist)
+
+      let replyMarkup =
+        Seq.append playlistButtons (InlineKeyboardButton("<< Back", CallbackData = $"p|{preset.Id |> PresetId.value}|i") |> Seq.singleton |> Seq.singleton)
+        |> InlineKeyboardMarkup
+
+      let! _ = bot.EditMessageTextAsync(
+        (userId |> UserId.value |> ChatId),
+        messageId,
+        $"Preset *{preset.Name |> escapeMarkdownString}* has the next included playlists:",
+        ParseMode.MarkdownV2,
+        replyMarkup = replyMarkup)
+
+      return ()
+    }
