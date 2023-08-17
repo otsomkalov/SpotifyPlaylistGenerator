@@ -18,6 +18,12 @@ module IncludedPlaylist =
       Name = playlist.Name }
 
 [<RequireQualifiedAccess>]
+module ExcludedPlaylist =
+  let fromDb (playlist: HistoryPlaylist) : ExcludedPlaylist =
+    { Id = playlist.Url |> PlaylistId |> ReadablePlaylistId
+      Name = playlist.Name }
+
+[<RequireQualifiedAccess>]
 module TargetPlaylist =
   let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
     { Id = playlist.Url |> PlaylistId |> WritablePlaylistId
@@ -48,13 +54,16 @@ module PresetSettings =
 [<RequireQualifiedAccess>]
 module Preset =
   let fromDb (preset: Database.Entities.Preset) : Preset =
-    let mapPlaylists playlists =
+    let mapIncludedPlaylist playlists =
       playlists |> Seq.map IncludedPlaylist.fromDb |> Seq.toList
+
+    let mapExcludedPlaylist playlists =
+      playlists |> Seq.map ExcludedPlaylist.fromDb |> Seq.toList
 
     { Id = preset.Id |> PresetId
       Name = preset.Name
-      IncludedPlaylists = mapPlaylists preset.SourcePlaylists
-      ExcludedPlaylist = ReadablePlaylistId.fromDb preset.HistoryPlaylists
+      IncludedPlaylists = mapIncludedPlaylist preset.SourcePlaylists
+      ExcludedPlaylist = mapExcludedPlaylist preset.HistoryPlaylists
       TargetPlaylists = TargetPlaylist.mapPlaylists preset.TargetPlaylists
       Settings = PresetSettings.fromDb preset.Settings
       UserId = preset.UserId |> UserId }

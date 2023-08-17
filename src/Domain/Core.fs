@@ -32,6 +32,7 @@ type WritablePlaylist ={
 }
 
 type IncludedPlaylist = ReadablePlaylist
+type ExcludedPlaylist = ReadablePlaylist
 
 [<RequireQualifiedAccess>]
 module WritablePlaylist =
@@ -78,7 +79,7 @@ type Preset =
     Name: string
     Settings: PresetSettings.PresetSettings
     IncludedPlaylists: IncludedPlaylist list
-    ExcludedPlaylist: ReadablePlaylistId list
+    ExcludedPlaylist: ExcludedPlaylist list
     TargetPlaylists: TargetPlaylist list
     UserId: UserId }
 

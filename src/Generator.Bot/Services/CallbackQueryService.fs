@@ -13,6 +13,13 @@ open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Domain.Extensions
 
+[<NoEquality; NoComparison>]
+type ProcessCallbackQueryDeps ={
+  LoadPreset: Workflows.Preset.Load
+  ShowIncludedPlaylists: Telegram.ShowIncludedPlaylist
+  ShowExcludedPlaylists: Telegram.ShowExcludedPlaylist
+}
+
 type CallbackQueryService
   (
     _setIncludeLikedTracksCommandHandler: SetIncludeLikedTracksCommandHandler,
@@ -22,8 +29,7 @@ type CallbackQueryService
     sendPresetInfo: Telegram.SendPresetInfo,
     _queueClient: QueueClient,
     setCurrentPreset: Telegram.SetCurrentPreset,
-    showIncludedPlaylists: Telegram.ShowIncludedPlaylist,
-    loadPreset: Workflows.Preset.Load
+    deps: ProcessCallbackQueryDeps
   ) =
 
   let appendToTargetPlaylist userId playlistId (callbackQuery: CallbackQuery) =
@@ -46,11 +52,24 @@ type CallbackQueryService
 
   let showIncludedPlaylists userId presetId (callbackQuery: CallbackQuery) =
     let showIncludedPlaylists' =
-      showIncludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+      deps.ShowIncludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
 
-    presetId |> (loadPreset >> Async.bind showIncludedPlaylists' >> Async.StartAsTask)
+    presetId |> (deps.LoadPreset >> Async.bind showIncludedPlaylists' >> Async.StartAsTask)
+
+  let showExcludedPlaylists userId presetId (callbackQuery: CallbackQuery) =
+    let showExcludedPlaylists' =
+      deps.ShowExcludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+
+    presetId |> (deps.LoadPreset >> Async.bind showExcludedPlaylists' >> Async.StartAsTask)
 
   let showIncludedPlaylist (callbackQuery: CallbackQuery) =
+    task{
+      do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
+
+      return ()
+    }
+
+  let showExcludedPlaylist (callbackQuery: CallbackQuery) =
     task{
       do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
 
@@ -79,9 +98,11 @@ type CallbackQueryService
         | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("ip", id, "i") -> showIncludedPlaylist
+        | CallbackQueryData("ep", id, "i") -> showExcludedPlaylist
         | PresetAction(id, "i") -> showSelectedPreset userId (id |> PresetId)
         | PresetAction(id, "c") -> setCurrentPreset userId (id |> PresetId)
         | PresetAction(id, "ip") -> showIncludedPlaylists userId (id |> PresetId)
+        | PresetAction(id, "ep") -> showExcludedPlaylists userId (id |> PresetId)
 
       return! processCallbackQueryDataTask callbackQuery
     }
