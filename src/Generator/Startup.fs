@@ -36,6 +36,12 @@ type Startup() =
 
     QueueClient(settings.ConnectionString, settings.QueueName)
 
+  let buildProcessCallbackQueryDeps =
+    fun bot loadPreset ->
+      { LoadPreset = loadPreset
+        ShowIncludedPlaylists = Telegram.showIncludedPlaylists bot
+        ShowExcludedPlaylists = Telegram.showExcludedPlaylists bot }
+
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
     builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
@@ -90,7 +96,8 @@ type Startup() =
     services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, User.LoadPreset>(Telegram.sendPresetInfo)
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
-    services.AddScopedFunc<Telegram.ShowIncludedPlaylist, ITelegramBotClient>(Telegram.showIncludedPlaylists)
+
+    services.AddScopedFunc<ProcessCallbackQueryDeps, ITelegramBotClient, Preset.Load>(buildProcessCallbackQueryDeps)
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
     services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)

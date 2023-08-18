@@ -166,6 +166,7 @@ module Playlist =
 
         let! excludedTracks =
           preset.ExcludedPlaylist
+          |> Seq.map (fun p -> p.Id)
           |> Seq.map listPlaylistTracks
           |> Async.Parallel
           |> Async.map List.concat
