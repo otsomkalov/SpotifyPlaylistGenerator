@@ -21,8 +21,9 @@ let keyboardColumns = 4
 type SendUserPresets = UserId -> Task<unit>
 type SendPresetInfo = int -> UserId -> PresetId -> Task<unit>
 type SetCurrentPreset = string -> UserId -> PresetId -> Task<unit>
-type ShowIncludedPlaylist = int -> UserId -> Preset -> Task<unit>
-type ShowExcludedPlaylist = int -> UserId -> Preset -> Task<unit>
+type ShowIncludedPlaylists = int -> UserId -> Preset -> Task<unit>
+type ShowExcludedPlaylists = int -> UserId -> Preset -> Task<unit>
+type ShowTargetPlaylists = int -> UserId -> Preset -> Task<unit>
 
 type AuthState =
   | Authorized
@@ -57,6 +58,7 @@ let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: User.LoadPreset) : Sen
           seq {
             InlineKeyboardButton("Included playlists", CallbackData = $"p|{presetId}|ip")
             InlineKeyboardButton("Excluded playlists", CallbackData = $"p|{presetId}|ep")
+            InlineKeyboardButton("Target playlists", CallbackData = $"p|{presetId}|tp")
           }
 
           seq { InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId}|c") }
@@ -99,7 +101,7 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "(.)", "\$1")
 
-let showIncludedPlaylists (bot: ITelegramBotClient) : ShowIncludedPlaylist =
+let showIncludedPlaylists (bot: ITelegramBotClient) : ShowIncludedPlaylists =
   let createButtonFromPlaylist =
     fun (playlist: IncludedPlaylist) ->
       InlineKeyboardButton(playlist.Name, CallbackData = $"ip|{playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value}|i")
@@ -131,7 +133,7 @@ let showIncludedPlaylists (bot: ITelegramBotClient) : ShowIncludedPlaylist =
       return ()
     }
 
-let showExcludedPlaylists (bot: ITelegramBotClient) : ShowExcludedPlaylist =
+let showExcludedPlaylists (bot: ITelegramBotClient) : ShowExcludedPlaylists =
   let createButtonFromPlaylist =
     fun (playlist: IncludedPlaylist) ->
       InlineKeyboardButton(playlist.Name, CallbackData = $"ep|{playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value}|i")
@@ -156,6 +158,38 @@ let showExcludedPlaylists (bot: ITelegramBotClient) : ShowExcludedPlaylist =
           (userId |> UserId.value |> ChatId),
           messageId,
           $"Preset *{preset.Name |> escapeMarkdownString}* has the next excluded playlists:",
+          ParseMode.MarkdownV2,
+          replyMarkup = replyMarkup
+        )
+
+      return ()
+    }
+
+let showTargetPlaylists (bot: ITelegramBotClient) : ShowTargetPlaylists =
+  let createButtonFromPlaylist =
+    fun (playlist: TargetPlaylist) ->
+      InlineKeyboardButton(playlist.Name, CallbackData = $"tp|{playlist.Id |> WritablePlaylistId.value |> PlaylistId.value}|i")
+
+  fun messageId userId preset ->
+    task {
+      let playlistButtons =
+        [ 0..keyboardColumns .. preset.TargetPlaylists.Length ]
+        |> List.map (fun idx -> preset.TargetPlaylists |> List.skip idx |> List.takeSafe keyboardColumns)
+        |> List.map (Seq.map createButtonFromPlaylist)
+
+      let replyMarkup =
+        Seq.append
+          playlistButtons
+          (InlineKeyboardButton("<< Back", CallbackData = $"p|{preset.Id |> PresetId.value}|i")
+           |> Seq.singleton
+           |> Seq.singleton)
+        |> InlineKeyboardMarkup
+
+      let! _ =
+        bot.EditMessageTextAsync(
+          (userId |> UserId.value |> ChatId),
+          messageId,
+          $"Preset *{preset.Name |> escapeMarkdownString}* has the next target playlists:",
           ParseMode.MarkdownV2,
           replyMarkup = replyMarkup
         )

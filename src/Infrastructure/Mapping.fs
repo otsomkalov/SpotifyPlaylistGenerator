@@ -5,12 +5,6 @@ open Database.Entities
 open Infrastructure.Core
 open Domain.Core
 
-module ReadablePlaylistId =
-  let fromDb (playlists: #Playlist seq) =
-    playlists
-    |> Seq.map (fun p -> p.Url |> PlaylistId |> ReadablePlaylistId)
-    |> Seq.toList
-
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   let fromDb (playlist: SourcePlaylist) : IncludedPlaylist =
@@ -27,6 +21,7 @@ module ExcludedPlaylist =
 module TargetPlaylist =
   let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
     { Id = playlist.Url |> PlaylistId |> WritablePlaylistId
+      Name = playlist.Name
       Overwrite = playlist.Overwrite }
 
   let mapPlaylists (playlists: Database.Entities.TargetPlaylist seq) =

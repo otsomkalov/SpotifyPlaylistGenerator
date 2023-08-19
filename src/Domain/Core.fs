@@ -44,6 +44,7 @@ module WritablePlaylist =
 
 type TargetPlaylist =
   { Id: WritablePlaylistId
+    Name: string
     Overwrite: bool }
 
 [<RequireQualifiedAccess>]

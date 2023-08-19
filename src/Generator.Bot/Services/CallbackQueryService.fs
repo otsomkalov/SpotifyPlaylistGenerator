@@ -16,8 +16,9 @@ open Domain.Extensions
 [<NoEquality; NoComparison>]
 type ProcessCallbackQueryDeps ={
   LoadPreset: Workflows.Preset.Load
-  ShowIncludedPlaylists: Telegram.ShowIncludedPlaylist
-  ShowExcludedPlaylists: Telegram.ShowExcludedPlaylist
+  ShowIncludedPlaylists: Telegram.ShowIncludedPlaylists
+  ShowExcludedPlaylists: Telegram.ShowExcludedPlaylists
+  ShowTargetPlaylists: Telegram.ShowTargetPlaylists
 }
 
 type CallbackQueryService
@@ -62,6 +63,12 @@ type CallbackQueryService
 
     presetId |> (deps.LoadPreset >> Async.bind showExcludedPlaylists' >> Async.StartAsTask)
 
+  let showTargetPlaylists userId presetId (callbackQuery: CallbackQuery) =
+    let showTargetPlaylists =
+      deps.ShowTargetPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+
+    presetId |> (deps.LoadPreset >> Async.bind showTargetPlaylists >> Async.StartAsTask)
+
   let showIncludedPlaylist (callbackQuery: CallbackQuery) =
     task{
       do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
@@ -70,6 +77,13 @@ type CallbackQueryService
     }
 
   let showExcludedPlaylist (callbackQuery: CallbackQuery) =
+    task{
+      do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
+
+      return ()
+    }
+
+  let showTargetPlaylist (callbackQuery: CallbackQuery) =
     task{
       do! _bot.AnswerCallbackQueryAsync(callbackQuery.Id, "Not implemented yet")
 
@@ -99,10 +113,12 @@ type CallbackQueryService
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("ip", id, "i") -> showIncludedPlaylist
         | CallbackQueryData("ep", id, "i") -> showExcludedPlaylist
+        | CallbackQueryData("tp", id, "i") -> showTargetPlaylist
         | PresetAction(id, "i") -> showSelectedPreset userId (id |> PresetId)
         | PresetAction(id, "c") -> setCurrentPreset userId (id |> PresetId)
         | PresetAction(id, "ip") -> showIncludedPlaylists userId (id |> PresetId)
         | PresetAction(id, "ep") -> showExcludedPlaylists userId (id |> PresetId)
+        | PresetAction(id, "tp") -> showTargetPlaylists userId (id |> PresetId)
 
       return! processCallbackQueryDataTask callbackQuery
     }
