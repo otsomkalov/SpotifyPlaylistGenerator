@@ -40,7 +40,8 @@ type Startup() =
     fun bot loadPreset ->
       { LoadPreset = loadPreset
         ShowIncludedPlaylists = Telegram.showIncludedPlaylists bot
-        ShowExcludedPlaylists = Telegram.showExcludedPlaylists bot }
+        ShowExcludedPlaylists = Telegram.showExcludedPlaylists bot
+        ShowTargetPlaylists = Telegram.showTargetPlaylists bot }
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 

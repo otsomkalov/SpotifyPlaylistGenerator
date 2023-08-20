@@ -25,7 +25,8 @@ type GeneratorFunctions
 
   [<FunctionName("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, logger: ILogger) =
-    let cache = connectionMultiplexer.GetDatabase 0
+    let playlistsCache = connectionMultiplexer.GetDatabase 0
+    let likedTracksCache = connectionMultiplexer.GetDatabase 3
 
     task {
       let! client = _spotifyClientProvider.GetAsync message.TelegramId
@@ -33,12 +34,12 @@ type GeneratorFunctions
       let listTracks = Playlist.listTracks logger client
       let listLikedTracks = User.listLikedTracks client
 
-      let listPlaylistTracks = Cache.listOrRefresh cache message.RefreshCache listTracks
+      let listPlaylistTracks = Cache.listOrRefresh playlistsCache message.RefreshCache listTracks
 
       let listLikedTracks =
-        Cache.listOrRefreshByKey cache message.RefreshCache listLikedTracks message.TelegramId
+        Cache.listOrRefreshByKey likedTracksCache message.RefreshCache listLikedTracks message.TelegramId
 
-      let updateTargetPlaylist = TargetPlaylist.update cache client
+      let updateTargetPlaylist = TargetPlaylist.update playlistsCache client
 
       logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
 
