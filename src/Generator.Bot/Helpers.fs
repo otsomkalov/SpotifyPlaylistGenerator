@@ -42,6 +42,11 @@ let (|CallbackQueryData|_|) (str: string) =
   | [| entityType; entityId; entityAction |] -> Some(entityType, entityId, entityAction)
   | _ -> None
 
+let (|CallbackQueryDataWithPage|_|) (str: string) =
+  match str.Split("|") with
+  | [| entityType; entityId; entityAction; page |] -> Some(entityType, entityId, entityAction, int page)
+  | _ -> None
+
 let (|PresetAction|_|) (str: string) =
   match str.Split("|") with
   | [| entityType; entityId; entityAction |] ->
