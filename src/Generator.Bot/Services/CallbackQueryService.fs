@@ -51,21 +51,21 @@ type CallbackQueryService
       return ()
     }
 
-  let showIncludedPlaylists userId presetId (callbackQuery: CallbackQuery) =
+  let showIncludedPlaylists userId presetId page (callbackQuery: CallbackQuery) =
     let showIncludedPlaylists' =
-      deps.ShowIncludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+      deps.ShowIncludedPlaylists callbackQuery.Message.MessageId page userId >> Async.AwaitTask
 
     presetId |> (deps.LoadPreset >> Async.bind showIncludedPlaylists' >> Async.StartAsTask)
 
-  let showExcludedPlaylists userId presetId (callbackQuery: CallbackQuery) =
+  let showExcludedPlaylists userId presetId page (callbackQuery: CallbackQuery) =
     let showExcludedPlaylists' =
-      deps.ShowExcludedPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+      deps.ShowExcludedPlaylists callbackQuery.Message.MessageId page userId >> Async.AwaitTask
 
     presetId |> (deps.LoadPreset >> Async.bind showExcludedPlaylists' >> Async.StartAsTask)
 
-  let showTargetPlaylists userId presetId (callbackQuery: CallbackQuery) =
+  let showTargetPlaylists userId presetId page (callbackQuery: CallbackQuery) =
     let showTargetPlaylists =
-      deps.ShowTargetPlaylists callbackQuery.Message.MessageId userId >> Async.AwaitTask
+      deps.ShowTargetPlaylists callbackQuery.Message.MessageId page userId >> Async.AwaitTask
 
     presetId |> (deps.LoadPreset >> Async.bind showTargetPlaylists >> Async.StartAsTask)
 
@@ -114,11 +114,11 @@ type CallbackQueryService
         | CallbackQueryData("ip", id, "i") -> showIncludedPlaylist
         | CallbackQueryData("ep", id, "i") -> showExcludedPlaylist
         | CallbackQueryData("tp", id, "i") -> showTargetPlaylist
+        | CallbackQueryDataWithPage("p", id, "ip", page) -> showIncludedPlaylists userId (id |> int |> PresetId) page
+        | CallbackQueryDataWithPage("p", id, "ep", page) -> showExcludedPlaylists userId (id |> int |> PresetId) page
+        | CallbackQueryDataWithPage("p", id, "tp", page) -> showTargetPlaylists userId (id |> int |> PresetId) page
         | PresetAction(id, "i") -> showSelectedPreset userId (id |> PresetId)
         | PresetAction(id, "c") -> setCurrentPreset userId (id |> PresetId)
-        | PresetAction(id, "ip") -> showIncludedPlaylists userId (id |> PresetId)
-        | PresetAction(id, "ep") -> showExcludedPlaylists userId (id |> PresetId)
-        | PresetAction(id, "tp") -> showTargetPlaylists userId (id |> PresetId)
 
       return! processCallbackQueryDataTask callbackQuery
     }

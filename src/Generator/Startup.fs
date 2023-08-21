@@ -37,11 +37,11 @@ type Startup() =
     QueueClient(settings.ConnectionString, settings.QueueName)
 
   let buildProcessCallbackQueryDeps =
-    fun bot loadPreset ->
+    fun loadPreset editMessage ->
       { LoadPreset = loadPreset
-        ShowIncludedPlaylists = Telegram.showIncludedPlaylists bot
-        ShowExcludedPlaylists = Telegram.showExcludedPlaylists bot
-        ShowTargetPlaylists = Telegram.showTargetPlaylists bot }
+        ShowIncludedPlaylists = Telegram.showIncludedPlaylists editMessage
+        ShowExcludedPlaylists = Telegram.showExcludedPlaylists editMessage
+        ShowTargetPlaylists = Telegram.showTargetPlaylists editMessage }
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
@@ -97,8 +97,9 @@ type Startup() =
     services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, User.LoadPreset>(Telegram.sendPresetInfo)
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
+    services.AddScopedFunc<Telegram.EditMessage, ITelegramBotClient>(Telegram.editMessage)
 
-    services.AddScopedFunc<ProcessCallbackQueryDeps, ITelegramBotClient, Preset.Load>(buildProcessCallbackQueryDeps)
+    services.AddScopedFunc<ProcessCallbackQueryDeps, Preset.Load, Telegram.EditMessage>(buildProcessCallbackQueryDeps)
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
     services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)
