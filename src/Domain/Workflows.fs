@@ -25,6 +25,7 @@ module User =
 [<RequireQualifiedAccess>]
 module Preset =
   type Load = PresetId -> Async<Preset>
+  type UpdateSettings = PresetSettings.PresetSettings -> Task<unit>
 
   let validate: Preset.Validate =
     fun preset ->
@@ -51,16 +52,6 @@ module PresetSettings =
         let updatedSettings = { presetSettings with PlaylistSize = playlistSize }
 
         do! updatePresetSettings userId updatedSettings
-      }
-
-  let setLikedTracksHandling (loadPresetSettings: Load) (updateInStorage: Update) : PresetSettings.SetLikedTracksHandling =
-    fun userId likedTracksHandling ->
-      task {
-        let! presetSettings = loadPresetSettings userId
-
-        let updatedSettings = { presetSettings with LikedTracksHandling = likedTracksHandling }
-
-        do! updateInStorage userId updatedSettings
       }
 
 [<RequireQualifiedAccess>]

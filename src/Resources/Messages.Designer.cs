@@ -224,6 +224,18 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Preset name: *{0}*
+        ///Preset settings:
+        ///*Include liked tracks* - {1}
+        ///*Playlist size* - {2}.
+        /// </summary>
+        public static string PresetInfo {
+            get {
+                return ResourceManager.GetString("PresetInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Send included playlist.
         /// </summary>
         public static string SendIncludedPlaylist {

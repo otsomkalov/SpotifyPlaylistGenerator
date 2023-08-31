@@ -6,8 +6,12 @@ open System.Threading.Tasks
 open Database
 open Domain.Core
 open Domain.Workflows
+open Generator.Bot.Constants
 open Infrastructure.Core
 open Infrastructure.Helpers
+open Infrastructure.Mapping
+open Infrastructure.Workflows
+open Resources
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -28,6 +32,7 @@ type EditMessage = int -> UserId -> string -> InlineKeyboardMarkup -> Task<unit>
 type ShowIncludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type ShowExcludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type ShowTargetPlaylists = int -> int -> UserId -> Preset -> Task<unit>
+type SetLikedTracksHandling = UserId -> PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 
 type AuthState =
   | Authorized
@@ -50,12 +55,31 @@ let sendUserPresets (bot: ITelegramBotClient) (listPresets: User.ListPresets) : 
         |> Task.map ignore
     }
 
-let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: User.LoadPreset) : SendPresetInfo =
+let escapeMarkdownString (str: string) = Regex.Replace(str, "([`#\-])", "\$1")
+
+let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: Preset.Load) : SendPresetInfo =
   fun messageId userId presetId ->
     task {
       let! preset = loadPreset presetId |> Async.StartAsTask
 
       let presetId = presetId |> PresetId.value
+
+      let messageText, buttonText, buttonData =
+        match preset.Settings.LikedTracksHandling with
+        | PresetSettings.LikedTracksHandling.Include ->
+          Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.excludeLikedTracks}"
+        | PresetSettings.LikedTracksHandling.Exclude ->
+          Messages.LikedTracksExcluded, Messages.IgnoreLikedTracks, $"p|{presetId}|{CallbackQueryConstants.ignoreLikedTracks}"
+        | PresetSettings.LikedTracksHandling.Ignore ->
+          Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.includeLikedTracks}"
+
+      let text =
+        System.String.Format(
+          Messages.PresetInfo,
+          preset.Name,
+          messageText,
+          (preset.Settings.PlaylistSize |> PlaylistSize.value)
+        )
 
       let keyboardMarkup =
         seq {
@@ -65,17 +89,15 @@ let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: User.LoadPreset) : Sen
             InlineKeyboardButton("Target playlists", CallbackData = $"p|{presetId}|tp|0")
           }
 
+          seq { InlineKeyboardButton(buttonText, CallbackData = buttonData) }
+
           seq { InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId}|c") }
         }
         |> InlineKeyboardMarkup
 
+      let escapeMarkdownString = text |> escapeMarkdownString
       do!
-        bot.EditMessageTextAsync(
-          (userId |> UserId.value |> ChatId),
-          messageId,
-          $"Your preset info: {preset.Name}",
-          replyMarkup = keyboardMarkup
-        )
+        bot.EditMessageTextAsync((userId |> UserId.value |> ChatId), messageId, escapeMarkdownString, ParseMode.MarkdownV2, replyMarkup = keyboardMarkup)
         |> Task.map ignore
     }
 
@@ -102,8 +124,6 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
   >> Task.map (function
     | null -> Unauthorized
     | _ -> Authorized)
-
-let escapeMarkdownString (str: string) = Regex.Replace(str, "(.)", "\$1")
 
 let editMessage (bot: ITelegramBotClient) : EditMessage =
   fun messageId userId text replyMarkup ->
@@ -184,3 +204,13 @@ let showTargetPlaylists editMessage : ShowTargetPlaylists =
       createPlaylistsPage page preset.TargetPlaylists createButtonFromPlaylist preset.Id
 
     editMessage messageId userId $"Preset *{preset.Name |> escapeMarkdownString}* has the next target playlists:" replyMarkup
+
+let setLikedTracksHandling (bot: ITelegramBotClient) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) callbackQueryId messageId : SetLikedTracksHandling =
+  fun userId presetId likedTracksHandling ->
+    task{
+      do! setLikedTracksHandling presetId likedTracksHandling
+
+      do! bot.AnswerCallbackQueryAsync(callbackQueryId, Messages.Updated)
+
+      return! sendPresetInfo messageId userId presetId
+    }

@@ -23,7 +23,6 @@ type ProcessCallbackQueryDeps ={
 
 type CallbackQueryService
   (
-    _setIncludeLikedTracksCommandHandler: SetIncludeLikedTracksCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _context: AppDbContext,
     _bot: ITelegramBotClient,
@@ -96,18 +95,27 @@ type CallbackQueryService
   let setCurrentPreset userId presetId (callbackQuery: CallbackQuery) =
     setCurrentPreset callbackQuery.Id userId presetId
 
+  let setLikedTracksHandling userId presetId handling (callbackQuery: CallbackQuery) =
+    let updatePresetSettings = Preset.updateSettings _context presetId
+    let setLikedTracksHandling = Preset.setLikedTracksHandling deps.LoadPreset updatePresetSettings
+    let sendPresetInfo = Telegram.sendPresetInfo _bot deps.LoadPreset
+
+    let setLikedTracksHandling = Telegram.setLikedTracksHandling _bot setLikedTracksHandling sendPresetInfo callbackQuery.Id callbackQuery.Message.MessageId userId
+
+    setLikedTracksHandling presetId handling
+
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     task {
       let processCallbackQueryDataTask: CallbackQuery -> Task<unit> =
         let userId = callbackQuery.From.Id |> UserId
 
         match callbackQuery.Data with
-        | CallbackQueryConstants.includeLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Include
-        | CallbackQueryConstants.excludeLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Exclude
-        | CallbackQueryConstants.ignoreLikedTracks ->
-          _setIncludeLikedTracksCommandHandler.HandleAsync PresetSettings.LikedTracksHandling.Ignore
+        | PresetAction(id, CallbackQueryConstants.includeLikedTracks) ->
+          setLikedTracksHandling userId id PresetSettings.LikedTracksHandling.Include
+        | PresetAction(id, CallbackQueryConstants.excludeLikedTracks) ->
+          setLikedTracksHandling userId id PresetSettings.LikedTracksHandling.Exclude
+        | PresetAction(id, CallbackQueryConstants.ignoreLikedTracks) ->
+          setLikedTracksHandling userId id PresetSettings.LikedTracksHandling.Ignore
         | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
         | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
@@ -117,8 +125,8 @@ type CallbackQueryService
         | CallbackQueryDataWithPage("p", id, "ip", page) -> showIncludedPlaylists userId (id |> int |> PresetId) page
         | CallbackQueryDataWithPage("p", id, "ep", page) -> showExcludedPlaylists userId (id |> int |> PresetId) page
         | CallbackQueryDataWithPage("p", id, "tp", page) -> showTargetPlaylists userId (id |> int |> PresetId) page
-        | PresetAction(id, "i") -> showSelectedPreset userId (id |> PresetId)
-        | PresetAction(id, "c") -> setCurrentPreset userId (id |> PresetId)
+        | PresetAction(id, "i") -> showSelectedPreset userId id
+        | PresetAction(id, "c") -> setCurrentPreset userId id
 
       return! processCallbackQueryDataTask callbackQuery
     }
