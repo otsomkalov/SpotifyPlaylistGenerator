@@ -91,17 +91,19 @@ let sendPresetInfo (bot: ITelegramBotClient) (getPresetMessage: GetPresetMessage
     task {
       let! text, buttonText, buttonData = getPresetMessage presetId
 
+      let presetId = presetId |> PresetId.value
+
       let keyboardMarkup =
         seq {
           seq {
-            InlineKeyboardButton("Included playlists", CallbackData = $"p|{presetId}|ip|0")
-            InlineKeyboardButton("Excluded playlists", CallbackData = $"p|{presetId}|ep|0")
-            InlineKeyboardButton("Target playlists", CallbackData = $"p|{presetId}|tp|0")
+            InlineKeyboardButton("Included playlists", CallbackData = $"p|%i{presetId}|ip|0")
+            InlineKeyboardButton("Excluded playlists", CallbackData = $"p|%i{presetId}|ep|0")
+            InlineKeyboardButton("Target playlists", CallbackData = $"p|%i{presetId}|tp|0")
           }
 
           seq { InlineKeyboardButton(buttonText, CallbackData = buttonData) }
 
-          seq { InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId}|c") }
+          seq { InlineKeyboardButton("Set as current", CallbackData = $"p|%i{presetId}|c") }
         }
         |> InlineKeyboardMarkup
 
