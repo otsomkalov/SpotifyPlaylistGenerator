@@ -19,14 +19,14 @@ steps:
     name: Restore
     inputs:
       command: 'restore'
-      projects: '**/*.fsproj'
+      projects: 'src/**/Generator.fsproj'
       arguments: '-r $(Runtime)'
   - task: DotNetCoreCLI@2
     name: Build
     inputs:
       command: 'build'
       configuration: 'Release'
-      projects: '**/*.fsproj'
+      projects: 'src/**/Generator.fsproj'
       arguments: '-r $(Runtime) -c Release --no-self-contained'
       publishWebProjects: false
   - task: DotNetCoreCLI@2
