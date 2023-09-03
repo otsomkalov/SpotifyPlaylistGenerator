@@ -2,24 +2,26 @@
 
 open System.Threading.Tasks
 open Generator.Bot
-open Resources
 open Database
 open Database.Entities
 open Domain.Core
 open Domain.Workflows
 open Infrastructure
 open Infrastructure.Spotify
-open Microsoft.Extensions.Logging
 open Shared.Services
 open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
-open Telegram.Bot.Types.ReplyMarkups
 
 type StartCommand = { AuthState: Telegram.AuthState; Text: string }
 type ProcessStartCommand = StartCommand -> Task<unit>
+
+[<NoEquality; NoComparison>]
+type StartCommandDeps ={
+  SendCurrentPresetInfo: Telegram.SendCurrentPresetInfo
+}
 
 type StartCommandHandler
   (
@@ -31,11 +33,11 @@ type StartCommandHandler
     createClientFromTokenResponse: CreateClientFromTokenResponse,
     cacheToken: TokenProvider.CacheToken,
     checkAuth: Telegram.CheckAuth,
-    sendCurrentPresetInfo: Telegram.SendCurrentPresetInfo
+    deps: StartCommandDeps
   ) =
 
   let sendMessageAsync (message: Message) =
-    sendCurrentPresetInfo (message.From.Id |> UserId)
+    deps.SendCurrentPresetInfo (message.From.Id |> UserId)
 
   let handleCommandDataAsync (message: Message) (stateKey: string) =
     let userId = message.From.Id |> UserId

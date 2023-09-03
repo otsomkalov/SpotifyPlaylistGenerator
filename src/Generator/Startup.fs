@@ -43,6 +43,10 @@ type Startup() =
         ShowExcludedPlaylists = Telegram.showExcludedPlaylists editMessage
         ShowTargetPlaylists = Telegram.showTargetPlaylists editMessage }
 
+  let buildStartCommandDeps =
+    fun bot getCurrentPresetId getPresetMessage ->
+      { SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage  }
+
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
     builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
@@ -97,9 +101,9 @@ type Startup() =
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
     services.AddScopedFunc<Telegram.EditMessage, ITelegramBotClient>(Telegram.editMessage)
-    services.AddScopedFunc<Telegram.SendCurrentPresetInfo, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(Telegram.sendCurrentPresetInfo)
 
     services.AddScopedFunc<ProcessCallbackQueryDeps, Preset.Load, Telegram.EditMessage>(buildProcessCallbackQueryDeps)
+    services.AddScopedFunc<StartCommandDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(buildStartCommandDeps)
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
     services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)
