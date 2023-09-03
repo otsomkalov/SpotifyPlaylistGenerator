@@ -1,17 +1,28 @@
 ﻿namespace Generator.Bot.Services
 
 open Domain.Core
+open Domain.Workflows
 open Resources
 open Database
 open Generator.Bot
 open Microsoft.FSharp.Core
 open Telegram.Bot
 open Telegram.Bot.Types
-open Telegram.Bot.Types.ReplyMarkups
 open Helpers
 open Infrastructure.Core
 
-type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbContext, _settingsCommandHandler: SettingsCommandHandler, setPlaylistSize: PresetSettings.SetPlaylistSize) =
+[<NoComparison; NoEquality>]
+type SetPlaylistSizeDeps ={
+  SendSettingsMessage: Telegram.SendSettingsMessage
+}
+
+type SetPlaylistSizeCommandHandler
+  (
+    _bot: ITelegramBotClient,
+    _context: AppDbContext,
+    setPlaylistSize: PresetSettings.SetPlaylistSize,
+    deps: SetPlaylistSizeDeps
+  ) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
       _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.WrongPlaylistSize, replyToMessageId = message.MessageId)
@@ -22,11 +33,11 @@ type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbCont
     task {
       match PlaylistSize.tryCreate size with
       | Ok playlistSize ->
-        do! setPlaylistSize (UserId message.From.Id) playlistSize
+        let userId = message.From.Id |> UserId
 
-        let! _ = _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.PlaylistSizeSet, replyToMessageId = message.MessageId)
+        do! setPlaylistSize userId playlistSize
 
-        return! _settingsCommandHandler.HandleAsync message
+        return! deps.SendSettingsMessage userId
       | Error e ->
         _bot.SendTextMessageAsync(ChatId(message.Chat.Id), e, replyToMessageId = message.MessageId)
         |> ignore
@@ -40,13 +51,4 @@ type SetPlaylistSizeCommandHandler(_bot: ITelegramBotClient, _context: AppDbCont
         | _ -> handleWrongCommandDataAsync
 
       return! processMessageFunc message
-    }
-
-  member this.HandleAsync(callbackQuery: CallbackQuery) =
-    task {
-      _bot.AnswerCallbackQueryAsync(callbackQuery.Id)
-      |> ignore
-
-      _bot.SendTextMessageAsync(ChatId(callbackQuery.From.Id), Messages.SendPlaylistSize, replyMarkup = ForceReplyMarkup())
-      |> ignore
     }

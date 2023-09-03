@@ -117,7 +117,6 @@ type CallbackQueryService
           setLikedTracksHandling userId id PresetSettings.LikedTracksHandling.Exclude
         | PresetAction(id, CallbackQueryConstants.ignoreLikedTracks) ->
           setLikedTracksHandling userId id PresetSettings.LikedTracksHandling.Ignore
-        | CallbackQueryConstants.setPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
         | CallbackQueryData("tp", id, "a") -> appendToTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("tp", id, "o") -> overwriteTargetPlaylist userId (id |> PlaylistId |> WritablePlaylistId)
         | CallbackQueryData("ip", id, "i") -> showIncludedPlaylist

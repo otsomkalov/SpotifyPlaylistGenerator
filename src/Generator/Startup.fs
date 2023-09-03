@@ -45,7 +45,17 @@ type Startup() =
 
   let buildStartCommandDeps =
     fun bot getCurrentPresetId getPresetMessage ->
-      { SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage  }
+      { SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage }
+
+  let buildMessageServiceDeps =
+    fun bot getCurrentPresetId getPresetMessage ->
+      { SendSettingsMessage = Telegram.sendSettingsMessage bot getCurrentPresetId getPresetMessage
+        SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage
+        AskForPlaylistSize = Telegram.askForPlaylistSize bot }
+
+  let buildSetPlaylistSizeDeps =
+    fun bot getCurrentPresetId getPresetMessage ->
+      { SendSettingsMessage = Telegram.sendSettingsMessage bot getCurrentPresetId getPresetMessage }
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
@@ -69,14 +79,12 @@ type Startup() =
       .AddScoped<GenerateCommandHandler>()
       .AddScoped<UnknownCommandHandler>()
       .AddScoped<EmptyCommandDataHandler>()
-      .AddScoped<SettingsCommandHandler>()
 
       .AddScoped<PlaylistCommandHandler>()
       .AddScoped<AddSourcePlaylistCommandHandler>()
       .AddScoped<SetTargetPlaylistCommandHandler>()
       .AddScoped<AddHistoryPlaylistCommandHandler>()
 
-      .AddScoped<GetSettingsMessageCommandHandler>()
       .AddScoped<SetPlaylistSizeCommandHandler>()
 
       .AddScoped<MessageService>()
@@ -104,6 +112,14 @@ type Startup() =
 
     services.AddScopedFunc<ProcessCallbackQueryDeps, Preset.Load, Telegram.EditMessage>(buildProcessCallbackQueryDeps)
     services.AddScopedFunc<StartCommandDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(buildStartCommandDeps)
+
+    services.AddScopedFunc<MessageServiceDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(
+      buildMessageServiceDeps
+    )
+
+    services.AddScopedFunc<SetPlaylistSizeDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(
+      buildSetPlaylistSizeDeps
+    )
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
     services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)
