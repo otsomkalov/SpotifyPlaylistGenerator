@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Generator\Generator.fsproj" />
+    <ProjectReference Include="..\..\src\Generator\Generator.fsproj" />
   </ItemGroup>
 
 </Project>
