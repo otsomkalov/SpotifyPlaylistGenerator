@@ -114,6 +114,18 @@ module User =
 
     PresetId.value >> loadPreset >> Task.map SimplePreset.fromDb >> Async.AwaitTask
 
+  let getCurrentPresetId (context: AppDbContext) : User.GetCurrentPresetId =
+    fun userId ->
+      let userId = userId |> UserId.value
+
+      context.Users
+        .AsNoTracking()
+        .Where(fun u -> u.Id = userId)
+        .Select(fun u -> u.CurrentPresetId)
+        .FirstOrDefaultAsync()
+      |> Task.map (fun id -> id.Value |> PresetId)
+      |> Async.AwaitTask
+
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
   let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.Update =

@@ -29,7 +29,8 @@ type CallbackQueryService
     sendPresetInfo: Telegram.SendPresetInfo,
     _queueClient: QueueClient,
     setCurrentPreset: Telegram.SetCurrentPreset,
-    deps: ProcessCallbackQueryDeps
+    deps: ProcessCallbackQueryDeps,
+    getPresetMessage: Telegram.GetPresetMessage
   ) =
 
   let appendToTargetPlaylist userId playlistId (callbackQuery: CallbackQuery) =
@@ -98,7 +99,7 @@ type CallbackQueryService
   let setLikedTracksHandling userId presetId handling (callbackQuery: CallbackQuery) =
     let updatePresetSettings = Preset.updateSettings _context presetId
     let setLikedTracksHandling = Preset.setLikedTracksHandling deps.LoadPreset updatePresetSettings
-    let sendPresetInfo = Telegram.sendPresetInfo _bot deps.LoadPreset
+    let sendPresetInfo = Telegram.sendPresetInfo _bot getPresetMessage
 
     let setLikedTracksHandling = Telegram.setLikedTracksHandling _bot setLikedTracksHandling sendPresetInfo callbackQuery.Id callbackQuery.Message.MessageId userId
 

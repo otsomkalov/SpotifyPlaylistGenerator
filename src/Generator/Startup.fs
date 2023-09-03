@@ -83,6 +83,7 @@ type Startup() =
     services.AddSingletonFunc<User.LoadCurrentPreset, AppDbContext>(User.loadCurrentPreset)
     services.AddSingletonFunc<User.ListPresets, AppDbContext>(User.listPresets)
     services.AddSingletonFunc<User.LoadPreset, AppDbContext>(User.loadPreset)
+    services.AddSingletonFunc<User.GetCurrentPresetId, AppDbContext>(User.getCurrentPresetId)
 
     services.AddSingletonFunc<Preset.Load, AppDbContext>(Preset.load)
 
@@ -91,10 +92,12 @@ type Startup() =
     services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
 
     services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
-    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, Preset.Load>(Telegram.sendPresetInfo)
+    services.AddScopedFunc<Telegram.GetPresetMessage, Preset.Load>(Telegram.getPresetMessage)
+    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, Telegram.GetPresetMessage>(Telegram.sendPresetInfo)
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
     services.AddScopedFunc<Telegram.EditMessage, ITelegramBotClient>(Telegram.editMessage)
+    services.AddScopedFunc<Telegram.SendCurrentPresetInfo, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(Telegram.sendCurrentPresetInfo)
 
     services.AddScopedFunc<ProcessCallbackQueryDeps, Preset.Load, Telegram.EditMessage>(buildProcessCallbackQueryDeps)
 

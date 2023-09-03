@@ -30,28 +30,12 @@ type StartCommandHandler
     getState: State.GetState,
     createClientFromTokenResponse: CreateClientFromTokenResponse,
     cacheToken: TokenProvider.CacheToken,
-    checkAuth: Telegram.CheckAuth
+    checkAuth: Telegram.CheckAuth,
+    sendCurrentPresetInfo: Telegram.SendCurrentPresetInfo
   ) =
 
   let sendMessageAsync (message: Message) =
-    task {
-      let replyMarkup =
-        ReplyKeyboardMarkup(
-          seq {
-            seq { KeyboardButton(Messages.MyPresets) }
-            seq { KeyboardButton(Messages.IncludePlaylist) }
-            seq { KeyboardButton(Messages.Settings) }
-          }
-        )
-
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "You've successfully logged in!",
-        replyToMessageId = message.MessageId,
-        replyMarkup = replyMarkup
-      )
-      |> ignore
-    }
+    sendCurrentPresetInfo (message.From.Id |> UserId)
 
   let handleCommandDataAsync (message: Message) (stateKey: string) =
     let userId = message.From.Id |> UserId

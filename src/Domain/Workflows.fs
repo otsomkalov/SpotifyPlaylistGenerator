@@ -21,6 +21,7 @@ module User =
 
   type ListPresets = UserId -> Async<SimplePreset seq>
   type LoadPreset = PresetId -> Async<SimplePreset>
+  type GetCurrentPresetId = UserId -> Async<PresetId>
 
 [<RequireQualifiedAccess>]
 module Preset =
