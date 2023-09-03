@@ -128,3 +128,6 @@ module Preset =
     | Errors of ValidationError list
 
   type Validate = Preset -> ValidationResult
+
+  type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+

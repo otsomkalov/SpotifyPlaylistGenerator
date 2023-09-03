@@ -21,6 +21,12 @@
     <data name="Settings" xml:space="preserve">
         <value>⚙ Settings</value>
     </data>
+    <data name="PresetInfo" xml:space="preserve">
+        <value>Preset name: *{0}*
+Preset settings:
+*Include liked tracks* - {1}
+*Playlist size* - {2}</value>
+    </data>
     <data name="CurrentSettings" xml:space="preserve">
         <value>Your current settings are:
 *Include liked tracks* - {0}

@@ -1,6 +1,7 @@
 ﻿module Generator.Bot.Helpers
 
 open System
+open Domain.Core
 
 let (|StartsWith|_|) (substring: string) (str: string) =
   if str.StartsWith(substring, StringComparison.InvariantCultureIgnoreCase) then
@@ -51,6 +52,6 @@ let (|PresetAction|_|) (str: string) =
   match str.Split("|") with
   | [| entityType; entityId; entityAction |] ->
     match entityType, entityId with
-    | "p", Int id -> Some(id, entityAction)
+    | "p", Int id -> Some(PresetId id, entityAction)
     | _ -> None
   | _ -> None

@@ -316,7 +316,7 @@ module Playlist =
         return playlist
       }
 
-  let excludeInStorage (context: AppDbContext) userId  (loadCurrentPreset: User.LoadCurrentPreset): Playlist.ExcludeInStorage =
+  let excludeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.ExcludeInStorage =
     fun playlist ->
       task {
         let! currentPreset = loadCurrentPreset userId
@@ -367,3 +367,32 @@ module Preset =
       |> Async.AwaitTask
 
     PresetId.value >> loadDbPreset >> Async.map Preset.fromDb
+
+  let updateSettings (context: AppDbContext) (presetId: PresetId) : Preset.UpdateSettings =
+    fun settings ->
+      task {
+        let (PresetId presetId) = presetId
+
+        let! dbPreset =
+          context.Presets
+            .FirstOrDefaultAsync(fun p -> p.Id = presetId)
+
+        let updatedDbSettings = settings |> PresetSettings.toDb
+
+        dbPreset.Settings <- updatedDbSettings
+
+        context.Presets.Update(dbPreset) |> ignore
+
+        let! _ = context.SaveChangesAsync()
+
+        return ()
+      }
+
+  let setLikedTracksHandling (loadPreset: Preset.Load) (updateSettings: Preset.UpdateSettings) : Preset.SetLikedTracksHandling =
+    fun presetId likedTracksHandling ->
+      loadPreset presetId
+      |> Async.StartAsTask
+      |> Task.map (fun p ->
+        { p.Settings with
+            LikedTracksHandling = likedTracksHandling })
+      |> Task.bind updateSettings

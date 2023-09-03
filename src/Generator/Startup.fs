@@ -73,7 +73,6 @@ type Startup() =
       .AddScoped<AddHistoryPlaylistCommandHandler>()
 
       .AddScoped<GetSettingsMessageCommandHandler>()
-      .AddScoped<SetIncludeLikedTracksCommandHandler>()
       .AddScoped<SetPlaylistSizeCommandHandler>()
 
       .AddScoped<MessageService>()
@@ -91,10 +90,8 @@ type Startup() =
     services.AddScopedFunc<PresetSettings.Update, AppDbContext>(PresetSettings.update)
     services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
 
-    services.AddScopedFunc<PresetSettings.SetLikedTracksHandling, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setLikedTracksHandling)
-
     services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
-    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, User.LoadPreset>(Telegram.sendPresetInfo)
+    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, Preset.Load>(Telegram.sendPresetInfo)
     services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
     services.AddScopedFunc<Telegram.EditMessage, ITelegramBotClient>(Telegram.editMessage)

@@ -26,7 +26,6 @@
     <Compile Include="Services\SettingsCommandHandler.fs"/>
     <Compile Include="Services\SetPlaylistSizeCommandHandler.fs"/>
     <Compile Include="Services\MessageService.fs"/>
-    <Compile Include="Services\SetIncludeLikedTracksCommandHandler.fs"/>
     <Compile Include="Services\CallbackQueryService.fs"/>
   </ItemGroup>
 
