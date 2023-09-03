@@ -31,6 +31,19 @@ module ServiceCollection =
         factory service1 service2)
 
     [<Extension>]
+    static member AddScopedFunc<'TFunc, 'TDep1, 'TDep2, 'TDep3 when 'TFunc: not struct>
+      (
+        sc: Microsoft.Extensions.DependencyInjection.IServiceCollection,
+        factory
+      ) =
+      sc.AddScoped<'TFunc>(fun sp ->
+        let service1 = sp.GetRequiredService<'TDep1>()
+        let service2 = sp.GetRequiredService<'TDep2>()
+        let service3 = sp.GetRequiredService<'TDep3>()
+
+        factory service1 service2 service3)
+
+    [<Extension>]
     static member AddSingletonFunc<'TFunc, 'TDep when 'TFunc: not struct>
       (
         sc: Microsoft.Extensions.DependencyInjection.IServiceCollection,

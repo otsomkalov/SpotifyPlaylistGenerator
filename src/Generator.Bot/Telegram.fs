@@ -33,6 +33,8 @@ type ShowIncludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type ShowExcludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type ShowTargetPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type SetLikedTracksHandling = UserId -> PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+type SendCurrentPresetInfo = UserId -> Task<unit>
+type GetPresetMessage = PresetId -> Task<string * string * string>
 
 type AuthState =
   | Authorized
@@ -57,9 +59,9 @@ let sendUserPresets (bot: ITelegramBotClient) (listPresets: User.ListPresets) : 
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "([`#\-])", "\$1")
 
-let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: Preset.Load) : SendPresetInfo =
-  fun messageId userId presetId ->
-    task {
+let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
+  fun presetId ->
+    task{
       let! preset = loadPreset presetId |> Async.StartAsTask
 
       let presetId = presetId |> PresetId.value
@@ -81,23 +83,32 @@ let sendPresetInfo (bot: ITelegramBotClient) (loadPreset: Preset.Load) : SendPre
           (preset.Settings.PlaylistSize |> PlaylistSize.value)
         )
 
+      return (text |> escapeMarkdownString, buttonText, buttonData)
+    }
+
+let sendPresetInfo (bot: ITelegramBotClient) (getPresetMessage: GetPresetMessage) : SendPresetInfo =
+  fun messageId userId presetId ->
+    task {
+      let! text, buttonText, buttonData = getPresetMessage presetId
+
+      let presetId = presetId |> PresetId.value
+
       let keyboardMarkup =
         seq {
           seq {
-            InlineKeyboardButton("Included playlists", CallbackData = $"p|{presetId}|ip|0")
-            InlineKeyboardButton("Excluded playlists", CallbackData = $"p|{presetId}|ep|0")
-            InlineKeyboardButton("Target playlists", CallbackData = $"p|{presetId}|tp|0")
+            InlineKeyboardButton("Included playlists", CallbackData = $"p|%i{presetId}|ip|0")
+            InlineKeyboardButton("Excluded playlists", CallbackData = $"p|%i{presetId}|ep|0")
+            InlineKeyboardButton("Target playlists", CallbackData = $"p|%i{presetId}|tp|0")
           }
 
           seq { InlineKeyboardButton(buttonText, CallbackData = buttonData) }
 
-          seq { InlineKeyboardButton("Set as current", CallbackData = $"p|{presetId}|c") }
+          seq { InlineKeyboardButton("Set as current", CallbackData = $"p|%i{presetId}|c") }
         }
         |> InlineKeyboardMarkup
 
-      let escapeMarkdownString = text |> escapeMarkdownString
       do!
-        bot.EditMessageTextAsync((userId |> UserId.value |> ChatId), messageId, escapeMarkdownString, ParseMode.MarkdownV2, replyMarkup = keyboardMarkup)
+        bot.EditMessageTextAsync((userId |> UserId.value |> ChatId), messageId, text, ParseMode.MarkdownV2, replyMarkup = keyboardMarkup)
         |> Task.map ignore
     }
 
@@ -213,4 +224,28 @@ let setLikedTracksHandling (bot: ITelegramBotClient) (setLikedTracksHandling: Pr
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, Messages.Updated)
 
       return! sendPresetInfo messageId userId presetId
+    }
+
+let sendCurrentPresetInfo
+  (bot: ITelegramBotClient)
+  (getCurrentPresetId: User.GetCurrentPresetId)
+  (getPresetMessage: GetPresetMessage)
+  : SendCurrentPresetInfo =
+  fun userId ->
+    task {
+      let! currentPresetId = getCurrentPresetId userId
+      let! text, _, _ = getPresetMessage currentPresetId
+
+      let replyMarkup =
+        ReplyKeyboardMarkup(
+          seq {
+            seq { KeyboardButton(Messages.MyPresets) }
+            seq { KeyboardButton(Messages.IncludePlaylist) }
+            seq { KeyboardButton(Messages.Settings) }
+          }
+        )
+
+      return!
+        bot.SendTextMessageAsync(userId |> UserId.value |> ChatId, text, ParseMode.MarkdownV2, replyMarkup = replyMarkup)
+        |> Task.map ignore
     }
