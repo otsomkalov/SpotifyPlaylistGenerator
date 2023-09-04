@@ -60,17 +60,6 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Your current settings are:
-        ///*Include liked tracks* - {0}
-        ///*Playlist size* - {1}.
-        /// </summary>
-        public static string CurrentSettings {
-            get {
-                return ResourceManager.GetString("CurrentSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to ➖ Exclude liked.
         /// </summary>
         public static string ExcludeLikedTracks {

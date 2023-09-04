@@ -35,6 +35,8 @@ type ShowTargetPlaylists = int -> int -> UserId -> Preset -> Task<unit>
 type SetLikedTracksHandling = UserId -> PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 type SendCurrentPresetInfo = UserId -> Task<unit>
 type GetPresetMessage = PresetId -> Task<string * string * string>
+type SendSettingsMessage = UserId -> Task<unit>
+type AskForPlaylistSize = UserId -> Task<unit>
 
 type AuthState =
   | Authorized
@@ -224,6 +226,30 @@ let setLikedTracksHandling (bot: ITelegramBotClient) (setLikedTracksHandling: Pr
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, Messages.Updated)
 
       return! sendPresetInfo messageId userId presetId
+    }
+
+let askForPlaylistSize (bot: ITelegramBotClient) : AskForPlaylistSize =
+  fun userId ->
+    bot.SendTextMessageAsync(ChatId(userId |> UserId.value), Messages.SendPlaylistSize, replyMarkup = ForceReplyMarkup())
+    |> Task.map ignore
+
+let sendSettingsMessage (bot: ITelegramBotClient) (getCurrentPresetId: User.GetCurrentPresetId) (getPresetMessage: GetPresetMessage) : SendSettingsMessage =
+  fun userId ->
+    task {
+      let! currentPresetId = getCurrentPresetId userId
+
+      let! text, _, _ = getPresetMessage currentPresetId
+
+      let replyMarkup =
+        seq {
+          seq { KeyboardButton(Messages.SetPlaylistSize) }
+          seq { KeyboardButton("Back") }
+        }
+        |> ReplyKeyboardMarkup
+
+      return!
+        bot.SendTextMessageAsync(userId |> UserId.value |> ChatId, text, ParseMode.MarkdownV2, replyMarkup = replyMarkup)
+        |> Task.map ignore
     }
 
 let sendCurrentPresetInfo

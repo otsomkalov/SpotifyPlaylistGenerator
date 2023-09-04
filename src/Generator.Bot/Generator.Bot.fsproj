@@ -22,8 +22,6 @@
     <Compile Include="Services\StartCommandHandler.fs"/>
     <Compile Include="Services\GenerateCommandHandler.fs"/>
     <Compile Include="Services\UnknownCommandHandler.fs"/>
-    <Compile Include="Services\GetSettingsMessageCommandHandler.fs"/>
-    <Compile Include="Services\SettingsCommandHandler.fs"/>
     <Compile Include="Services\SetPlaylistSizeCommandHandler.fs"/>
     <Compile Include="Services\MessageService.fs"/>
     <Compile Include="Services\CallbackQueryService.fs"/>

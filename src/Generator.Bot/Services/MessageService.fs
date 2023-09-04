@@ -1,10 +1,12 @@
 ﻿namespace Generator.Bot.Services
 
 open System.Threading.Tasks
+open Database
 open Domain.Core
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
+open Microsoft.FSharp.Core
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -12,6 +14,13 @@ open Generator.Bot.Helpers
 open Resources
 open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
+
+[<NoComparison;NoEquality>]
+type MessageServiceDeps ={
+  SendSettingsMessage: Telegram.SendSettingsMessage
+  SendCurrentPresetInfo: Telegram.SendCurrentPresetInfo
+  AskForPlaylistSize: Telegram.AskForPlaylistSize
+}
 
 type MessageService
   (
@@ -23,15 +32,19 @@ type MessageService
     _setTargetPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
-    _settingsCommandHandler: SettingsCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     sendUserPresets: Telegram.SendUserPresets,
     _emptyCommandDataHandler: EmptyCommandDataHandler,
-    _bot: ITelegramBotClient
+    _bot: ITelegramBotClient,
+    _context: AppDbContext,
+    deps:MessageServiceDeps
   ) =
 
   let sendUserPresets (message: Message) =
     sendUserPresets (message.From.Id |> UserId)
+
+  let askForPlaylistSize (message: Message) =
+    deps.AskForPlaylistSize (message.From.Id |> UserId)
 
   let includePlaylist (message: Message) =
     match message.Text with
@@ -62,6 +75,12 @@ type MessageService
       ()
     }
 
+  let sendSettingsMessage (message: Message) =
+    deps.SendSettingsMessage (message.From.Id |> UserId)
+
+  let sendCurrentPresetInfo (message: Message) =
+    deps.SendCurrentPresetInfo (message.From.Id |> UserId)
+
   let getProcessReplyToMessageTextFunc (replyToMessage: Message) : (Message -> Task<unit>) =
     match replyToMessage.Text with
     | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync
@@ -74,10 +93,12 @@ type MessageService
     | StartsWith "/addsourceplaylist" -> validateUserLogin includePlaylist
     | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
     | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
+    | Equals Messages.SetPlaylistSize -> validateUserLogin askForPlaylistSize
     | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
     | Equals Messages.MyPresets -> sendUserPresets
-    | Equals Messages.Settings -> _settingsCommandHandler.HandleAsync
+    | Equals Messages.Settings -> sendSettingsMessage
     | Equals Messages.IncludePlaylist -> askForIncludedPlaylist
+    | Equals "Back" -> sendCurrentPresetInfo
     | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
 
   let processTextMessage (message: Message) =
