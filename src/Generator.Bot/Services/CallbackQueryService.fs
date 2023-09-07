@@ -24,7 +24,7 @@ type CallbackQueryService
     getPresetMessage: Telegram.GetPresetMessage
   ) =
 
-  let appendToTargetPlaylistBuilder callbackQueryId presetId playlistId =
+  let appendToTargetPlaylist callbackQueryId presetId playlistId =
     task {
       do! TargetPlaylist.appendToTargetPlaylist _context presetId playlistId
 
@@ -33,7 +33,7 @@ type CallbackQueryService
       return ()
     }
 
-  let overwriteTargetPlaylistBuilder callbackQueryId presetId playlistId =
+  let overwriteTargetPlaylist callbackQueryId presetId playlistId =
     task {
       do! TargetPlaylist.overwriteTargetPlaylist _context presetId playlistId
 
@@ -42,7 +42,7 @@ type CallbackQueryService
       return ()
     }
 
-  let showIncludedPlaylistBuilder callbackQueryId presetId playlistId =
+  let showIncludedPlaylist callbackQueryId presetId playlistId =
     task {
       do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
 
@@ -50,21 +50,21 @@ type CallbackQueryService
     }
 
 
-  let showExcludedPlaylistBuilder callbackQueryId presetId playlistId =
+  let showExcludedPlaylist callbackQueryId presetId playlistId =
     task {
       do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
 
       return ()
     }
 
-  let showTargetPlaylistBuilder callbackQueryId presetId playlistId =
+  let showTargetPlaylist callbackQueryId presetId playlistId =
     task {
       do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
 
       return ()
     }
 
-  let setLikedTracksHandlingBuilder callbackQueryId messageId userId presetId handling =
+  let setLikedTracksHandling callbackQueryId messageId userId presetId handling =
     let updatePresetSettings = Preset.updateSettings _context presetId
 
     let setLikedTracksHandling =
@@ -95,15 +95,15 @@ type CallbackQueryService
 
     let showTargetPlaylists = Telegram.showTargetPlaylists deps.LoadPreset editMessage
 
-    let showIncludedPlaylist = showIncludedPlaylistBuilder callbackQuery.Id
-    let showExcludedPlaylist = showExcludedPlaylistBuilder callbackQuery.Id
-    let showTargetPlaylist = showTargetPlaylistBuilder callbackQuery.Id
+    let showIncludedPlaylist = showIncludedPlaylist callbackQuery.Id
+    let showExcludedPlaylist = showExcludedPlaylist callbackQuery.Id
+    let showTargetPlaylist = showTargetPlaylist callbackQuery.Id
 
-    let appendToTargetPlaylist = appendToTargetPlaylistBuilder callbackQuery.Id
-    let overwriteTargetPlaylist = overwriteTargetPlaylistBuilder callbackQuery.Id
+    let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
+    let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
 
     let setLikedTracksHandling =
-      setLikedTracksHandlingBuilder callbackQuery.Id callbackQuery.Message.MessageId userId
+      setLikedTracksHandling callbackQuery.Id callbackQuery.Message.MessageId userId
 
     match callbackQuery.Data |> Telegram.parseAction with
     | Telegram.Action.ShowPresetInfo presetId -> sendPresetInfo presetId
