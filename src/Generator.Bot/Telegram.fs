@@ -56,10 +56,6 @@ type Action =
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | ShowTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
-  | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
-  | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
-  | RemoveTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
-
   | AppendToTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
@@ -83,10 +79,6 @@ let parseAction (str: string) =
     | [|"p"; Int presetId; "ip"; playlistId; "i"|] -> Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [|"p"; Int presetId; "ep"; playlistId; "i"|] -> Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [|"p"; Int presetId; "tp"; playlistId; "i"|] -> Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-
-    | [|"p"; Int presetId; "ip"; playlistId; "rm"|] -> Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [|"p"; Int presetId; "ep"; playlistId; "rm"|] -> Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [|"p"; Int presetId; "tp"; playlistId; "rm"|] -> Action.RemoveTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
     | [|"p"; Int presetId; "ip"; playlistId; "a"|] -> Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [|"p"; Int presetId; "ip"; playlistId; "o"|] -> Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
