@@ -18,6 +18,7 @@ open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
 open Microsoft.EntityFrameworkCore
+open Helpers
 
 [<Literal>]
 let keyboardColumns = 4
@@ -26,17 +27,73 @@ let keyboardColumns = 4
 let buttonsPerPage = 20
 
 type SendUserPresets = UserId -> Task<unit>
-type SendPresetInfo = int -> UserId -> PresetId -> Task<unit>
-type SetCurrentPreset = string -> UserId -> PresetId -> Task<unit>
-type EditMessage = int -> UserId -> string -> InlineKeyboardMarkup -> Task<unit>
-type ShowIncludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
-type ShowExcludedPlaylists = int -> int -> UserId -> Preset -> Task<unit>
-type ShowTargetPlaylists = int -> int -> UserId -> Preset -> Task<unit>
-type SetLikedTracksHandling = UserId -> PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+type SendPresetInfo = PresetId -> Task<unit>
+type SetCurrentPreset = UserId -> PresetId -> Task<unit>
+type EditMessage = string -> InlineKeyboardMarkup -> Task<unit>
+type Page = Page of int
+type ShowIncludedPlaylists = PresetId -> Page -> Task<unit>
+type ShowExcludedPlaylists = PresetId -> Page -> Task<unit>
+type ShowTargetPlaylists = PresetId -> Page -> Task<unit>
+type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 type SendCurrentPresetInfo = UserId -> Task<unit>
 type GetPresetMessage = PresetId -> Task<string * string * string>
 type SendSettingsMessage = UserId -> Task<unit>
 type AskForPlaylistSize = UserId -> Task<unit>
+type ShowIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
+type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+
+[<RequireQualifiedAccess>]
+type Action =
+  | ShowPresetInfo of presetId: PresetId
+  | SetCurrentPreset of presetId: PresetId
+
+  | ShowIncludedPlaylists of presetId: PresetId * page: Page
+  | ShowExcludedPlaylists of presetId: PresetId * page: Page
+  | ShowTargetPlaylists of presetId: PresetId * page: Page
+
+  | ShowIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | ShowTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+
+  | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | RemoveTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+
+  | AppendToTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+  | OverwriteTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+
+  | AskForPlaylistSize
+
+  | IncludeLikedTracks of presetId: PresetId
+  | ExcludeLikedTracks of presetId: PresetId
+  | IgnoreLikedTracks of presetId: PresetId
+
+let parseAction (str: string) =
+  match str with
+  | _ ->
+    match str.Split("|") with
+    | [|"p"; Int id; "i"|] -> PresetId id |> Action.ShowPresetInfo
+    | [|"p"; Int id; "c"|] -> PresetId id |> Action.SetCurrentPreset
+
+    | [|"p"; Int id; "ip"; Int page|] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+    | [|"p"; Int id; "ep"; Int page|] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+    | [|"p"; Int id; "tp"; Int page|] -> Action.ShowTargetPlaylists(PresetId id, (Page page))
+
+    | [|"p"; Int presetId; "ip"; playlistId; "i"|] -> Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [|"p"; Int presetId; "ep"; playlistId; "i"|] -> Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [|"p"; Int presetId; "tp"; playlistId; "i"|] -> Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [|"p"; Int presetId; "ip"; playlistId; "rm"|] -> Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [|"p"; Int presetId; "ep"; playlistId; "rm"|] -> Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [|"p"; Int presetId; "tp"; playlistId; "rm"|] -> Action.RemoveTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [|"p"; Int presetId; "ip"; playlistId; "a"|] -> Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [|"p"; Int presetId; "ip"; playlistId; "o"|] -> Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [|"p"; Int presetId; CallbackQueryConstants.includeLikedTracks|] -> Action.IncludeLikedTracks(PresetId presetId)
+    | [|"p"; Int presetId; CallbackQueryConstants.excludeLikedTracks|] -> Action.ExcludeLikedTracks(PresetId presetId)
+    | [|"p"; Int presetId; CallbackQueryConstants.ignoreLikedTracks|] -> Action.IgnoreLikedTracks(PresetId presetId)
 
 type AuthState =
   | Authorized
@@ -88,8 +145,8 @@ let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
       return (text |> escapeMarkdownString, buttonText, buttonData)
     }
 
-let sendPresetInfo (bot: ITelegramBotClient) (getPresetMessage: GetPresetMessage) : SendPresetInfo =
-  fun messageId userId presetId ->
+let sendPresetInfo (bot: ITelegramBotClient) (getPresetMessage: GetPresetMessage) messageId userId : SendPresetInfo =
+  fun presetId ->
     task {
       let! text, buttonText, buttonData = getPresetMessage presetId
 
@@ -114,8 +171,8 @@ let sendPresetInfo (bot: ITelegramBotClient) (getPresetMessage: GetPresetMessage
         |> Task.map ignore
     }
 
-let setCurrentPreset (bot: ITelegramBotClient) (context: AppDbContext) : SetCurrentPreset =
-  fun callbackQueryId userId presetId ->
+let setCurrentPreset (bot: ITelegramBotClient) (context: AppDbContext) callbackQueryId : SetCurrentPreset =
+  fun userId presetId ->
     task {
       let userId = userId |> UserId.value
       let presetId = presetId |> PresetId.value
@@ -138,8 +195,8 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
     | null -> Unauthorized
     | _ -> Authorized)
 
-let editMessage (bot: ITelegramBotClient) : EditMessage =
-  fun messageId userId text replyMarkup ->
+let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
+  fun text replyMarkup ->
     bot.EditMessageTextAsync(
       (userId |> UserId.value |> ChatId),
       messageId,
@@ -150,6 +207,7 @@ let editMessage (bot: ITelegramBotClient) : EditMessage =
     |> Task.map ignore
 
 let internal createPlaylistsPage page (playlists: 'a list) playlistToButton presetId =
+  let (Page page) = page
   let remainingPlaylists = playlists[page * buttonsPerPage ..]
   let playlistsForPage = remainingPlaylists[.. buttonsPerPage - 1]
 
@@ -185,47 +243,74 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton)
   |> InlineKeyboardMarkup
 
-let showIncludedPlaylists editMessage : ShowIncludedPlaylists =
-  let createButtonFromPlaylist =
+let showIncludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowIncludedPlaylists =
+  let createButtonFromPlaylist presetId =
     fun (playlist: IncludedPlaylist) ->
-      InlineKeyboardButton(playlist.Name, CallbackData = $"ip|{playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value}|i")
+      InlineKeyboardButton(
+        playlist.Name,
+        CallbackData = sprintf "p|%i|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+      )
 
-  fun messageId page userId preset ->
-    let replyMarkup =
+  fun presetId page ->
+    let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+    task {
+      let! preset = loadPreset presetId
+
+      let replyMarkup =
         createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
 
-    editMessage messageId userId $"Preset *{preset.Name |> escapeMarkdownString}* has the next included playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next included playlists:" replyMarkup
+    }
 
-let showExcludedPlaylists editMessage : ShowExcludedPlaylists =
-  let createButtonFromPlaylist =
+let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowExcludedPlaylists =
+  let createButtonFromPlaylist presetId =
     fun (playlist: IncludedPlaylist) ->
-      InlineKeyboardButton(playlist.Name, CallbackData = $"ep|{playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value}|i")
+      InlineKeyboardButton(
+        playlist.Name,
+        CallbackData = sprintf "p|%i|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+      )
 
-  fun messageId page userId preset ->
-    let replyMarkup =
+  fun presetId page ->
+    let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+    task {
+      let! preset = loadPreset presetId
+
+      let replyMarkup =
         createPlaylistsPage page preset.ExcludedPlaylist createButtonFromPlaylist preset.Id
 
-    editMessage messageId userId $"Preset *{preset.Name |> escapeMarkdownString}* has the next excluded playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next excluded playlists:" replyMarkup
+    }
 
-let showTargetPlaylists editMessage : ShowTargetPlaylists =
-  let createButtonFromPlaylist =
+let showTargetPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowTargetPlaylists =
+  let createButtonFromPlaylist presetId =
     fun (playlist: TargetPlaylist) ->
-      InlineKeyboardButton(playlist.Name, CallbackData = $"tp|{playlist.Id |> WritablePlaylistId.value |> PlaylistId.value}|i")
+      InlineKeyboardButton(
+        playlist.Name,
+        CallbackData = sprintf "p|%i|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
+      )
 
-  fun messageId page userId preset ->
-    let replyMarkup =
-      createPlaylistsPage page preset.TargetPlaylists createButtonFromPlaylist preset.Id
+  fun presetId page ->
+    let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
-    editMessage messageId userId $"Preset *{preset.Name |> escapeMarkdownString}* has the next target playlists:" replyMarkup
+    task {
+      let! preset = loadPreset presetId
 
-let setLikedTracksHandling (bot: ITelegramBotClient) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) callbackQueryId messageId : SetLikedTracksHandling =
-  fun userId presetId likedTracksHandling ->
+      let replyMarkup =
+        createPlaylistsPage page preset.TargetPlaylists createButtonFromPlaylist preset.Id
+
+      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next target playlists:" replyMarkup
+    }
+
+let setLikedTracksHandling (bot: ITelegramBotClient) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) callbackQueryId : SetLikedTracksHandling =
+  fun presetId likedTracksHandling ->
     task{
       do! setLikedTracksHandling presetId likedTracksHandling
 
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, Messages.Updated)
 
-      return! sendPresetInfo messageId userId presetId
+      return! sendPresetInfo presetId
     }
 
 let askForPlaylistSize (bot: ITelegramBotClient) : AskForPlaylistSize =

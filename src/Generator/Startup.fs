@@ -37,11 +37,9 @@ type Startup() =
     QueueClient(settings.ConnectionString, settings.QueueName)
 
   let buildProcessCallbackQueryDeps =
-    fun loadPreset editMessage ->
+    fun bot loadPreset ->
       { LoadPreset = loadPreset
-        ShowIncludedPlaylists = Telegram.showIncludedPlaylists editMessage
-        ShowExcludedPlaylists = Telegram.showExcludedPlaylists editMessage
-        ShowTargetPlaylists = Telegram.showTargetPlaylists editMessage }
+        AskForPlaylistSize = Telegram.askForPlaylistSize bot }
 
   let buildStartCommandDeps =
     fun bot getCurrentPresetId getPresetMessage ->
@@ -105,12 +103,9 @@ type Startup() =
 
     services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
     services.AddScopedFunc<Telegram.GetPresetMessage, Preset.Load>(Telegram.getPresetMessage)
-    services.AddScopedFunc<Telegram.SendPresetInfo, ITelegramBotClient, Telegram.GetPresetMessage>(Telegram.sendPresetInfo)
-    services.AddScopedFunc<Telegram.SetCurrentPreset, ITelegramBotClient, AppDbContext>(Telegram.setCurrentPreset)
     services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
-    services.AddScopedFunc<Telegram.EditMessage, ITelegramBotClient>(Telegram.editMessage)
 
-    services.AddScopedFunc<ProcessCallbackQueryDeps, Preset.Load, Telegram.EditMessage>(buildProcessCallbackQueryDeps)
+    services.AddScopedFunc<ProcessCallbackQueryDeps, ITelegramBotClient, Preset.Load>(buildProcessCallbackQueryDeps)
     services.AddScopedFunc<StartCommandDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(buildStartCommandDeps)
 
     services.AddScopedFunc<MessageServiceDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(

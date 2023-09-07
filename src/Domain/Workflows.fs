@@ -206,5 +206,5 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
-  type AppendToTargetPlaylist = UserId -> WritablePlaylistId -> Task<unit>
-  type OverwriteTargetPlaylist = UserId -> WritablePlaylistId -> Task<unit>
+  type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+  type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
