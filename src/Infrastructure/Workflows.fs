@@ -168,19 +168,16 @@ module TargetPlaylist =
         |> Async.AwaitTask
 
   let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
-    fun userId targetPlaylistId ->
+    fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
           targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
 
-        let userId = userId |> UserId.value
+        let presetId = presetId |> PresetId.value
 
         let! targetPlaylist =
-          context.Users
-            .Where(fun u -> u.Id = userId)
-            .Include(fun u -> u.CurrentPreset)
-            .ThenInclude(fun p -> p.TargetPlaylists.Where(fun tp -> tp.Url = targetPlaylistId))
-            .SelectMany(fun u -> u.CurrentPreset.TargetPlaylists)
+          context.TargetPlaylists
+            .Where(fun p -> p.PresetId = presetId && p.Url = targetPlaylistId)
             .FirstOrDefaultAsync()
 
         targetPlaylist.Overwrite <- true
@@ -193,19 +190,16 @@ module TargetPlaylist =
       }
 
   let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
-    fun userId targetPlaylistId ->
+    fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
           targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
 
-        let userId = userId |> UserId.value
+        let presetId = presetId |> PresetId.value
 
         let! targetPlaylist =
-          context.Users
-            .Where(fun u -> u.Id = userId)
-            .Include(fun u -> u.CurrentPreset)
-            .ThenInclude(fun p -> p.TargetPlaylists.Where(fun tp -> tp.Url = targetPlaylistId))
-            .SelectMany(fun u -> u.CurrentPreset.TargetPlaylists)
+          context.TargetPlaylists
+            .Where(fun p -> p.PresetId = presetId && p.Url = targetPlaylistId)
             .FirstOrDefaultAsync()
 
         targetPlaylist.Overwrite <- false

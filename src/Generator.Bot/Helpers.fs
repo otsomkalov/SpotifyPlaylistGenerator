@@ -37,21 +37,3 @@ let (|Int|_|) (str: string) =
   match Int32.TryParse(str) with
   | true, value -> Some(value)
   | _ -> None
-
-let (|CallbackQueryData|_|) (str: string) =
-  match str.Split("|") with
-  | [| entityType; entityId; entityAction |] -> Some(entityType, entityId, entityAction)
-  | _ -> None
-
-let (|CallbackQueryDataWithPage|_|) (str: string) =
-  match str.Split("|") with
-  | [| entityType; entityId; entityAction; page |] -> Some(entityType, entityId, entityAction, int page)
-  | _ -> None
-
-let (|PresetAction|_|) (str: string) =
-  match str.Split("|") with
-  | [| entityType; entityId; entityAction |] ->
-    match entityType, entityId with
-    | "p", Int id -> Some(PresetId id, entityAction)
-    | _ -> None
-  | _ -> None
