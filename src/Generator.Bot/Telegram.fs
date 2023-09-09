@@ -395,7 +395,7 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       return! editMessage messageText replyMarkup
     }
 
-let removeIncludedPlaylistBuilder (bot: ITelegramBotClient) callbackQueryId : RemoveIncludedPlaylist =
+let removeIncludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveIncludedPlaylist =
   fun presetId playlistId ->
     task {
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
