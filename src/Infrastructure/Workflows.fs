@@ -360,6 +360,12 @@ module Playlist =
         return playlist
       }
 
+  let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
+    let database = connectionMultiplexer.GetDatabase 0
+    PlaylistId.value
+    >> RedisKey
+    >> database.ListLengthAsync
+
 [<RequireQualifiedAccess>]
 module Preset =
   let load (context: AppDbContext) : Preset.Load =
