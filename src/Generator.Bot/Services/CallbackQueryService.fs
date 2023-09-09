@@ -92,10 +92,11 @@ type CallbackQueryService
     let showTargetPlaylists = Telegram.showTargetPlaylists deps.LoadPreset editMessage
 
     let showIncludedPlaylist = Telegram.showIncludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
-    let showExcludedPlaylist = showExcludedPlaylist callbackQuery.Id
+    let showExcludedPlaylist = Telegram.showExcludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
     let showTargetPlaylist = showTargetPlaylist callbackQuery.Id
 
     let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
+    let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
 
     let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
     let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
@@ -116,6 +117,7 @@ type CallbackQueryService
     | Telegram.Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
 
     | Telegram.Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
+    | Telegram.Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
 
     | Telegram.Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
     | Telegram.Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
