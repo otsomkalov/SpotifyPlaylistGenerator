@@ -31,20 +31,27 @@ type SendPresetInfo = PresetId -> Task<unit>
 type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 type EditMessage = string -> InlineKeyboardMarkup -> Task<unit>
 type Page = Page of int
+
 type ShowIncludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowExcludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowTargetPlaylists = PresetId -> Page -> Task<unit>
+
 type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 type SendCurrentPresetInfo = UserId -> Task<unit>
 type GetPresetMessage = PresetId -> Task<string * string * string>
 type SendSettingsMessage = UserId -> Task<unit>
 type AskForPlaylistSize = UserId -> Task<unit>
+
 type ShowIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
+type ShowTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+
 type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+
 type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
+type RemoveTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type Action =
@@ -61,6 +68,7 @@ type Action =
 
   | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | RemoveTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
   | AppendToTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
@@ -89,10 +97,12 @@ let parseAction (str: string) =
     | [| "p"; Int presetId; "tp"; playlistId; "i" |] ->
       Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
-    | [| "p"; Int presetId; "ip"; playlistId; "i" |] ->
+    | [| "p"; Int presetId; "ip"; playlistId; "rm" |] ->
       Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; Int presetId; "ep"; playlistId; "i" |] ->
-      Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; Int presetId; "ep"; playlistId; "rm" |] ->
+      Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; Int presetId; "tp"; playlistId; "rm" |] ->
+      Action.RemoveTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
     | [| "p"; Int presetId; "ip"; playlistId; "a" |] ->
       Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
@@ -405,13 +415,13 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
     task {
       let! preset = loadPreset presetId
 
-      let includedPlaylist =
+      let excludedPlaylist =
         preset.ExcludedPlaylist |> List.find (fun p -> p.Id = playlistId)
 
       let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
       let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+        sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
         |> escapeMarkdownString
 
       let replyMarkup =
@@ -424,7 +434,38 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
             )
           }
 
-          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ep|%i" (presetId |> PresetId.value) 0) }
+        }
+        |> InlineKeyboardMarkup
+
+      return! editMessage messageText replyMarkup
+    }
+
+let showTargetPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowTargetPlaylist =
+  fun presetId playlistId ->
+    task {
+      let! preset = loadPreset presetId
+
+      let targetPlaylist =
+        preset.TargetPlaylists |> List.find (fun p -> p.Id = playlistId)
+
+      let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
+
+      let messageText =
+        sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
+        |> escapeMarkdownString
+
+      let replyMarkup =
+        seq {
+          seq {
+            InlineKeyboardButton(
+              "Remove",
+              CallbackData =
+                sprintf "p|%i|tp|%s|rm" (presetId |> PresetId.value) (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+            )
+          }
+
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|tp|%i" (presetId |> PresetId.value) 0) }
         }
         |> InlineKeyboardMarkup
 
@@ -440,6 +481,14 @@ let removeIncludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveInc
     }
 
 let removeExcludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveExcludedPlaylist =
+  fun presetId playlistId ->
+    task {
+      do! bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
+
+      return ()
+    }
+
+let removeTargetPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveTargetPlaylist =
   fun presetId playlistId ->
     task {
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
