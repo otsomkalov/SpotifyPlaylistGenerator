@@ -48,8 +48,6 @@ type ShowTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
 type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>

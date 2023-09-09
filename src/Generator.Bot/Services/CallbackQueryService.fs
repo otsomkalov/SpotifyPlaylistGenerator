@@ -84,9 +84,6 @@ type CallbackQueryService
     let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
     let removeTargetPlaylist = Telegram.removeTargetPlaylist _bot callbackQuery.Id
 
-    let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
-    let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
-
     let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
     let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
 
