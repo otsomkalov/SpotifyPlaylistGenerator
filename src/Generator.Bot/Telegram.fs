@@ -405,13 +405,13 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
     task {
       let! preset = loadPreset presetId
 
-      let includedPlaylist =
+      let excludedPlaylist =
         preset.ExcludedPlaylist |> List.find (fun p -> p.Id = playlistId)
 
       let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
       let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+        sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
         |> escapeMarkdownString
 
       let replyMarkup =
@@ -424,7 +424,7 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
             )
           }
 
-          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ep|%i" (presetId |> PresetId.value) 0) }
         }
         |> InlineKeyboardMarkup
 
