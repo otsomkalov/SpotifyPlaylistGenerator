@@ -42,6 +42,7 @@ type AskForPlaylistSize = UserId -> Task<unit>
 type ShowIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type Action =
@@ -56,6 +57,8 @@ type Action =
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | ShowTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
+  | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+
   | AppendToTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
@@ -69,23 +72,31 @@ let parseAction (str: string) =
   match str with
   | _ ->
     match str.Split("|") with
-    | [|"p"; Int id; "i"|] -> PresetId id |> Action.ShowPresetInfo
-    | [|"p"; Int id; "c"|] -> PresetId id |> Action.SetCurrentPreset
+    | [| "p"; Int id; "i" |] -> PresetId id |> Action.ShowPresetInfo
+    | [| "p"; Int id; "c" |] -> PresetId id |> Action.SetCurrentPreset
 
-    | [|"p"; Int id; "ip"; Int page|] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
-    | [|"p"; Int id; "ep"; Int page|] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
-    | [|"p"; Int id; "tp"; Int page|] -> Action.ShowTargetPlaylists(PresetId id, (Page page))
+    | [| "p"; Int id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+    | [| "p"; Int id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+    | [| "p"; Int id; "tp"; Int page |] -> Action.ShowTargetPlaylists(PresetId id, (Page page))
 
-    | [|"p"; Int presetId; "ip"; playlistId; "i"|] -> Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [|"p"; Int presetId; "ep"; playlistId; "i"|] -> Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [|"p"; Int presetId; "tp"; playlistId; "i"|] -> Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; Int presetId; "ip"; playlistId; "i" |] ->
+      Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; Int presetId; "ep"; playlistId; "i" |] ->
+      Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; Int presetId; "tp"; playlistId; "i" |] ->
+      Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
-    | [|"p"; Int presetId; "ip"; playlistId; "a"|] -> Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [|"p"; Int presetId; "ip"; playlistId; "o"|] -> Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; Int presetId; "ip"; playlistId; "i" |] ->
+      Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [|"p"; Int presetId; CallbackQueryConstants.includeLikedTracks|] -> Action.IncludeLikedTracks(PresetId presetId)
-    | [|"p"; Int presetId; CallbackQueryConstants.excludeLikedTracks|] -> Action.ExcludeLikedTracks(PresetId presetId)
-    | [|"p"; Int presetId; CallbackQueryConstants.ignoreLikedTracks|] -> Action.IgnoreLikedTracks(PresetId presetId)
+    | [| "p"; Int presetId; "ip"; playlistId; "a" |] ->
+      Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; Int presetId; "ip"; playlistId; "o" |] ->
+      Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [| "p"; Int presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
+    | [| "p"; Int presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
+    | [| "p"; Int presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
 
 type AuthState =
   | Authorized
@@ -351,4 +362,43 @@ let sendCurrentPresetInfo
       return!
         bot.SendTextMessageAsync(userId |> UserId.value |> ChatId, text, ParseMode.MarkdownV2, replyMarkup = replyMarkup)
         |> Task.map ignore
+    }
+
+let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowIncludedPlaylist =
+  fun presetId playlistId ->
+    task {
+      let! preset = loadPreset presetId
+
+      let includedPlaylist =
+        preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+
+      let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
+
+      let messageText =
+        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+        |> escapeMarkdownString
+
+      let replyMarkup =
+        seq {
+          seq {
+            InlineKeyboardButton(
+              "Remove",
+              CallbackData =
+                sprintf "p|%i|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+            )
+          }
+
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+        }
+        |> InlineKeyboardMarkup
+
+      return! editMessage messageText replyMarkup
+    }
+
+let removeIncludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveIncludedPlaylist =
+  fun presetId playlistId ->
+    task {
+      do! bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
+
+      return ()
     }

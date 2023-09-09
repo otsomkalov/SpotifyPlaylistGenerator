@@ -73,6 +73,8 @@ module Playlist =
   type ExcludeInStorage = ReadablePlaylist -> Async<ReadablePlaylist>
   type TargetInStorage = WritablePlaylist -> Async<WritablePlaylist>
 
+  type CountTracks = PlaylistId -> Task<int64>
+
   let includePlaylist
     (parseId: ParseId)
     (existsInSpotify: CheckExistsInSpotify)

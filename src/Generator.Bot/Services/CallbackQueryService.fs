@@ -6,6 +6,7 @@ open Domain
 open Domain.Core
 open Generator.Bot
 open Infrastructure.Workflows
+open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
 
@@ -21,7 +22,8 @@ type CallbackQueryService
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
     deps: ProcessCallbackQueryDeps,
-    getPresetMessage: Telegram.GetPresetMessage
+    getPresetMessage: Telegram.GetPresetMessage,
+    _connectionMultiplexer: IConnectionMultiplexer
   ) =
 
   let appendToTargetPlaylist callbackQueryId presetId playlistId =
@@ -38,13 +40,6 @@ type CallbackQueryService
       do! TargetPlaylist.overwriteTargetPlaylist _context presetId playlistId
 
       let! _ = _bot.AnswerCallbackQueryAsync(callbackQueryId, "Target playlist will be overwritten with generated tracks")
-
-      return ()
-    }
-
-  let showIncludedPlaylist callbackQueryId presetId playlistId =
-    task {
-      do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
 
       return ()
     }
@@ -81,6 +76,7 @@ type CallbackQueryService
     let userId = callbackQuery.From.Id |> UserId
 
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
+    let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
 
     let sendPresetInfo =
       Telegram.sendPresetInfo _bot getPresetMessage callbackQuery.Message.MessageId userId
@@ -95,9 +91,11 @@ type CallbackQueryService
 
     let showTargetPlaylists = Telegram.showTargetPlaylists deps.LoadPreset editMessage
 
-    let showIncludedPlaylist = showIncludedPlaylist callbackQuery.Id
+    let showIncludedPlaylist = Telegram.showIncludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
     let showExcludedPlaylist = showExcludedPlaylist callbackQuery.Id
     let showTargetPlaylist = showTargetPlaylist callbackQuery.Id
+
+    let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
 
     let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
     let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
@@ -116,6 +114,8 @@ type CallbackQueryService
     | Telegram.Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
     | Telegram.Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
     | Telegram.Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
+
+    | Telegram.Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
 
     | Telegram.Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
     | Telegram.Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
