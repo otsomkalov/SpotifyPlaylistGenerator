@@ -44,21 +44,6 @@ type CallbackQueryService
       return ()
     }
 
-
-  let showExcludedPlaylist callbackQueryId presetId playlistId =
-    task {
-      do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
-
-      return ()
-    }
-
-  let showTargetPlaylist callbackQueryId presetId playlistId =
-    task {
-      do! _bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
-
-      return ()
-    }
-
   let setLikedTracksHandling callbackQueryId messageId userId presetId handling =
     let updatePresetSettings = Preset.updateSettings _context presetId
 
@@ -93,10 +78,11 @@ type CallbackQueryService
 
     let showIncludedPlaylist = Telegram.showIncludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
     let showExcludedPlaylist = Telegram.showExcludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
-    let showTargetPlaylist = showTargetPlaylist callbackQuery.Id
+    let showTargetPlaylist = Telegram.showTargetPlaylist editMessage deps.LoadPreset countPlaylistTracks
 
     let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
     let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
+    let removeTargetPlaylist = Telegram.removeTargetPlaylist _bot callbackQuery.Id
 
     let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
     let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
@@ -118,6 +104,7 @@ type CallbackQueryService
 
     | Telegram.Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
     | Telegram.Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
+    | Telegram.Action.RemoveTargetPlaylist(presetId, playlistId) -> removeTargetPlaylist presetId playlistId
 
     | Telegram.Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
     | Telegram.Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
