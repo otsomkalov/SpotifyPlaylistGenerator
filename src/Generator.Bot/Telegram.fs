@@ -134,7 +134,7 @@ let sendUserPresets (bot: ITelegramBotClient) (listPresets: User.ListPresets) : 
         |> Task.map ignore
     }
 
-let escapeMarkdownString (str: string) = Regex.Replace(str, "([`#\-])", "\$1")
+let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-])", "\$1")
 
 let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
   fun presetId ->
