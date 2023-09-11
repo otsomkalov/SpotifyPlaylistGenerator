@@ -26,24 +26,6 @@ type CallbackQueryService
     _connectionMultiplexer: IConnectionMultiplexer
   ) =
 
-  let appendToTargetPlaylist callbackQueryId presetId playlistId =
-    task {
-      do! TargetPlaylist.appendToTargetPlaylist _context presetId playlistId
-
-      let! _ = _bot.AnswerCallbackQueryAsync(callbackQueryId, "Target playlist will be appended with generated tracks")
-
-      return ()
-    }
-
-  let overwriteTargetPlaylist callbackQueryId presetId playlistId =
-    task {
-      do! TargetPlaylist.overwriteTargetPlaylist _context presetId playlistId
-
-      let! _ = _bot.AnswerCallbackQueryAsync(callbackQueryId, "Target playlist will be overwritten with generated tracks")
-
-      return ()
-    }
-
   let setLikedTracksHandling callbackQueryId messageId userId presetId handling =
     let updatePresetSettings = Preset.updateSettings _context presetId
 
@@ -60,8 +42,14 @@ type CallbackQueryService
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
 
+    let removeTargetPlaylist = TargetPlaylist.remove _context
+
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
+    let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
+    let updateTargetPlaylist = TargetPlaylist.update _context
+    let appendToTargetPlaylist = Workflows.TargetPlaylist.appendToTargetPlaylist deps.LoadPreset updateTargetPlaylist
+    let overwriteTargetPlaylist = Workflows.TargetPlaylist.overwriteTargetPlaylist deps.LoadPreset updateTargetPlaylist
 
     let sendPresetInfo =
       Telegram.sendPresetInfo _bot getPresetMessage callbackQuery.Message.MessageId userId
@@ -82,10 +70,11 @@ type CallbackQueryService
 
     let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
     let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
-    let removeTargetPlaylist = Telegram.removeTargetPlaylist _bot callbackQuery.Id
 
-    let appendToTargetPlaylist = appendToTargetPlaylist callbackQuery.Id
-    let overwriteTargetPlaylist = overwriteTargetPlaylist callbackQuery.Id
+    let removeTargetPlaylist = Telegram.removeTargetPlaylist removeTargetPlaylist answerCallbackQuery showTargetPlaylists
+
+    let appendToTargetPlaylist = Telegram.appendToTargetPlaylist appendToTargetPlaylist answerCallbackQuery showTargetPlaylist
+    let overwriteTargetPlaylist = Telegram.overwriteTargetPlaylist overwriteTargetPlaylist answerCallbackQuery showTargetPlaylist
 
     let setLikedTracksHandling =
       setLikedTracksHandling callbackQuery.Id callbackQuery.Message.MessageId userId

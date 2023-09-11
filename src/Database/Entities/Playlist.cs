@@ -11,7 +11,7 @@ public abstract class Playlist
 {
     public int Id { get; init; }
 
-    public string Name { get; init; }
+    public string Name { get; set; }
 
     public virtual PlaylistType PlaylistType { get; }
 

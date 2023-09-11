@@ -42,8 +42,10 @@ module WritablePlaylist =
       Name = spotifyPlaylist.Name
     }
 
+type TargetPlaylistId = WritablePlaylistId
+
 type TargetPlaylist =
-  { Id: WritablePlaylistId
+  { Id: TargetPlaylistId
     Name: string
     Overwrite: bool }
 
@@ -131,3 +133,8 @@ module Preset =
 
   type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 
+[<RequireQualifiedAccess>]
+module TargetPlaylist =
+  type Remove = PresetId -> TargetPlaylistId -> Task<unit>
+  type AppendTracks = PresetId -> TargetPlaylistId -> Task<unit>
+  type OverwriteTracks = PresetId -> TargetPlaylistId -> Task<unit>

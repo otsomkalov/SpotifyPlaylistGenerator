@@ -39,7 +39,7 @@ type GeneratorFunctions
       let listLikedTracks =
         Cache.listOrRefreshByKey likedTracksCache message.RefreshCache listLikedTracks message.TelegramId
 
-      let updateTargetPlaylist = TargetPlaylist.update playlistsCache client
+      let updateTargetPlaylist = TargetPlaylist.updateTracks playlistsCache client
 
       logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
 
