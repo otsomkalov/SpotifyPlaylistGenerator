@@ -29,7 +29,9 @@ let buttonsPerPage = 20
 type SendUserPresets = UserId -> Task<unit>
 type SendPresetInfo = PresetId -> Task<unit>
 type SetCurrentPreset = UserId -> PresetId -> Task<unit>
+type SendMessage = string -> InlineKeyboardMarkup -> Task<unit>
 type EditMessage = string -> InlineKeyboardMarkup -> Task<unit>
+type AnswerCallbackQuery = string -> Task
 type Page = Page of int
 
 type ShowIncludedPlaylists = PresetId -> Page -> Task<unit>
@@ -104,9 +106,9 @@ let parseAction (str: string) =
     | [| "p"; Int presetId; "tp"; playlistId; "rm" |] ->
       Action.RemoveTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
-    | [| "p"; Int presetId; "ip"; playlistId; "a" |] ->
+    | [| "p"; Int presetId; "tp"; playlistId; "a" |] ->
       Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; Int presetId; "ip"; playlistId; "o" |] ->
+    | [| "p"; Int presetId; "tp"; playlistId; "o" |] ->
       Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
     | [| "p"; Int presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
@@ -213,6 +215,16 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
     | null -> Unauthorized
     | _ -> Authorized)
 
+let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
+  fun text replyMarkup ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text,
+      ParseMode.MarkdownV2,
+      replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
 let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
   fun text replyMarkup ->
     bot.EditMessageTextAsync(
@@ -223,6 +235,10 @@ let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
       replyMarkup = replyMarkup
     )
     |> Task.map ignore
+
+let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallbackQuery =
+  fun text ->
+    bot.AnswerCallbackQueryAsync(callbackQueryId, text)
 
 let internal createPlaylistsPage page (playlists: 'a list) playlistToButton presetId =
   let (Page page) = page
@@ -441,7 +457,11 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       return! editMessage messageText replyMarkup
     }
 
-let showTargetPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowTargetPlaylist =
+let showTargetPlaylist
+  (editMessage: EditMessage)
+  (loadPreset: Preset.Load)
+  (countPlaylistTracks: Playlist.CountTracks)
+  : ShowTargetPlaylist =
   fun presetId playlistId ->
     task {
       let! preset = loadPreset presetId
@@ -455,17 +475,23 @@ let showTargetPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (cou
         sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
         |> escapeMarkdownString
 
+      let presetId' = (presetId |> PresetId.value)
+      let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+
+      let buttonText, buttonDataBuilder =
+        if targetPlaylist.Overwrite then
+          ("Append", sprintf "p|%i|tp|%s|a")
+        else
+          ("Overwrite", sprintf "p|%i|tp|%s|o")
+
+      let buttonData = buttonDataBuilder presetId' playlistId'
+
       let replyMarkup =
         seq {
-          seq {
-            InlineKeyboardButton(
-              "Remove",
-              CallbackData =
-                sprintf "p|%i|tp|%s|rm" (presetId |> PresetId.value) (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
-            )
-          }
+          seq { InlineKeyboardButton(buttonText, CallbackData = buttonData) }
+          seq { InlineKeyboardButton("Remove", CallbackData = sprintf "p|%i|tp|%s|rm" presetId' playlistId') }
 
-          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|tp|%i" (presetId |> PresetId.value) 0) }
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|tp|%i" presetId' 0) }
         }
         |> InlineKeyboardMarkup
 
@@ -488,10 +514,40 @@ let removeExcludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveExc
       return ()
     }
 
-let removeTargetPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveTargetPlaylist =
+let removeTargetPlaylist
+  (removeTargetPlaylist: Domain.Core.TargetPlaylist.Remove)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (showTargetPlaylists: ShowTargetPlaylists)
+  : RemoveTargetPlaylist =
   fun presetId playlistId ->
     task {
-      do! bot.AnswerCallbackQueryAsync(callbackQueryId, "Not implemented yet")
+      do! removeTargetPlaylist presetId playlistId
+      do! answerCallbackQuery "Target playlist successfully deleted"
 
-      return ()
+      return! showTargetPlaylists presetId (Page 0)
+    }
+
+let appendToTargetPlaylist
+  (appendToTargetPlaylist: TargetPlaylist.AppendTracks)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (showTargetPlaylist: ShowTargetPlaylist)
+  : AppendToTargetPlaylist =
+    fun presetId playlistId ->
+    task {
+      do! appendToTargetPlaylist presetId playlistId
+      do! answerCallbackQuery "Target playlist will be appended with generated tracks"
+
+      return! showTargetPlaylist presetId playlistId
+    }
+
+let overwriteTargetPlaylist
+  (overwriteTargetPlaylist: TargetPlaylist.OverwriteTracks)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (showTargetPlaylist: ShowTargetPlaylist) : OverwriteTargetPlaylist=
+  fun presetId playlistId ->
+    task {
+      do! overwriteTargetPlaylist presetId playlistId
+      do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
+
+      return! showTargetPlaylist presetId playlistId
     }

@@ -128,7 +128,7 @@ module User =
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
-  let update (cache: IDatabase) (client: ISpotifyClient) : Playlist.Update =
+  let updateTracks (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdateTracks =
     fun playlist tracksIds ->
       let tracksIds = tracksIds |> List.map TrackId.value
       let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
@@ -167,7 +167,7 @@ module TargetPlaylist =
         |> Task.WhenAll
         |> Async.AwaitTask
 
-  let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTargetPlaylist =
+  let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTracks =
     fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
@@ -189,7 +189,7 @@ module TargetPlaylist =
         return ()
       }
 
-  let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendToTargetPlaylist =
+  let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendTracks =
     fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
@@ -209,6 +209,35 @@ module TargetPlaylist =
         let! _ = context.SaveChangesAsync()
 
         return ()
+      }
+
+  let remove (context: AppDbContext) : TargetPlaylist.Remove =
+    fun presetId targetPlaylistId ->
+      task{
+        let presetId = presetId |> PresetId.value
+        let playlistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
+
+        let! dbPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun tp -> tp.PresetId = presetId && tp.Url = playlistId)
+
+        do context.Remove dbPlaylist |> ignore
+
+        return! context.SaveChangesAsync() |> Task.map ignore
+      }
+
+  let update (context: AppDbContext) : TargetPlaylist.Update =
+    fun presetId targetPlaylist ->
+      let presetId = presetId |> PresetId.value
+      let targetPlaylistId = targetPlaylist.Id |> WritablePlaylistId.value |> PlaylistId.value
+
+      task{
+        let! dbPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = targetPlaylistId && tp.PresetId = presetId)
+
+        dbPlaylist.Name <- targetPlaylist.Name
+        dbPlaylist.Overwrite <- targetPlaylist.Overwrite
+
+        do context.Update(dbPlaylist) |> ignore
+
+        return! context.SaveChangesAsync() |> Task.map ignore
       }
 
 [<RequireQualifiedAccess>]

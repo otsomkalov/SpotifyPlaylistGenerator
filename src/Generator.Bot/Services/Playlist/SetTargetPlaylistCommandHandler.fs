@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
+open Generator.Bot
 open Resources
 open System
 open System.Threading.Tasks
@@ -9,12 +10,11 @@ open Domain.Workflows
 open Generator.Bot.Services
 open Infrastructure.Core
 open Shared.Services
+open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
-open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.ReplyMarkups
 
 type SetTargetPlaylistCommandHandler
   (
@@ -22,7 +22,10 @@ type SetTargetPlaylistCommandHandler
     _playlistCommandHandler: PlaylistCommandHandler,
     _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
-    _emptyCommandDataHandler: EmptyCommandDataHandler
+    _emptyCommandDataHandler: EmptyCommandDataHandler,
+    getCurrentPresetId: User.GetCurrentPresetId,
+    loadPreset: Preset.Load,
+    connectionMultiplexer: IConnectionMultiplexer
   ) =
 
   member this.HandleAsync(message: Message) =
@@ -48,24 +51,18 @@ type SetTargetPlaylistCommandHandler
 
         let! targetPlaylistResult = rawPlaylistId |> targetPlaylist
 
+        let! currentPresetId = getCurrentPresetId userId
+
         return!
           match targetPlaylistResult with
           | Ok playlist ->
-            let replyMarkup =
-              let id = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
 
-              InlineKeyboardMarkup(
-                [ InlineKeyboardButton("Append", CallbackData = $"tp|{id}|a")
-                  InlineKeyboardButton("Overwrite", CallbackData = $"tp|{id}|o") ]
-              )
+            let sendMessage = Telegram.sendMessage _bot userId
+            let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
 
-            _bot.SendTextMessageAsync(
-              ChatId(message.Chat.Id),
-              $"Target playlist *{playlist.Name |> Generator.Bot.Telegram.escapeMarkdownString}* successfully added\! Do you want to overwrite or append tracks to it?",
-              ParseMode.MarkdownV2,
-              replyMarkup = replyMarkup,
-              replyToMessageId = message.MessageId
-            )
+            let showTargetPlaylist = Telegram.showTargetPlaylist sendMessage loadPreset countPlaylistTracks
+
+            showTargetPlaylist currentPresetId playlist.Id
             :> Task
             |> Async.AwaitTask
           | Error error ->

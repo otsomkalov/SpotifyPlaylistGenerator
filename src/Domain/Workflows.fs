@@ -59,7 +59,7 @@ module PresetSettings =
 module Playlist =
   type ListTracks = ReadablePlaylistId -> Async<string list>
 
-  type Update = TargetPlaylist -> TrackId list -> Async<unit>
+  type UpdateTracks = TargetPlaylist -> TrackId list -> Async<unit>
 
   type ParsedPlaylistId = ParsedPlaylistId of string
 
@@ -135,7 +135,7 @@ module Playlist =
     (listPlaylistTracks: ListTracks)
     (listLikedTracks: User.ListLikedTracks)
     (loadPreset: Preset.Load)
-    (updateTargetPlaylist: Update)
+    (updateTargetPlaylist: UpdateTracks)
     (shuffler: Shuffler)
     : Playlist.Generate =
     fun presetId ->
@@ -208,5 +208,34 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
-  type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-  type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+  type Update = PresetId -> TargetPlaylist -> Task<unit>
+  type Remove = PresetId -> TargetPlaylistId -> Task<unit>
+
+  let overwriteTargetPlaylist (loadPreset: Preset.Load) (updatePlaylist: Update) : TargetPlaylist.OverwriteTracks =
+    fun presetId targetPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let targetPlaylist =
+          preset.TargetPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
+
+        let updatedPlaylist = { targetPlaylist with Overwrite = true }
+
+        do! updatePlaylist presetId updatedPlaylist
+      }
+
+  let appendToTargetPlaylist (loadPreset: Preset.Load) (updatePlaylist: Update) : TargetPlaylist.AppendTracks =
+    fun presetId targetPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let targetPlaylist =
+          preset.TargetPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
+
+        let updatedPlaylist = { targetPlaylist with Overwrite = false }
+
+        do! updatePlaylist presetId updatedPlaylist
+      }
+
+  let remove (removeTargetPlaylist: Remove) : TargetPlaylist.Remove =
+    removeTargetPlaylist
