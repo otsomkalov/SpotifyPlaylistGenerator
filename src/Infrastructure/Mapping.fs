@@ -9,20 +9,23 @@ open Domain.Core
 module IncludedPlaylist =
   let fromDb (playlist: SourcePlaylist) : IncludedPlaylist =
     { Id = playlist.Url |> PlaylistId |> ReadablePlaylistId
-      Name = playlist.Name }
+      Name = playlist.Name
+      Enabled = not playlist.Disabled }
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
   let fromDb (playlist: HistoryPlaylist) : ExcludedPlaylist =
     { Id = playlist.Url |> PlaylistId |> ReadablePlaylistId
-      Name = playlist.Name }
+      Name = playlist.Name
+      Enabled = not playlist.Disabled }
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
   let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
     { Id = playlist.Url |> PlaylistId |> WritablePlaylistId
       Name = playlist.Name
-      Overwrite = playlist.Overwrite }
+      Overwrite = playlist.Overwrite
+      Enabled = not playlist.Disabled }
 
   let mapPlaylists (playlists: Database.Entities.TargetPlaylist seq) =
     playlists |> Seq.map fromDb |> Seq.toList

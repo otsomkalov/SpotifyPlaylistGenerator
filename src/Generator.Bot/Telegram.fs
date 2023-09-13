@@ -55,6 +55,10 @@ type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type RemoveTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
+type EnableIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
+type DisableIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
+
+
 [<RequireQualifiedAccess>]
 type Action =
   | ShowPresetInfo of presetId: PresetId
@@ -67,6 +71,9 @@ type Action =
   | ShowIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | ShowTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+
+  | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
   | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
@@ -98,6 +105,11 @@ let parseAction (str: string) =
       Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; Int presetId; "tp"; playlistId; "i" |] ->
       Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [| "p"; Int presetId; "ip"; playlistId; "e" |] ->
+      Action.EnableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; Int presetId; "ip"; playlistId; "d" |] ->
+      Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
     | [| "p"; Int presetId; "ip"; playlistId; "rm" |] ->
       Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
@@ -405,21 +417,33 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
 
       let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
+      let buttonText, buttonDataTemplate =
+        match includedPlaylist.Enabled with
+        | true -> "Disable", sprintf "p|%i|ip|%s|d"
+        | false -> "Enable", sprintf "p|%i|ip|%s|e"
+
       let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+        sprintf "*Name:* %s\n*Tracks count:* %i\n*Enabled:* %b" includedPlaylist.Name playlistTracksCount includedPlaylist.Enabled
         |> escapeMarkdownString
 
       let replyMarkup =
+        let presetId = (presetId |> PresetId.value)
+
         seq {
           seq {
+            let playlistId = (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+
+            InlineKeyboardButton(
+              buttonText,
+              CallbackData = buttonDataTemplate presetId playlistId
+            )
             InlineKeyboardButton(
               "Remove",
-              CallbackData =
-                sprintf "p|%i|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+              CallbackData = sprintf "p|%i|ip|%s|rm" presetId playlistId
             )
           }
 
-          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+          seq { InlineKeyboardButton("<< Back >>", CallbackData = sprintf "p|%i|ip|%i" presetId 0) }
         }
         |> InlineKeyboardMarkup
 
@@ -496,6 +520,26 @@ let showTargetPlaylist
         |> InlineKeyboardMarkup
 
       return! editMessage messageText replyMarkup
+    }
+
+let enableIncludedPlaylist (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : EnableIncludedPlaylist =
+  fun presetId playlistId ->
+    task {
+      do! enableIncludedPlaylist presetId playlistId
+
+      do! answerCallbackQuery "Disabled"
+
+      return! showIncludedPlaylist presetId playlistId
+    }
+
+let disableIncludedPlaylist (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : DisableIncludedPlaylist =
+  fun presetId playlistId ->
+    task {
+      do! disableIncludedPlaylist presetId playlistId
+
+      do! answerCallbackQuery "Disabled"
+
+      return! showIncludedPlaylist presetId playlistId
     }
 
 let removeIncludedPlaylist (bot: ITelegramBotClient) callbackQueryId : RemoveIncludedPlaylist =

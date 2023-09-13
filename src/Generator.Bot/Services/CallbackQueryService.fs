@@ -42,6 +42,8 @@ type CallbackQueryService
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
 
+    let enableIncludedPlaylist = IncludedPlaylist.enable _context
+    let disableIncludedPlaylist = IncludedPlaylist.disable _context
     let removeTargetPlaylist = TargetPlaylist.remove _context
 
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
@@ -68,6 +70,9 @@ type CallbackQueryService
     let showExcludedPlaylist = Telegram.showExcludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
     let showTargetPlaylist = Telegram.showTargetPlaylist editMessage deps.LoadPreset countPlaylistTracks
 
+    let enableIncludedPlaylist = Telegram.enableIncludedPlaylist enableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
+    let disableIncludedPlaylist = Telegram.disableIncludedPlaylist disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
+
     let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
     let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
 
@@ -90,6 +95,9 @@ type CallbackQueryService
     | Telegram.Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
     | Telegram.Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
     | Telegram.Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
+
+    | Telegram.Action.EnableIncludedPlaylist(presetId, playlistId) -> enableIncludedPlaylist presetId playlistId
+    | Telegram.Action.DisableIncludedPlaylist(presetId, playlistId) -> disableIncludedPlaylist presetId playlistId
 
     | Telegram.Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
     | Telegram.Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
