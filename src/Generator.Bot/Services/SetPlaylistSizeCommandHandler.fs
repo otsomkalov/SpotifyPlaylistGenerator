@@ -11,17 +11,11 @@ open Telegram.Bot.Types
 open Telegram.Helpers
 open Infrastructure.Core
 
-[<NoComparison; NoEquality>]
-type SetPlaylistSizeDeps ={
-  SendSettingsMessage: Telegram.Core.SendSettingsMessage
-}
-
 type SetPlaylistSizeCommandHandler
   (
     _bot: ITelegramBotClient,
     _context: AppDbContext,
-    setPlaylistSize: PresetSettings.SetPlaylistSize,
-    deps: SetPlaylistSizeDeps
+    setPlaylistSize: PresetSettings.SetPlaylistSize
   ) =
   let handleWrongCommandDataAsync (message: Message) =
     task {
@@ -29,7 +23,12 @@ type SetPlaylistSizeCommandHandler
       |> ignore
     }
 
-  let setPlaylistSizeAsync size (message: Message) =
+  let setPlaylistSizeAsync sendKeyboard size (message: Message) =
+    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
+    let loadPreset = Infrastructure.Workflows.Preset.load _context
+    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage sendKeyboard getCurrentPresetId getPresetMessage
+
     task {
       match PlaylistSize.tryCreate size with
       | Ok playlistSize ->
@@ -37,17 +36,17 @@ type SetPlaylistSizeCommandHandler
 
         do! setPlaylistSize userId playlistSize
 
-        return! deps.SendSettingsMessage userId
+        return! sendSettingsMessage userId
       | Error e ->
         _bot.SendTextMessageAsync(ChatId(message.Chat.Id), e, replyToMessageId = message.MessageId)
         |> ignore
     }
 
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync sendKeyboard (message: Message) =
     task {
       let processMessageFunc =
         match message.Text with
-        | Int size -> setPlaylistSizeAsync size
+        | Int size -> setPlaylistSizeAsync sendKeyboard size
         | _ -> handleWrongCommandDataAsync
 
       return! processMessageFunc message

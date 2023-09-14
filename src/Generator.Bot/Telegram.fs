@@ -15,8 +15,24 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map(Seq.map(function | Button.Message (text, data) -> InlineKeyboardButton(text, CallbackData = data)))
+      |> Seq.map(Seq.map(function text, data -> InlineKeyboardButton(text, CallbackData = data)))
       |> InlineKeyboardMarkup
+
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text,
+      ParseMode.MarkdownV2,
+      replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
+let sendKeyboard (bot: ITelegramBotClient) userId : SendKeyboard =
+  fun text buttons ->
+    let replyMarkup =
+      buttons
+      |> Seq.map (Seq.toArray)
+      |> Seq.toArray
+      |> ReplyKeyboardMarkup.op_Implicit
 
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),

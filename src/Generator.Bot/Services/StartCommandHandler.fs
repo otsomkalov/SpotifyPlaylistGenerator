@@ -31,16 +31,16 @@ type StartCommandHandler
     checkAuth: Telegram.Core.CheckAuth
   ) =
 
-  let sendMessageAsync sendMessage (message: Message) =
+  let sendMessageAsync sendKeyboard (message: Message) =
 
     let loadPreset = Preset.load _context
     let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendMessage getCurrentPresetId getPresetMessage
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard getCurrentPresetId getPresetMessage
 
     sendCurrentPresetInfo (message.From.Id |> UserId)
 
-  let handleCommandDataAsync sendMessage (message: Message) (stateKey: string) =
+  let handleCommandDataAsync sendKeyboard (message: Message) (stateKey: string) =
     let userId = message.From.Id |> UserId
 
     task{
@@ -58,7 +58,7 @@ type StartCommandHandler
 
             do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
 
-            return! sendMessageAsync sendMessage message
+            return! sendMessageAsync sendKeyboard message
           }
         | None ->
           _unauthorizedUserCommandHandler.HandleAsync message
@@ -92,7 +92,7 @@ type StartCommandHandler
       return! _unauthorizedUserCommandHandler.HandleAsync message
     }
 
-  let overwriteToken sendMessage (message: Message) stateKey =
+  let overwriteToken sendKeyboard (message: Message) stateKey =
     let userId = message.From.Id |> UserId
 
     task {
@@ -110,13 +110,13 @@ type StartCommandHandler
 
             do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
 
-            return! sendMessageAsync sendMessage message
+            return! sendMessageAsync sendKeyboard message
           }
         | None ->
           _unauthorizedUserCommandHandler.HandleAsync message
     }
 
-  member this.HandleAsync sendMessage (message: Message) =
+  member this.HandleAsync sendKeyboard (message: Message) =
     let userId = message.From.Id |> UserId
 
     task{
@@ -126,10 +126,10 @@ type StartCommandHandler
         match authState with
         | Telegram.Core.Authorized ->
           match message.Text with
-          | CommandData stateKey -> overwriteToken sendMessage message stateKey
-          | _ -> sendMessageAsync sendMessage message
+          | CommandData stateKey -> overwriteToken sendKeyboard message stateKey
+          | _ -> sendMessageAsync sendKeyboard message
         | Telegram.Core.Unauthorized ->
           match message.Text with
-          | CommandData stateKey -> overwriteToken sendMessage message stateKey
+          | CommandData stateKey -> overwriteToken sendKeyboard message stateKey
           | _ -> handleEmptyCommandAsync message
     }

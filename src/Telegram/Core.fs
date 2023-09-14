@@ -6,11 +6,6 @@ open Domain.Core
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
 
-// [<RequireQualifiedAccess>]
-// module Message =
-//   type Action =
-//     |
-
 type SendUserPresets = UserId -> Task<unit>
 type SendCurrentPresetInfo = UserId -> Task<unit>
 type SetCurrentPreset = UserId -> PresetId -> Task<unit>

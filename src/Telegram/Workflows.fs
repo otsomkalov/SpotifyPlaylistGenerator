@@ -15,11 +15,15 @@ let keyboardColumns = 4
 [<Literal>]
 let buttonsPerPage = 20
 
-type Button =
-  | Message of string * string
-  | Keyboard of string
+type MessageButton = string * string
+type KeyboardButton = string
 
-type SendMessage = string -> Button seq seq -> Task<unit>
+type Button =
+  | Message of MessageButton
+  | Keyboard of KeyboardButton
+
+type SendMessage = string -> MessageButton seq seq -> Task<unit>
+type SendKeyboard = string -> KeyboardButton seq seq -> Task<unit>
 type EditMessage = string -> Button seq seq -> Task<unit>
 
 let parseAction (str: string) =
@@ -66,7 +70,7 @@ let sendUserPresets (sendMessage: SendMessage) (listPresets: User.ListPresets) :
 
       let keyboardMarkup =
         presets
-        |> Seq.map (fun p -> Button.Message(p.Name, $"p|{p.Id |> PresetId.value}|i"))
+        |> Seq.map (fun p -> MessageButton(p.Name, $"p|{p.Id |> PresetId.value}|i"))
         |> Seq.singleton
 
       do! sendMessage "Your presets" keyboardMarkup
@@ -262,7 +266,7 @@ let askForPlaylistSize (sendMessage: SendMessage) : AskForPlaylistSize =
   fun userId ->
     sendMessage Messages.SendPlaylistSize Seq.empty
 
-let sendSettingsMessage (sendMessage:SendMessage) (getCurrentPresetId: User.GetCurrentPresetId) (getPresetMessage: GetPresetMessage) : SendSettingsMessage =
+let sendSettingsMessage (sendKeyboard:SendKeyboard) (getCurrentPresetId: User.GetCurrentPresetId) (getPresetMessage: GetPresetMessage) : SendSettingsMessage =
   fun userId ->
     task {
       let! currentPresetId = getCurrentPresetId userId
@@ -271,15 +275,15 @@ let sendSettingsMessage (sendMessage:SendMessage) (getCurrentPresetId: User.GetC
 
       let buttons =
         seq {
-          seq { Button.Keyboard(Messages.SetPlaylistSize) }
-          seq { Button.Keyboard("Back") }
+          seq { KeyboardButton(Messages.SetPlaylistSize) }
+          seq { KeyboardButton("Back") }
         }
 
-      return! sendMessage text buttons
+      return! sendKeyboard text buttons
     }
 
 let sendCurrentPresetInfo
-  (sendMessage: SendMessage)
+  (sendKeyboard: SendKeyboard)
   (getCurrentPresetId: User.GetCurrentPresetId)
   (getPresetMessage: GetPresetMessage)
   : SendCurrentPresetInfo =
@@ -290,12 +294,12 @@ let sendCurrentPresetInfo
 
       let buttons =
         seq {
-          seq { Button.Keyboard(Messages.MyPresets) }
-          seq { Button.Keyboard(Messages.IncludePlaylist) }
-          seq { Button.Keyboard(Messages.Settings) }
+          seq { KeyboardButton(Messages.MyPresets) }
+          seq { KeyboardButton(Messages.IncludePlaylist) }
+          seq { KeyboardButton(Messages.Settings) }
         }
 
-      return! sendMessage text buttons
+      return! sendKeyboard text buttons
     }
 let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowIncludedPlaylist =
   fun presetId playlistId ->
