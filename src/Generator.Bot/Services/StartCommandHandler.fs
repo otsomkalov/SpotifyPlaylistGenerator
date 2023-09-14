@@ -8,6 +8,7 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure
 open Infrastructure.Spotify
+open Infrastructure.Workflows
 open Shared.Services
 open SpotifyAPI.Web
 open Telegram.Bot
@@ -15,13 +16,8 @@ open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Microsoft.EntityFrameworkCore
 
-type StartCommand = { AuthState: Telegram.AuthState; Text: string }
+type StartCommand = { AuthState: Telegram.Core.AuthState; Text: string }
 type ProcessStartCommand = StartCommand -> Task<unit>
-
-[<NoEquality; NoComparison>]
-type StartCommandDeps ={
-  SendCurrentPresetInfo: Telegram.SendCurrentPresetInfo
-}
 
 type StartCommandHandler
   (
@@ -32,14 +28,19 @@ type StartCommandHandler
     getState: State.GetState,
     createClientFromTokenResponse: CreateClientFromTokenResponse,
     cacheToken: TokenProvider.CacheToken,
-    checkAuth: Telegram.CheckAuth,
-    deps: StartCommandDeps
+    checkAuth: Telegram.Core.CheckAuth
   ) =
 
-  let sendMessageAsync (message: Message) =
-    deps.SendCurrentPresetInfo (message.From.Id |> UserId)
+  let sendMessageAsync sendMessage (message: Message) =
 
-  let handleCommandDataAsync (message: Message) (stateKey: string) =
+    let loadPreset = Preset.load _context
+    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
+    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendMessage getCurrentPresetId getPresetMessage
+
+    sendCurrentPresetInfo (message.From.Id |> UserId)
+
+  let handleCommandDataAsync sendMessage (message: Message) (stateKey: string) =
     let userId = message.From.Id |> UserId
 
     task{
@@ -57,7 +58,7 @@ type StartCommandHandler
 
             do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
 
-            return! sendMessageAsync message
+            return! sendMessageAsync sendMessage message
           }
         | None ->
           _unauthorizedUserCommandHandler.HandleAsync message
@@ -91,7 +92,7 @@ type StartCommandHandler
       return! _unauthorizedUserCommandHandler.HandleAsync message
     }
 
-  let overwriteToken (message: Message) stateKey =
+  let overwriteToken sendMessage (message: Message) stateKey =
     let userId = message.From.Id |> UserId
 
     task {
@@ -109,13 +110,13 @@ type StartCommandHandler
 
             do _spotifyClientProvider.SetClient((userId |> UserId.value), spotifyClient)
 
-            return! sendMessageAsync message
+            return! sendMessageAsync sendMessage message
           }
         | None ->
           _unauthorizedUserCommandHandler.HandleAsync message
     }
 
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync sendMessage (message: Message) =
     let userId = message.From.Id |> UserId
 
     task{
@@ -123,12 +124,12 @@ type StartCommandHandler
 
       return!
         match authState with
-        | Telegram.Authorized ->
+        | Telegram.Core.Authorized ->
           match message.Text with
-          | CommandData stateKey -> overwriteToken message stateKey
-          | _ -> sendMessageAsync message
-        | Telegram.Unauthorized ->
+          | CommandData stateKey -> overwriteToken sendMessage message stateKey
+          | _ -> sendMessageAsync sendMessage message
+        | Telegram.Core.Unauthorized ->
           match message.Text with
-          | CommandData stateKey -> overwriteToken message stateKey
+          | CommandData stateKey -> overwriteToken sendMessage message stateKey
           | _ -> handleEmptyCommandAsync message
     }

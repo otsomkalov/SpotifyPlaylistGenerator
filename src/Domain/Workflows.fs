@@ -15,18 +15,28 @@ module PresetId =
   let value (PresetId id) = id
 
 [<RequireQualifiedAccess>]
+module ReadablePlaylistId =
+  let value (ReadablePlaylistId id) = id
+
+[<RequireQualifiedAccess>]
+module PlaylistId =
+  let value (PlaylistId id) = id
+
+[<RequireQualifiedAccess>]
+module WritablePlaylistId =
+  let value (WritablePlaylistId id) = id
+
+[<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = Async<string list>
   type LoadCurrentPreset = UserId -> Async<Preset>
-
-  type ListPresets = UserId -> Async<SimplePreset seq>
   type LoadPreset = PresetId -> Async<SimplePreset>
   type GetCurrentPresetId = UserId -> Async<PresetId>
 
 [<RequireQualifiedAccess>]
 module Preset =
   type Load = PresetId -> Async<Preset>
-  type UpdateSettings = PresetSettings.PresetSettings -> Task<unit>
+  type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
 
   let validate: Preset.Validate =
     fun preset ->

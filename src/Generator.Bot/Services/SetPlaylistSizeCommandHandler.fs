@@ -8,12 +8,12 @@ open Generator.Bot
 open Microsoft.FSharp.Core
 open Telegram.Bot
 open Telegram.Bot.Types
-open Helpers
+open Telegram.Helpers
 open Infrastructure.Core
 
 [<NoComparison; NoEquality>]
 type SetPlaylistSizeDeps ={
-  SendSettingsMessage: Telegram.SendSettingsMessage
+  SendSettingsMessage: Telegram.Core.SendSettingsMessage
 }
 
 type SetPlaylistSizeCommandHandler

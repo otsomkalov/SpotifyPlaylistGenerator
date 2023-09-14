@@ -60,7 +60,7 @@ type SetTargetPlaylistCommandHandler
             let sendMessage = Telegram.sendMessage _bot userId
             let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
 
-            let showTargetPlaylist = Telegram.showTargetPlaylist sendMessage loadPreset countPlaylistTracks
+            let showTargetPlaylist = Telegram.Workflows.showTargetPlaylist sendMessage loadPreset countPlaylistTracks
 
             showTargetPlaylist currentPresetId playlist.Id
             :> Task
