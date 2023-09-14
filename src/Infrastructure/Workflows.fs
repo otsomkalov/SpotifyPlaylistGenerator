@@ -88,11 +88,11 @@ module User =
       context.Users
         .AsNoTracking()
         .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
+        .ThenInclude(fun x -> x.SourcePlaylists)
         .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
+        .ThenInclude(fun x -> x.HistoryPlaylists)
         .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
+        .ThenInclude(fun x -> x.TargetPlaylists)
         .Where(fun u -> u.Id = userId)
         .Select(fun u -> u.CurrentPreset)
         .FirstOrDefaultAsync()
@@ -401,9 +401,9 @@ module Preset =
     let loadDbPreset presetId =
       context.Presets.AsNoTracking()
         .AsNoTracking()
-        .Include(fun x -> x.SourcePlaylists.Where(fun p -> not p.Disabled))
-        .Include(fun x -> x.HistoryPlaylists.Where(fun p -> not p.Disabled))
-        .Include(fun x -> x.TargetPlaylists.Where(fun p -> not p.Disabled))
+        .Include(fun x -> x.SourcePlaylists)
+        .Include(fun x -> x.HistoryPlaylists)
+        .Include(fun x -> x.TargetPlaylists)
         .FirstOrDefaultAsync(fun p -> p.Id = presetId)
       |> Async.AwaitTask
 
@@ -437,3 +437,35 @@ module Preset =
         { p.Settings with
             LikedTracksHandling = likedTracksHandling })
       |> Task.bind updateSettings
+
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  let enable (context: AppDbContext) : IncludedPlaylist.Enable =
+    fun presetId playlistId ->
+      let presetId = presetId |> PresetId.value
+      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
+
+      task{
+        let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
+
+        dbPlaylist.Disabled <- false
+
+        do dbPlaylist |> context.Update |> ignore
+
+        return! context.SaveChangesAsync() |> Task.map ignore
+      }
+
+  let disable (context: AppDbContext) : IncludedPlaylist.Disable =
+    fun presetId playlistId ->
+      let presetId = presetId |> PresetId.value
+      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
+
+      task{
+        let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
+
+        dbPlaylist.Disabled <- true
+
+        do dbPlaylist |> context.Update |> ignore
+
+        return! context.SaveChangesAsync() |> Task.map ignore
+      }

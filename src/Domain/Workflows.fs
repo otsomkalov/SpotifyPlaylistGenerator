@@ -146,6 +146,7 @@ module Playlist =
 
         let! includedTracks =
           preset.IncludedPlaylists
+          |> Seq.filter (fun p -> p.Enabled)
           |> Seq.map (fun p -> p.Id)
           |> Seq.map listPlaylistTracks
           |> Async.Parallel
@@ -160,6 +161,7 @@ module Playlist =
 
         let! excludedTracks =
           preset.ExcludedPlaylist
+          |> Seq.filter (fun p -> p.Enabled)
           |> Seq.map (fun p -> p.Id)
           |> Seq.map listPlaylistTracks
           |> Async.Parallel
@@ -200,11 +202,23 @@ module Playlist =
           |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
           |> List.map TrackId
 
-        for playlist in preset.TargetPlaylists do
+        for playlist in preset.TargetPlaylists |> Seq.filter (fun p -> p.Enabled) do
           do! updateTargetPlaylist playlist tracksIdsToImport
 
         return Ok()
       }
+
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+
+  let enable (enableIncludedPlaylist: Enable) : IncludedPlaylist.Enable =
+    enableIncludedPlaylist
+
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+
+  let disable (disableIncludedPlaylist: Disable) : IncludedPlaylist.Disable =
+    disableIncludedPlaylist
 
 [<RequireQualifiedAccess>]
 module TargetPlaylist =

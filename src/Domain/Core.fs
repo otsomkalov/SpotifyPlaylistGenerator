@@ -16,6 +16,7 @@ type SpotifyPlaylist =
 type ReadablePlaylist ={
   Id: ReadablePlaylistId
   Name: string
+  Enabled: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -24,6 +25,7 @@ module ReadablePlaylist =
     {
       Id = spotifyPlaylist.Id |> ReadablePlaylistId
       Name = spotifyPlaylist.Name
+      Enabled = true
     }
 
 type WritablePlaylist ={
@@ -47,6 +49,7 @@ type TargetPlaylistId = WritablePlaylistId
 type TargetPlaylist =
   { Id: TargetPlaylistId
     Name: string
+    Enabled: bool
     Overwrite: bool }
 
 [<RequireQualifiedAccess>]
@@ -138,3 +141,8 @@ module TargetPlaylist =
   type Remove = PresetId -> TargetPlaylistId -> Task<unit>
   type AppendTracks = PresetId -> TargetPlaylistId -> Task<unit>
   type OverwriteTracks = PresetId -> TargetPlaylistId -> Task<unit>
+
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
