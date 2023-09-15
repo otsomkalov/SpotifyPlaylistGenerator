@@ -15,7 +15,7 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map(Seq.map(function text, data -> InlineKeyboardButton(text, CallbackData = data)))
+      |> Seq.map(Seq.map(InlineKeyboardButton.WithCallbackData))
       |> InlineKeyboardMarkup
 
     bot.SendTextMessageAsync(
@@ -30,7 +30,7 @@ let sendKeyboard (bot: ITelegramBotClient) userId : SendKeyboard =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map (Seq.toArray)
+      |> Seq.map Seq.toArray
       |> Seq.toArray
       |> ReplyKeyboardMarkup.op_Implicit
 
@@ -46,7 +46,7 @@ let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map(Seq.map(function | Button.Message (text, data) -> InlineKeyboardButton(text, CallbackData = data)))
+      |> Seq.map(Seq.map(InlineKeyboardButton.WithCallbackData))
       |> InlineKeyboardMarkup
 
     bot.EditMessageTextAsync(
