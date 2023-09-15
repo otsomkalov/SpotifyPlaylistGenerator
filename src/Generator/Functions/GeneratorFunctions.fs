@@ -10,8 +10,8 @@ open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
 open Infrastructure.Helpers
-open Generator.Worker.Extensions
 open Telegram.Bot
+open Generator.Extensions
 open Telegram.Bot.Types
 open Domain.Extensions
 

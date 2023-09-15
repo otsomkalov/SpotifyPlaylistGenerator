@@ -21,7 +21,6 @@ open Shared.Settings
 open Generator.Extensions.ServiceCollection
 open Domain.Workflows
 open StackExchange.Redis
-open Telegram.Bot
 
 type Startup() =
   inherit FunctionsStartup()
@@ -35,25 +34,6 @@ type Startup() =
     let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
 
     QueueClient(settings.ConnectionString, settings.QueueName)
-
-  let buildProcessCallbackQueryDeps =
-    fun bot loadPreset ->
-      { LoadPreset = loadPreset
-        AskForPlaylistSize = Telegram.askForPlaylistSize bot }
-
-  let buildStartCommandDeps =
-    fun bot getCurrentPresetId getPresetMessage ->
-      { SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage }
-
-  let buildMessageServiceDeps =
-    fun bot getCurrentPresetId getPresetMessage ->
-      { SendSettingsMessage = Telegram.sendSettingsMessage bot getCurrentPresetId getPresetMessage
-        SendCurrentPresetInfo = Telegram.sendCurrentPresetInfo bot getCurrentPresetId getPresetMessage
-        AskForPlaylistSize = Telegram.askForPlaylistSize bot }
-
-  let buildSetPlaylistSizeDeps =
-    fun bot getCurrentPresetId getPresetMessage ->
-      { SendSettingsMessage = Telegram.sendSettingsMessage bot getCurrentPresetId getPresetMessage }
 
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
@@ -101,20 +81,8 @@ type Startup() =
     services.AddScopedFunc<PresetSettings.Update, AppDbContext>(PresetSettings.update)
     services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
 
-    services.AddScopedFunc<Telegram.SendUserPresets, ITelegramBotClient, User.ListPresets>(Telegram.sendUserPresets)
-    services.AddScopedFunc<Telegram.GetPresetMessage, Preset.Load>(Telegram.getPresetMessage)
-    services.AddScopedFunc<Telegram.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
-
-    services.AddScopedFunc<ProcessCallbackQueryDeps, ITelegramBotClient, Preset.Load>(buildProcessCallbackQueryDeps)
-    services.AddScopedFunc<StartCommandDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(buildStartCommandDeps)
-
-    services.AddScopedFunc<MessageServiceDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(
-      buildMessageServiceDeps
-    )
-
-    services.AddScopedFunc<SetPlaylistSizeDeps, ITelegramBotClient, User.GetCurrentPresetId, Telegram.GetPresetMessage>(
-      buildSetPlaylistSizeDeps
-    )
+    services.AddScopedFunc<Telegram.Core.GetPresetMessage, Preset.Load>(Telegram.Workflows.getPresetMessage)
+    services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
     services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)

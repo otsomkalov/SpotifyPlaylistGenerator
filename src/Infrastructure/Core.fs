@@ -6,17 +6,9 @@ open System
 open Domain.Core
 
 [<RequireQualifiedAccess>]
-module PlaylistId =
-  let value (PlaylistId id) = id
-
-[<RequireQualifiedAccess>]
 module TrackId =
 
   let value (TrackId id) = id
-
-[<RequireQualifiedAccess>]
-module ReadablePlaylistId =
-  let value (ReadablePlaylistId id) = id
 
 [<RequireQualifiedAccess>]
 module RawPlaylistId =
@@ -39,10 +31,6 @@ module PlaylistSize =
     | Error e -> ArgumentException(e, nameof size) |> raise
 
   let value (PresetSettings.PlaylistSize size) = size
-
-[<RequireQualifiedAccess>]
-module WritablePlaylistId =
-  let value (WritablePlaylistId id) = id
 
 [<RequireQualifiedAccess>]
 module PresetId =

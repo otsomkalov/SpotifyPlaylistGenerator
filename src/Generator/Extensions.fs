@@ -1,6 +1,13 @@
 ﻿namespace Generator.Extensions
 
+open System
 open System.Runtime.CompilerServices
+
+module List =
+  let shuffle sequence =
+    let random = Random()
+
+    sequence |> List.sortBy (fun _ -> random.Next())
 
 module ServiceCollection =
   open Microsoft.Extensions.DependencyInjection

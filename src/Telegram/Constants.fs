@@ -1,4 +1,4 @@
-﻿module Generator.Bot.Constants
+﻿module Telegram.Constants
 
 open Microsoft.FSharp.Core
 

@@ -44,7 +44,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Generator.Bot\Generator.Bot.fsproj"/>
-    <ProjectReference Include="..\Generator.Worker\Generator.Worker.fsproj"/>
   </ItemGroup>
 
 </Project>

@@ -126,6 +126,21 @@ module User =
       |> Task.map (fun id -> id.Value |> PresetId)
       |> Async.AwaitTask
 
+  let setCurrentPreset (context: AppDbContext) : User.SetCurrentPreset =
+    fun userId presetId ->
+      task{
+        let userId = userId |> UserId.value
+        let presetId = presetId |> PresetId.value
+
+        let! user = context.Users.FirstOrDefaultAsync(fun u -> u.Id = userId)
+
+        user.CurrentPresetId <- presetId
+
+        user |> context.Update |> ignore
+
+        do! context.SaveChangesAsync() |> Task.map ignore
+      }
+
 [<RequireQualifiedAccess>]
 module TargetPlaylist =
   let updateTracks (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdateTracks =
@@ -409,8 +424,8 @@ module Preset =
 
     PresetId.value >> loadDbPreset >> Async.map Preset.fromDb
 
-  let updateSettings (context: AppDbContext) (presetId: PresetId) : Preset.UpdateSettings =
-    fun settings ->
+  let updateSettings (context: AppDbContext) : Preset.UpdateSettings =
+    fun (presetId: PresetId) settings ->
       task {
         let (PresetId presetId) = presetId
 
@@ -436,7 +451,7 @@ module Preset =
       |> Task.map (fun p ->
         { p.Settings with
             LikedTracksHandling = likedTracksHandling })
-      |> Task.bind updateSettings
+      |> Task.bind (updateSettings presetId)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

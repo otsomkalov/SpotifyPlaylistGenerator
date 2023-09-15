@@ -7,8 +7,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "Generator\Gene
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shared", "Shared\Shared.fsproj", "{1DE06A61-3013-490B-8AB3-624A8892F41B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator.Worker", "Generator.Worker\Generator.Worker.fsproj", "{26BDAAB6-C2C8-493C-BAAE-2F14BCA13EB6}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator.Bot", "Generator.Bot\Generator.Bot.fsproj", "{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Database", "Database\Database.csproj", "{91F79094-F203-40D2-A33C-DE1E162C380A}"
@@ -18,6 +16,8 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain", "Domain\Domain.fsproj", "{3A2CAED2-D804-4443-A284-F1FC1E3C5317}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infrastructure", "Infrastructure\Infrastructure.fsproj", "{D8739AB1-B1EA-45D7-B2D0-7BA344A72EF1}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Telegram", "Telegram\Telegram.fsproj", "{A86E6930-633A-4955-8C1B-27B0D7EF8F0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,10 +36,6 @@ Global
 		{1DE06A61-3013-490B-8AB3-624A8892F41B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DE06A61-3013-490B-8AB3-624A8892F41B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DE06A61-3013-490B-8AB3-624A8892F41B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{26BDAAB6-C2C8-493C-BAAE-2F14BCA13EB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{26BDAAB6-C2C8-493C-BAAE-2F14BCA13EB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{26BDAAB6-C2C8-493C-BAAE-2F14BCA13EB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{26BDAAB6-C2C8-493C-BAAE-2F14BCA13EB6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC21D04B-66C4-4E32-A8B2-6FFE9839225F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -60,5 +56,9 @@ Global
 		{D8739AB1-B1EA-45D7-B2D0-7BA344A72EF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D8739AB1-B1EA-45D7-B2D0-7BA344A72EF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D8739AB1-B1EA-45D7-B2D0-7BA344A72EF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A86E6930-633A-4955-8C1B-27B0D7EF8F0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A86E6930-633A-4955-8C1B-27B0D7EF8F0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A86E6930-633A-4955-8C1B-27B0D7EF8F0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A86E6930-633A-4955-8C1B-27B0D7EF8F0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

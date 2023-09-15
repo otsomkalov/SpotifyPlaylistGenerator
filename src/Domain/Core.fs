@@ -143,6 +143,11 @@ module TargetPlaylist =
   type OverwriteTracks = PresetId -> TargetPlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
+module User =
+  type ListPresets = UserId -> Async<SimplePreset seq>
+  type SetCurrentPreset = UserId -> PresetId -> Task<unit>
+
+[<RequireQualifiedAccess>]
 module IncludedPlaylist =
   type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Disable = PresetId -> ReadablePlaylistId -> Task<unit>

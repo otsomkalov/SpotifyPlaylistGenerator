@@ -4,16 +4,14 @@ open Azure.Storage.Queues
 open Database
 open Domain
 open Domain.Core
+open Infrastructure
+open Telegram
+open Telegram.Core
 open Generator.Bot
 open Infrastructure.Workflows
 open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
-
-[<NoEquality; NoComparison>]
-type ProcessCallbackQueryDeps =
-  { LoadPreset: Workflows.Preset.Load
-    AskForPlaylistSize: Telegram.AskForPlaylistSize }
 
 type CallbackQueryService
   (
@@ -21,23 +19,9 @@ type CallbackQueryService
     _context: AppDbContext,
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
-    deps: ProcessCallbackQueryDeps,
-    getPresetMessage: Telegram.GetPresetMessage,
+    getPresetMessage: GetPresetMessage,
     _connectionMultiplexer: IConnectionMultiplexer
   ) =
-
-  let setLikedTracksHandling callbackQueryId messageId userId presetId handling =
-    let updatePresetSettings = Preset.updateSettings _context presetId
-
-    let setLikedTracksHandling =
-      Preset.setLikedTracksHandling deps.LoadPreset updatePresetSettings
-
-    let sendPresetInfo = Telegram.sendPresetInfo _bot getPresetMessage messageId userId
-
-    let setLikedTracksHandling =
-      Telegram.setLikedTracksHandling _bot setLikedTracksHandling sendPresetInfo callbackQueryId
-
-    setLikedTracksHandling presetId handling
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
@@ -46,68 +30,73 @@ type CallbackQueryService
     let disableIncludedPlaylist = IncludedPlaylist.disable _context
     let removeTargetPlaylist = TargetPlaylist.remove _context
 
+    let sendMessage = Telegram.sendMessage _bot userId
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
     let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
     let updateTargetPlaylist = TargetPlaylist.update _context
-    let appendToTargetPlaylist = Workflows.TargetPlaylist.appendToTargetPlaylist deps.LoadPreset updateTargetPlaylist
-    let overwriteTargetPlaylist = Workflows.TargetPlaylist.overwriteTargetPlaylist deps.LoadPreset updateTargetPlaylist
+    let appendToTargetPlaylist = TargetPlaylist.appendToTargetPlaylist _context
+    let overwriteTargetPlaylist = TargetPlaylist.overwriteTargetPlaylist _context
+    let updateSettings = Preset.updateSettings _context
+    let loadPreset = Preset.load _context
+
+    let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updateSettings
+    let askForPlaylistSize = Telegram.Workflows.askForPlaylistSize sendMessage
 
     let sendPresetInfo =
-      Telegram.sendPresetInfo _bot getPresetMessage callbackQuery.Message.MessageId userId
+      Workflows.sendPresetInfo editMessage getPresetMessage callbackQuery.Message.MessageId userId
 
-    let setCurrentPreset = Telegram.setCurrentPreset _bot _context callbackQuery.Id
+    let setCurrentPreset = Infrastructure.Workflows.User.setCurrentPreset _context
+    let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
 
     let showIncludedPlaylists =
-      Telegram.showIncludedPlaylists deps.LoadPreset editMessage
+      Workflows.showIncludedPlaylists loadPreset editMessage
 
     let showExcludedPlaylists =
-      Telegram.showExcludedPlaylists deps.LoadPreset editMessage
+      Workflows.showExcludedPlaylists loadPreset editMessage
 
-    let showTargetPlaylists = Telegram.showTargetPlaylists deps.LoadPreset editMessage
+    let showTargetPlaylists = Workflows.showTargetPlaylists loadPreset editMessage
 
-    let showIncludedPlaylist = Telegram.showIncludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
-    let showExcludedPlaylist = Telegram.showExcludedPlaylist editMessage deps.LoadPreset countPlaylistTracks
-    let showTargetPlaylist = Telegram.showTargetPlaylist editMessage deps.LoadPreset countPlaylistTracks
+    let showIncludedPlaylist = Workflows.showIncludedPlaylist editMessage loadPreset countPlaylistTracks
+    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessage loadPreset countPlaylistTracks
+    let showTargetPlaylist = Workflows.showTargetPlaylist editMessage loadPreset countPlaylistTracks
 
-    let enableIncludedPlaylist = Telegram.enableIncludedPlaylist enableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
-    let disableIncludedPlaylist = Telegram.disableIncludedPlaylist disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
+    let enableIncludedPlaylist = Workflows.enableIncludedPlaylist enableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
+    let disableIncludedPlaylist = Workflows.disableIncludedPlaylist disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
 
-    let removeIncludedPlaylist = Telegram.removeIncludedPlaylist _bot callbackQuery.Id
-    let removeExcludedPlaylist = Telegram.removeExcludedPlaylist _bot callbackQuery.Id
+    let removeIncludedPlaylist = Workflows.removeIncludedPlaylist answerCallbackQuery
+    let removeExcludedPlaylist = Workflows.removeExcludedPlaylist answerCallbackQuery
 
-    let removeTargetPlaylist = Telegram.removeTargetPlaylist removeTargetPlaylist answerCallbackQuery showTargetPlaylists
+    let removeTargetPlaylist = Workflows.removeTargetPlaylist removeTargetPlaylist answerCallbackQuery showTargetPlaylists
 
-    let appendToTargetPlaylist = Telegram.appendToTargetPlaylist appendToTargetPlaylist answerCallbackQuery showTargetPlaylist
-    let overwriteTargetPlaylist = Telegram.overwriteTargetPlaylist overwriteTargetPlaylist answerCallbackQuery showTargetPlaylist
+    let appendToTargetPlaylist = Workflows.appendToTargetPlaylist appendToTargetPlaylist answerCallbackQuery showTargetPlaylist
+    let overwriteTargetPlaylist = Workflows.overwriteTargetPlaylist overwriteTargetPlaylist answerCallbackQuery showTargetPlaylist
 
     let setLikedTracksHandling =
-      setLikedTracksHandling callbackQuery.Id callbackQuery.Message.MessageId userId
+      Workflows.setLikedTracksHandling answerCallbackQuery setLikedTracksHandling sendPresetInfo
 
-    match callbackQuery.Data |> Telegram.parseAction with
-    | Telegram.Action.ShowPresetInfo presetId -> sendPresetInfo presetId
-    | Telegram.Action.SetCurrentPreset presetId -> setCurrentPreset userId presetId
+    match callbackQuery.Data |> Workflows.parseAction with
+    | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
+    | Action.SetCurrentPreset presetId -> setCurrentPreset userId presetId
 
-    | Telegram.Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
-    | Telegram.Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page
-    | Telegram.Action.ShowTargetPlaylists(presetId, page) -> showTargetPlaylists presetId page
+    | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
+    | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
+    | Action.EnableIncludedPlaylist(presetId, playlistId) -> enableIncludedPlaylist presetId playlistId
+    | Action.DisableIncludedPlaylist(presetId, playlistId) -> disableIncludedPlaylist presetId playlistId
+    | Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
 
-    | Telegram.Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
-    | Telegram.Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
-    | Telegram.Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
+    | Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page
+    | Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
+    | Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
 
-    | Telegram.Action.EnableIncludedPlaylist(presetId, playlistId) -> enableIncludedPlaylist presetId playlistId
-    | Telegram.Action.DisableIncludedPlaylist(presetId, playlistId) -> disableIncludedPlaylist presetId playlistId
+    | Action.ShowTargetPlaylists(presetId, page) -> showTargetPlaylists presetId page
+    | Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
+    | Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
+    | Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
+    | Action.RemoveTargetPlaylist(presetId, playlistId) -> removeTargetPlaylist presetId playlistId
 
-    | Telegram.Action.RemoveIncludedPlaylist(presetId, playlistId) -> removeIncludedPlaylist presetId playlistId
-    | Telegram.Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
-    | Telegram.Action.RemoveTargetPlaylist(presetId, playlistId) -> removeTargetPlaylist presetId playlistId
+    | Action.AskForPlaylistSize -> askForPlaylistSize userId
 
-    | Telegram.Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
-    | Telegram.Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
-
-    | Telegram.Action.AskForPlaylistSize -> deps.AskForPlaylistSize userId
-
-    | Telegram.Action.IncludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Include
-    | Telegram.Action.ExcludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Exclude
-    | Telegram.Action.IgnoreLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Ignore
+    | Action.IncludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Include
+    | Action.ExcludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Exclude
+    | Action.IgnoreLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Ignore

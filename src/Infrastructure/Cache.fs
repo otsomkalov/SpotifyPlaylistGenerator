@@ -1,6 +1,7 @@
 ﻿module Infrastructure.Cache
 
 open System
+open Domain.Workflows
 open Infrastructure.Helpers
 open Infrastructure.Core
 open StackExchange.Redis

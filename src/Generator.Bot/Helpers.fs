@@ -32,8 +32,3 @@ let (|Bool|_|) (str: string) =
   match bool.TryParse(str) with
   | true, value -> Some(value)
   | _ -> None
-
-let (|Int|_|) (str: string) =
-  match Int32.TryParse(str) with
-  | true, value -> Some(value)
-  | _ -> None

@@ -2,6 +2,7 @@
 
 open Database
 open Domain.Extensions
+open Telegram
 open Telegram.Bot
 open Telegram.Bot.Types
 open Resources
@@ -53,7 +54,7 @@ type AddHistoryPlaylistCommandHandler
           | Ok playlist ->
             _bot.SendTextMessageAsync(
               ChatId(message.Chat.Id),
-              $"*{playlist.Name |> Generator.Bot.Telegram.escapeMarkdownString}* successfully excluded\!",
+              $"*{playlist.Name |> Workflows.escapeMarkdownString}* successfully excluded\!",
               ParseMode.MarkdownV2,
               replyToMessageId = message.MessageId
             )

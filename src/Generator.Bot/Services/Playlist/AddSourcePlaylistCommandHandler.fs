@@ -14,7 +14,6 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Infrastructure.Workflows
 open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.ReplyMarkups
 
 type AddSourcePlaylistCommandHandler
   (
@@ -27,7 +26,6 @@ type AddSourcePlaylistCommandHandler
     loadCurrentPreset: User.LoadCurrentPreset
   ) =
   member this.HandleAsync data (message: Message) =
-
     let userId = UserId message.From.Id
     async {
       let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
@@ -50,7 +48,7 @@ type AddSourcePlaylistCommandHandler
         | Ok playlist ->
           _bot.SendTextMessageAsync(
             ChatId(message.Chat.Id),
-            $"*{playlist.Name |> Generator.Bot.Telegram.escapeMarkdownString}* successfully included\!",
+            $"*{playlist.Name |> Telegram.Workflows.escapeMarkdownString}* successfully included\!",
             ParseMode.MarkdownV2,
             replyToMessageId = message.MessageId
           )
