@@ -39,7 +39,7 @@ type GeneratorFunctions
       let listLikedTracks =
         Cache.listOrRefreshByKey likedTracksCache message.RefreshCache listLikedTracks message.TelegramId
 
-      let updateTargetPlaylist = TargetPlaylist.updateTracks playlistsCache client
+      let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
 
       logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
 
@@ -48,7 +48,7 @@ type GeneratorFunctions
       |> ignore
 
       let generatePlaylist =
-        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetPlaylist List.shuffle
+        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetedPlaylist List.shuffle
 
       let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
 

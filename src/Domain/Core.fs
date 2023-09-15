@@ -8,46 +8,31 @@ type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
 type TrackId = TrackId of string
 
-type SpotifyPlaylist =
+type SpotifyPlaylistData =
   { Id: PlaylistId
+    Name: string }
+
+type ReadableSpotifyPlaylist = ReadableSpotifyPlaylist of SpotifyPlaylistData
+type WriteableSpotifyPlaylist = WriteableSpotifyPlaylist of SpotifyPlaylistData
+
+type SpotifyPlaylist =
+  | Readable of ReadableSpotifyPlaylist
+  | Writable of WriteableSpotifyPlaylist
+
+type IncludedPlaylist =
+  { Id: ReadablePlaylistId
     Name: string
-    OwnerId: string }
+    Enabled: bool }
 
-type ReadablePlaylist ={
-  Id: ReadablePlaylistId
-  Name: string
-  Enabled: bool
-}
+type ExcludedPlaylist =
+  { Id: ReadablePlaylistId
+    Name: string
+    Enabled: bool }
 
-[<RequireQualifiedAccess>]
-module ReadablePlaylist =
-  let fromSpotifyPlaylist (spotifyPlaylist: SpotifyPlaylist) =
-    {
-      Id = spotifyPlaylist.Id |> ReadablePlaylistId
-      Name = spotifyPlaylist.Name
-      Enabled = true
-    }
+type TargetedPlaylistId = WritablePlaylistId
 
-type WritablePlaylist ={
-  Id: WritablePlaylistId
-  Name: string
-}
-
-type IncludedPlaylist = ReadablePlaylist
-type ExcludedPlaylist = ReadablePlaylist
-
-[<RequireQualifiedAccess>]
-module WritablePlaylist =
-  let fromSpotifyPlaylist (spotifyPlaylist: SpotifyPlaylist) =
-    {
-      Id = spotifyPlaylist.Id |> WritablePlaylistId
-      Name = spotifyPlaylist.Name
-    }
-
-type TargetPlaylistId = WritablePlaylistId
-
-type TargetPlaylist =
-  { Id: TargetPlaylistId
+type TargetedPlaylist =
+  { Id: TargetedPlaylistId
     Name: string
     Enabled: bool
     Overwrite: bool }
@@ -75,10 +60,7 @@ module PlaylistSize =
 
 type PresetId = PresetId of int
 
-type SimplePreset ={
-  Id: PresetId
-  Name: string
-}
+type SimplePreset = { Id: PresetId; Name: string }
 
 type Preset =
   { Id: PresetId
@@ -86,7 +68,7 @@ type Preset =
     Settings: PresetSettings.PresetSettings
     IncludedPlaylists: IncludedPlaylist list
     ExcludedPlaylist: ExcludedPlaylist list
-    TargetPlaylists: TargetPlaylist list
+    TargetedPlaylists: TargetedPlaylist list
     UserId: UserId }
 
 type User = { Id: UserId }
@@ -112,9 +94,9 @@ module Playlist =
     | MissingFromSpotify of MissingFromSpotifyError
     | AccessError of AccessError
 
-  type IncludePlaylist = RawPlaylistId -> Async<Result<ReadablePlaylist, IncludePlaylistError>>
-  type ExcludePlaylist = RawPlaylistId -> Async<Result<ReadablePlaylist, ExcludePlaylistError>>
-  type TargetPlaylist = RawPlaylistId -> Async<Result<WritablePlaylist, TargetPlaylistError>>
+  type IncludePlaylist = RawPlaylistId -> Async<Result<IncludedPlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
 
   type GenerateError = GenerateError of string
   type Generate = PresetId -> Async<Result<unit, GenerateError>>
@@ -125,7 +107,7 @@ module Preset =
   [<RequireQualifiedAccess>]
   type ValidationError =
     | NoIncludedPlaylists
-    | NoTargetPlaylists
+    | NoTargetedPlaylists
 
   [<RequireQualifiedAccess>]
   type ValidationResult =
@@ -137,12 +119,6 @@ module Preset =
   type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 
 [<RequireQualifiedAccess>]
-module TargetPlaylist =
-  type Remove = PresetId -> TargetPlaylistId -> Task<unit>
-  type AppendTracks = PresetId -> TargetPlaylistId -> Task<unit>
-  type OverwriteTracks = PresetId -> TargetPlaylistId -> Task<unit>
-
-[<RequireQualifiedAccess>]
 module User =
   type ListPresets = UserId -> Async<SimplePreset seq>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
@@ -151,3 +127,43 @@ module User =
 module IncludedPlaylist =
   type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+
+  let fromSpotifyPlaylist =
+    function
+    | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
+      { Id = (id |> ReadablePlaylistId)
+        Name = name
+        Enabled = true } : IncludedPlaylist
+    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+      { Id = (id |> ReadablePlaylistId)
+        Name = name
+        Enabled = true }
+
+[<RequireQualifiedAccess>]
+module ExcludedPlaylist =
+  let fromSpotifyPlaylist =
+    function
+    | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
+      { Id = (id |> ReadablePlaylistId)
+        Name = name
+        Enabled = true }
+    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+      { Id = (id |> ReadablePlaylistId)
+        Name = name
+        Enabled = true }
+
+[<RequireQualifiedAccess>]
+module TargetedPlaylist =
+  type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
+  type AppendTracks = PresetId -> TargetedPlaylistId -> Task<unit>
+  type OverwriteTracks = PresetId -> TargetedPlaylistId -> Task<unit>
+
+  let fromSpotifyPlaylist =
+    function
+    | Readable _ -> None
+    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+      { Id = (id |> WritablePlaylistId)
+        Name = name
+        Enabled = true
+        Overwrite = true }
+      |> Some

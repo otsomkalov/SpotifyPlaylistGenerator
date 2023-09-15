@@ -92,7 +92,7 @@ type GenerateCommandHandler
         errors
         |> Seq.map (function
           | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
-          | Preset.ValidationError.NoTargetPlaylists -> "No target playlists!")
+          | Preset.ValidationError.NoTargetedPlaylists -> "No target playlists!")
         |> String.concat Environment.NewLine
 
       _bot.SendTextMessageAsync(ChatId(message.Chat.Id), errorsText, replyToMessageId = message.MessageId)

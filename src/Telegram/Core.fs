@@ -27,11 +27,11 @@ type ShowExcludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
-type ShowTargetPlaylists = PresetId -> Page -> Task<unit>
-type ShowTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type AppendToTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type OverwriteTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type RemoveTargetPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type ShowTargetedPlaylists = PresetId -> Page -> Task<unit>
+type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type AppendToTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type OverwriteTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
+type RemoveTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type Action =
@@ -46,11 +46,11 @@ type Action =
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
-  | ShowTargetPlaylists of presetId: PresetId * page: Page
-  | ShowTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
-  | AppendToTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
-  | OverwriteTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
-  | RemoveTargetPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+  | ShowTargetedPlaylists of presetId: PresetId * page: Page
+  | ShowTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+  | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+  | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
+  | RemoveTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
   | ShowPresetInfo of presetId: PresetId
   | SetCurrentPreset of presetId: PresetId

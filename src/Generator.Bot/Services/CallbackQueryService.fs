@@ -28,15 +28,16 @@ type CallbackQueryService
 
     let enableIncludedPlaylist = IncludedPlaylist.enable _context
     let disableIncludedPlaylist = IncludedPlaylist.disable _context
-    let removeTargetPlaylist = TargetPlaylist.remove _context
+    let removeTargetedPlaylist = TargetedPlaylist.remove _context
     let listPresets = User.listPresets _context
 
     let sendMessage = Telegram.sendMessage _bot userId
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
     let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
-    let appendToTargetPlaylist = TargetPlaylist.appendToTargetPlaylist _context
-    let overwriteTargetPlaylist = TargetPlaylist.overwriteTargetPlaylist _context
+    let updateTargetedPlaylist = TargetedPlaylist.update _context
+    let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist _context
+    let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist _context
     let updateSettings = Preset.updateSettings _context
     let loadPreset = Preset.load _context
 
@@ -56,11 +57,11 @@ type CallbackQueryService
     let showExcludedPlaylists =
       Workflows.showExcludedPlaylists loadPreset editMessage
 
-    let showTargetPlaylists = Workflows.showTargetPlaylists loadPreset editMessage
+    let showTargetedPlaylists = Workflows.showTargetedPlaylists loadPreset editMessage
 
     let showIncludedPlaylist = Workflows.showIncludedPlaylist editMessage loadPreset countPlaylistTracks
     let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessage loadPreset countPlaylistTracks
-    let showTargetPlaylist = Workflows.showTargetPlaylist editMessage loadPreset countPlaylistTracks
+    let showTargetedPlaylist = Workflows.showTargetedPlaylist editMessage loadPreset countPlaylistTracks
 
     let enableIncludedPlaylist = Workflows.enableIncludedPlaylist enableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
     let disableIncludedPlaylist = Workflows.disableIncludedPlaylist disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
@@ -68,10 +69,10 @@ type CallbackQueryService
     let removeIncludedPlaylist = Workflows.removeIncludedPlaylist answerCallbackQuery
     let removeExcludedPlaylist = Workflows.removeExcludedPlaylist answerCallbackQuery
 
-    let removeTargetPlaylist = Workflows.removeTargetPlaylist removeTargetPlaylist answerCallbackQuery showTargetPlaylists
+    let removeTargetedPlaylist = Workflows.removeTargetedPlaylist removeTargetedPlaylist answerCallbackQuery showTargetedPlaylists
 
-    let appendToTargetPlaylist = Workflows.appendToTargetPlaylist appendToTargetPlaylist answerCallbackQuery showTargetPlaylist
-    let overwriteTargetPlaylist = Workflows.overwriteTargetPlaylist overwriteTargetPlaylist answerCallbackQuery showTargetPlaylist
+    let appendToTargetedPlaylist = Workflows.appendToTargetedPlaylist appendToTargetedPlaylist answerCallbackQuery showTargetedPlaylist
+    let overwriteTargetedPlaylist = Workflows.overwriteTargetedPlaylist overwriteTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
     let setLikedTracksHandling =
       Workflows.setLikedTracksHandling answerCallbackQuery setLikedTracksHandling sendPresetInfo
@@ -90,11 +91,11 @@ type CallbackQueryService
     | Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
     | Action.RemoveExcludedPlaylist(presetId, playlistId) -> removeExcludedPlaylist presetId playlistId
 
-    | Action.ShowTargetPlaylists(presetId, page) -> showTargetPlaylists presetId page
-    | Action.ShowTargetPlaylist(presetId, playlistId) -> showTargetPlaylist presetId playlistId
-    | Action.AppendToTargetPlaylist(presetId, playlistId) -> appendToTargetPlaylist presetId playlistId
-    | Action.OverwriteTargetPlaylist(presetId, playlistId) -> overwriteTargetPlaylist presetId playlistId
-    | Action.RemoveTargetPlaylist(presetId, playlistId) -> removeTargetPlaylist presetId playlistId
+    | Action.ShowTargetedPlaylists(presetId, page) -> showTargetedPlaylists presetId page
+    | Action.ShowTargetedPlaylist(presetId, playlistId) -> showTargetedPlaylist presetId playlistId
+    | Action.AppendToTargetedPlaylist(presetId, playlistId) -> appendToTargetedPlaylist presetId playlistId
+    | Action.OverwriteTargetedPlaylist(presetId, playlistId) -> overwriteTargetedPlaylist presetId playlistId
+    | Action.RemoveTargetedPlaylist(presetId, playlistId) -> removeTargetedPlaylist presetId playlistId
 
     | Action.AskForPlaylistSize -> askForPlaylistSize userId
 

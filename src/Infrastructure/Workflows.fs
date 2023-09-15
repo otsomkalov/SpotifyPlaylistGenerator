@@ -128,7 +128,7 @@ module User =
 
   let setCurrentPreset (context: AppDbContext) : User.SetCurrentPreset =
     fun userId presetId ->
-      task{
+      task {
         let userId = userId |> UserId.value
         let presetId = presetId |> PresetId.value
 
@@ -142,7 +142,7 @@ module User =
       }
 
 [<RequireQualifiedAccess>]
-module TargetPlaylist =
+module TargetedPlaylist =
   let updateTracks (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdateTracks =
     fun playlist tracksIds ->
       let tracksIds = tracksIds |> List.map TrackId.value
@@ -182,7 +182,7 @@ module TargetPlaylist =
         |> Task.WhenAll
         |> Async.AwaitTask
 
-  let overwriteTargetPlaylist (context: AppDbContext) : TargetPlaylist.OverwriteTracks =
+  let overwriteTargetedPlaylist (context: AppDbContext) : TargetedPlaylist.OverwriteTracks =
     fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
@@ -204,7 +204,7 @@ module TargetPlaylist =
         return ()
       }
 
-  let appendToTargetPlaylist (context: AppDbContext) : TargetPlaylist.AppendTracks =
+  let appendToTargetedPlaylist (context: AppDbContext) : TargetedPlaylist.AppendTracks =
     fun presetId targetPlaylistId ->
       task {
         let targetPlaylistId =
@@ -226,9 +226,9 @@ module TargetPlaylist =
         return ()
       }
 
-  let remove (context: AppDbContext) : TargetPlaylist.Remove =
+  let remove (context: AppDbContext) : TargetedPlaylist.Remove =
     fun presetId targetPlaylistId ->
-      task{
+      task {
         let presetId = presetId |> PresetId.value
         let playlistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
 
@@ -239,12 +239,14 @@ module TargetPlaylist =
         return! context.SaveChangesAsync() |> Task.map ignore
       }
 
-  let update (context: AppDbContext) : TargetPlaylist.Update =
+  let update (context: AppDbContext) : TargetedPlaylist.Update =
     fun presetId targetPlaylist ->
       let presetId = presetId |> PresetId.value
-      let targetPlaylistId = targetPlaylist.Id |> WritablePlaylistId.value |> PlaylistId.value
 
-      task{
+      let targetPlaylistId =
+        targetPlaylist.Id |> WritablePlaylistId.value |> PlaylistId.value
+
+      task {
         let! dbPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = targetPlaylistId && tp.PresetId = presetId)
 
         dbPlaylist.Name <- targetPlaylist.Name
@@ -317,33 +319,31 @@ module Playlist =
       | PlaylistId id -> id |> Playlist.ParsedPlaylistId |> Ok
       | _ -> Playlist.IdParsingError() |> Error
 
-  let checkPlaylistExistsInSpotify (client: ISpotifyClient) : Playlist.CheckExistsInSpotify =
+  let checkPlaylistExistsInSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
     fun playlistId ->
       let rawPlaylistId = playlistId |> ParsedPlaylistId.value
 
-      async {
+      task {
         try
-          let! playlist = rawPlaylistId |> client.Playlists.Get |> Async.AwaitTask
+          let! playlist = rawPlaylistId |> client.Playlists.Get
 
-          return
-            { Id = playlist.Id |> PlaylistId
-              Name = playlist.Name
-              OwnerId = playlist.Owner.Id }
-            |> Ok
+          let! currentUser = client.UserProfile.Current()
+
+          let playlist =
+            if playlist.Owner.Id = currentUser.Id then
+               WriteableSpotifyPlaylist(
+                 { Id = playlist.Id |> PlaylistId
+                   Name = playlist.Name }
+               ) |> SpotifyPlaylist.Writable
+             else
+               WriteableSpotifyPlaylist(
+                 { Id = playlist.Id |> PlaylistId
+                   Name = playlist.Name }
+               ) |> SpotifyPlaylist.Writable
+
+          return playlist |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
-      }
-
-  let checkWriteAccess (client: ISpotifyClient) : Playlist.CheckWriteAccess =
-    fun playlist ->
-      async {
-        let! currentUser = client.UserProfile.Current() |> Async.AwaitTask
-
-        return
-          if playlist.OwnerId = currentUser.Id then
-            playlist |> WritablePlaylist.fromSpotifyPlaylist |> Ok
-          else
-            Playlist.AccessError() |> Error
       }
 
   let includeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.IncludeInStorage =
@@ -382,7 +382,8 @@ module Playlist =
         let! _ = context.SaveChangesAsync()
 
         return playlist
-      } |> Async.AwaitTask
+      }
+      |> Async.AwaitTask
 
   let targetInStorage (context: AppDbContext) userId : Playlist.TargetInStorage =
     fun playlist ->
@@ -406,15 +407,14 @@ module Playlist =
 
   let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
     let database = connectionMultiplexer.GetDatabase 0
-    PlaylistId.value
-    >> RedisKey
-    >> database.ListLengthAsync
+    PlaylistId.value >> RedisKey >> database.ListLengthAsync
 
 [<RequireQualifiedAccess>]
 module Preset =
   let load (context: AppDbContext) : Preset.Load =
     let loadDbPreset presetId =
-      context.Presets.AsNoTracking()
+      context.Presets
+        .AsNoTracking()
         .AsNoTracking()
         .Include(fun x -> x.SourcePlaylists)
         .Include(fun x -> x.HistoryPlaylists)
@@ -429,9 +429,7 @@ module Preset =
       task {
         let (PresetId presetId) = presetId
 
-        let! dbPreset =
-          context.Presets
-            .FirstOrDefaultAsync(fun p -> p.Id = presetId)
+        let! dbPreset = context.Presets.FirstOrDefaultAsync(fun p -> p.Id = presetId)
 
         let updatedDbSettings = settings |> PresetSettings.toDb
 
@@ -460,7 +458,7 @@ module IncludedPlaylist =
       let presetId = presetId |> PresetId.value
       let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
 
-      task{
+      task {
         let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
 
         dbPlaylist.Disabled <- false
@@ -475,7 +473,7 @@ module IncludedPlaylist =
       let presetId = presetId |> PresetId.value
       let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
 
-      task{
+      task {
         let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
 
         dbPlaylist.Disabled <- true

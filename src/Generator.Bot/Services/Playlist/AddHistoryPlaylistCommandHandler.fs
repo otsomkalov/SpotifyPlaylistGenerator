@@ -40,14 +40,14 @@ type AddHistoryPlaylistCommandHandler
 
         let parsePlaylistId = Playlist.parseId
 
-        let includeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
+        let excludeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
 
-        let includePlaylist =
-          Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+        let excludePlaylist =
+          Playlist.excludePlaylist parsePlaylistId checkPlaylistExistsInSpotify excludeInStorage
 
         let rawPlaylistId = Playlist.RawPlaylistId data
 
-        let! excludePlaylistResult = rawPlaylistId |> includePlaylist
+        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist
 
         return!
           match excludePlaylistResult with
@@ -62,7 +62,7 @@ type AddHistoryPlaylistCommandHandler
             |> Async.AwaitTask
           | Error error ->
             match error with
-            | Playlist.IdParsing _ ->
+            | Playlist.ExcludePlaylistError.IdParsing _ ->
               _bot.SendTextMessageAsync(
                 ChatId(message.Chat.Id),
                 String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
@@ -70,7 +70,7 @@ type AddHistoryPlaylistCommandHandler
               )
               :> Task
               |> Async.AwaitTask
-            | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+            | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
               _bot.SendTextMessageAsync(
                 ChatId(message.Chat.Id),
                 String.Format(Messages.PlaylistNotFoundInSpotify, id),

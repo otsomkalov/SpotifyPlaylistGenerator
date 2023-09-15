@@ -120,6 +120,12 @@ module AsyncResult =
     : Async<Result<'output, 'error>> =
     Async.bind (Result.either binder returnError) input
 
+  let inline bindSync
+    ([<InlineIfLambda>] binder: 'input -> Result<'output, 'error>)
+    (input: Async<Result<'input, 'error>>)
+    : Async<Result<'output, 'error>> =
+    Async.bind (Result.either (binder >> Async.singleton) returnError) input
+
   let asyncMap mapping taskResult =
     async {
       let! result = taskResult
