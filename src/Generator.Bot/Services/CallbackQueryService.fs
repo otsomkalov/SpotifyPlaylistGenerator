@@ -29,25 +29,26 @@ type CallbackQueryService
     let enableIncludedPlaylist = IncludedPlaylist.enable _context
     let disableIncludedPlaylist = IncludedPlaylist.disable _context
     let removeTargetPlaylist = TargetPlaylist.remove _context
+    let listPresets = User.listPresets _context
 
     let sendMessage = Telegram.sendMessage _bot userId
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
     let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
-    let updateTargetPlaylist = TargetPlaylist.update _context
     let appendToTargetPlaylist = TargetPlaylist.appendToTargetPlaylist _context
     let overwriteTargetPlaylist = TargetPlaylist.overwriteTargetPlaylist _context
     let updateSettings = Preset.updateSettings _context
     let loadPreset = Preset.load _context
 
     let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updateSettings
-    let askForPlaylistSize = Telegram.Workflows.askForPlaylistSize sendMessage
+    let askForPlaylistSize = Workflows.askForPlaylistSize sendMessage
 
     let sendPresetInfo =
-      Workflows.sendPresetInfo editMessage getPresetMessage callbackQuery.Message.MessageId userId
+      Workflows.sendPresetInfo editMessage getPresetMessage
 
     let setCurrentPreset = Infrastructure.Workflows.User.setCurrentPreset _context
     let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
+    let showUserPresets = Workflows.sendUserPresets editMessage listPresets
 
     let showIncludedPlaylists =
       Workflows.showIncludedPlaylists loadPreset editMessage
@@ -100,3 +101,5 @@ type CallbackQueryService
     | Action.IncludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Include
     | Action.ExcludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Exclude
     | Action.IgnoreLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Ignore
+
+    | Action.ShowUserPresets -> showUserPresets userId

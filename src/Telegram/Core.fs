@@ -61,6 +61,8 @@ type Action =
   | ExcludeLikedTracks of presetId: PresetId
   | IgnoreLikedTracks of presetId: PresetId
 
+  | ShowUserPresets
+
 type AuthState =
   | Authorized
   | Unauthorized

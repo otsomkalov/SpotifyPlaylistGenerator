@@ -18,13 +18,9 @@ let buttonsPerPage = 20
 type MessageButton = string * string
 type KeyboardButton = string
 
-type Button =
-  | Message of MessageButton
-  | Keyboard of KeyboardButton
-
 type SendMessage = string -> MessageButton seq seq -> Task<unit>
 type SendKeyboard = string -> KeyboardButton seq seq -> Task<unit>
-type EditMessage = string -> Button seq seq -> Task<unit>
+type EditMessage = string -> MessageButton seq seq -> Task<unit>
 
 let parseAction (str: string) =
   match str with
@@ -62,6 +58,8 @@ let parseAction (str: string) =
     | [| "p"; Int presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
     | [| "p"; Int presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
     | [| "p"; Int presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
+
+    | [|"p"|] -> Action.ShowUserPresets
 
 let sendUserPresets (sendMessage: SendMessage) (listPresets: User.ListPresets) : SendUserPresets =
   fun userId ->
@@ -105,7 +103,7 @@ let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
       return (text |> escapeMarkdownString, buttonText, buttonData)
     }
 
-let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessage) messageId userId : SendPresetInfo =
+let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessage) : SendPresetInfo =
   fun presetId ->
     task {
       let! text, buttonText, buttonData = getPresetMessage presetId
@@ -115,14 +113,16 @@ let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessag
       let keyboardMarkup =
         seq {
           seq {
-            Button.Message("Included playlists", $"p|%i{presetId}|ip|0")
-            Button.Message("Excluded playlists", $"p|%i{presetId}|ep|0")
-            Button.Message("Target playlists", $"p|%i{presetId}|tp|0")
+            MessageButton("Included playlists", $"p|%i{presetId}|ip|0")
+            MessageButton("Excluded playlists", $"p|%i{presetId}|ep|0")
+            MessageButton("Target playlists", $"p|%i{presetId}|tp|0")
           }
 
-          seq { Button.Message(buttonText, buttonData) }
+          seq { MessageButton(buttonText, buttonData) }
 
-          seq { Button.Message("Set as current", $"p|%i{presetId}|c") }
+          seq { MessageButton("Set as current", $"p|%i{presetId}|c") }
+
+          seq { MessageButton("<< Back >>", "p")}
         }
 
       do! editMessage text keyboardMarkup
@@ -149,17 +149,17 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
   let presetId = presetId |> PresetId.value
 
   let backButton =
-    Button.Message("<< Back >>", $"p|{presetId}|i")
+    MessageButton("<< Back >>", $"p|{presetId}|i")
 
   let prevButton =
     if page > 0 then
-      Some(Button.Message("<< Prev", $"p|{presetId}|ip|{page - 1}"))
+      Some(MessageButton("<< Prev", $"p|{presetId}|ip|{page - 1}"))
     else
       None
 
   let nextButton =
     if remainingPlaylists.Length > buttonsPerPage then
-      Some(Button.Message("Next >>", $"p|{presetId}|ip|{page + 1}"))
+      Some(MessageButton("Next >>", $"p|{presetId}|ip|{page + 1}"))
     else
       None
 
@@ -175,7 +175,7 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 let showIncludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowIncludedPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: IncludedPlaylist) ->
-      Button.Message(
+      MessageButton(
         playlist.Name,
         sprintf "p|%i|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
       )
@@ -215,7 +215,7 @@ let disableIncludedPlaylist (disableIncludedPlaylist: Domain.Core.IncludedPlayli
 let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowExcludedPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: IncludedPlaylist) ->
-      Button.Message(
+      MessageButton(
         playlist.Name,
         sprintf "p|%i|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
       )
@@ -235,7 +235,7 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
 let showTargetPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowTargetPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: TargetPlaylist) ->
-      Button.Message(
+      MessageButton(
         playlist.Name,
         sprintf "p|%i|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
       )
@@ -318,13 +318,13 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       let buttons =
         seq {
           seq {
-            Button.Message(
+            MessageButton(
               "Remove",
               sprintf "p|%i|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
             )
           }
 
-          seq { Button.Message("<< Back >>", sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
         }
 
       return! editMessage messageText buttons
@@ -347,13 +347,13 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       let replyMarkup =
         seq {
           seq {
-            Button.Message(
+            MessageButton(
               "Remove",
               sprintf "p|%i|ep|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
             )
           }
 
-          seq { Button.Message("<< Back >>", sprintf "p|%i|ep|%i" (presetId |> PresetId.value) 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%i|ep|%i" (presetId |> PresetId.value) 0) }
         }
 
       return! editMessage messageText replyMarkup
@@ -390,10 +390,10 @@ let showTargetPlaylist
 
       let buttons =
         seq {
-          seq { Button.Message(buttonText, buttonData) }
-          seq { Button.Message("Remove", sprintf "p|%i|tp|%s|rm" presetId' playlistId') }
+          seq { MessageButton(buttonText, buttonData) }
+          seq { MessageButton("Remove", sprintf "p|%i|tp|%s|rm" presetId' playlistId') }
 
-          seq { Button.Message("<< Back >>", sprintf "p|%i|tp|%i" presetId' 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%i|tp|%i" presetId' 0) }
         }
 
       return! editMessage messageText buttons
