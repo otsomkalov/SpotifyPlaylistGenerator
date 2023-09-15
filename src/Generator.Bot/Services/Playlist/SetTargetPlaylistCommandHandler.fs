@@ -42,10 +42,8 @@ type SetTargetPlaylistCommandHandler
 
         let targetInStorage = Playlist.targetInStorage _context userId
 
-        let checkWriteAccess = Playlist.checkWriteAccess client
-
         let targetPlaylist =
-          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify checkWriteAccess targetInStorage
+          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify targetInStorage
 
         let rawPlaylistId = Playlist.RawPlaylistId data
 
@@ -57,12 +55,12 @@ type SetTargetPlaylistCommandHandler
           match targetPlaylistResult with
           | Ok playlist ->
 
-            let editMessage = Telegram.editMessage _bot message.MessageId userId
+            let sendMessage = Telegram.sendMessage _bot userId
             let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
 
-            let showTargetPlaylist = Telegram.Workflows.showTargetPlaylist editMessage loadPreset countPlaylistTracks
+            let showTargetedPlaylist = Telegram.Workflows.showTargetedPlaylist sendMessage loadPreset countPlaylistTracks
 
-            showTargetPlaylist currentPresetId playlist.Id
+            showTargetedPlaylist currentPresetId playlist.Id
             :> Task
             |> Async.AwaitTask
           | Error error ->

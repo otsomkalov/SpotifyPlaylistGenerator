@@ -20,8 +20,8 @@ module ExcludedPlaylist =
       Enabled = not playlist.Disabled }
 
 [<RequireQualifiedAccess>]
-module TargetPlaylist =
-  let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetPlaylist =
+module TargetedPlaylist =
+  let private fromDb (playlist: Database.Entities.TargetPlaylist) : TargetedPlaylist =
     { Id = playlist.Url |> PlaylistId |> WritablePlaylistId
       Name = playlist.Name
       Overwrite = playlist.Overwrite
@@ -62,7 +62,7 @@ module Preset =
       Name = preset.Name
       IncludedPlaylists = mapIncludedPlaylist preset.SourcePlaylists
       ExcludedPlaylist = mapExcludedPlaylist preset.HistoryPlaylists
-      TargetPlaylists = TargetPlaylist.mapPlaylists preset.TargetPlaylists
+      TargetedPlaylists = TargetedPlaylist.mapPlaylists preset.TargetPlaylists
       Settings = PresetSettings.fromDb preset.Settings
       UserId = preset.UserId |> UserId }
 

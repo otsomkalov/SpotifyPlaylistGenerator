@@ -22,7 +22,7 @@ type MessageService
     _unknownCommandHandler: UnknownCommandHandler,
     _addSourcePlaylistCommandHandler: AddSourcePlaylistCommandHandler,
     _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
-    _setTargetPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
+    _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
@@ -98,7 +98,7 @@ type MessageService
     | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
     | StartsWith "/addsourceplaylist" -> validateUserLogin includePlaylist
     | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
-    | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetPlaylistCommandHandler.HandleAsync
+    | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetedPlaylistCommandHandler.HandleAsync
     | Equals Messages.SetPlaylistSize -> validateUserLogin (askForPlaylistSize sendMessage)
     | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
     | Equals Messages.MyPresets -> sendUserPresets sendMessage

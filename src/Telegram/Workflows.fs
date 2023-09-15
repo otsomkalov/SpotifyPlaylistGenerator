@@ -45,15 +45,15 @@ let parseAction (str: string) =
     | [| "p"; Int presetId; "ep"; playlistId; "rm" |] ->
       Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; Int id; "tp"; Int page |] -> Action.ShowTargetPlaylists(PresetId id, (Page page))
+    | [| "p"; Int id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
     | [| "p"; Int presetId; "tp"; playlistId; "i" |] ->
-      Action.ShowTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [| "p"; Int presetId; "tp"; playlistId; "a" |] ->
-      Action.AppendToTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [| "p"; Int presetId; "tp"; playlistId; "o" |] ->
-      Action.OverwriteTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [| "p"; Int presetId; "tp"; playlistId; "rm" |] ->
-      Action.RemoveTargetPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
     | [| "p"; Int presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
     | [| "p"; Int presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
@@ -214,7 +214,7 @@ let disableIncludedPlaylist (disableIncludedPlaylist: Domain.Core.IncludedPlayli
 
 let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowExcludedPlaylists =
   let createButtonFromPlaylist presetId =
-    fun (playlist: IncludedPlaylist) ->
+    fun (playlist: ExcludedPlaylist) ->
       MessageButton(
         playlist.Name,
         sprintf "p|%i|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
@@ -232,9 +232,9 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next excluded playlists:" replyMarkup
     }
 
-let showTargetPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowTargetPlaylists =
+let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowTargetedPlaylists =
   let createButtonFromPlaylist presetId =
-    fun (playlist: TargetPlaylist) ->
+    fun (playlist: TargetedPlaylist) ->
       MessageButton(
         playlist.Name,
         sprintf "p|%i|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
@@ -247,9 +247,9 @@ let showTargetPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : S
       let! preset = loadPreset presetId
 
       let replyMarkup =
-        createPlaylistsPage page preset.TargetPlaylists createButtonFromPlaylist preset.Id
+        createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
 
-      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next target playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next targeted playlists:" replyMarkup
     }
 
 let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) : SetLikedTracksHandling =
@@ -359,17 +359,17 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       return! editMessage messageText replyMarkup
     }
 
-let showTargetPlaylist
+let showTargetedPlaylist
   (editMessage: EditMessage)
   (loadPreset: Preset.Load)
   (countPlaylistTracks: Playlist.CountTracks)
-  : ShowTargetPlaylist =
+  : ShowTargetedPlaylist =
   fun presetId playlistId ->
     task {
       let! preset = loadPreset presetId
 
       let targetPlaylist =
-        preset.TargetPlaylists |> List.find (fun p -> p.Id = playlistId)
+        preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
 
       let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
 
@@ -407,40 +407,40 @@ let removeExcludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : RemoveEx
   fun presetId playlistId ->
     answerCallbackQuery "Not implemented yet"
 
-let removeTargetPlaylist
-  (removeTargetPlaylist: Domain.Core.TargetPlaylist.Remove)
+let removeTargetedPlaylist
+  (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetPlaylists: ShowTargetPlaylists)
-  : RemoveTargetPlaylist =
+  (showTargetedPlaylists: ShowTargetedPlaylists)
+  : RemoveTargetedPlaylist =
   fun presetId playlistId ->
     task {
-      do! removeTargetPlaylist presetId playlistId
+      do! removeTargetedPlaylist presetId playlistId
       do! answerCallbackQuery "Target playlist successfully deleted"
 
-      return! showTargetPlaylists presetId (Page 0)
+      return! showTargetedPlaylists presetId (Page 0)
     }
 
-let appendToTargetPlaylist
-  (appendToTargetPlaylist: TargetPlaylist.AppendTracks)
+let appendToTargetedPlaylist
+  (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetPlaylist: ShowTargetPlaylist)
-  : AppendToTargetPlaylist =
+  (showTargetedPlaylist: ShowTargetedPlaylist)
+  : AppendToTargetedPlaylist =
     fun presetId playlistId ->
     task {
-      do! appendToTargetPlaylist presetId playlistId
+      do! appendToTargetedPlaylist presetId playlistId
       do! answerCallbackQuery "Target playlist will be appended with generated tracks"
 
-      return! showTargetPlaylist presetId playlistId
+      return! showTargetedPlaylist presetId playlistId
     }
 
-let overwriteTargetPlaylist
-  (overwriteTargetPlaylist: TargetPlaylist.OverwriteTracks)
+let overwriteTargetedPlaylist
+  (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetPlaylist: ShowTargetPlaylist) : OverwriteTargetPlaylist=
+  (showTargetedPlaylist: ShowTargetedPlaylist) : OverwriteTargetedPlaylist=
   fun presetId playlistId ->
     task {
-      do! overwriteTargetPlaylist presetId playlistId
+      do! overwriteTargetedPlaylist presetId playlistId
       do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
 
-      return! showTargetPlaylist presetId playlistId
+      return! showTargetedPlaylist presetId playlistId
     }
