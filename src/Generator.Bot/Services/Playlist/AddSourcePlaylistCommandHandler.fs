@@ -2,33 +2,28 @@
 
 open Resources
 open System
-open System.Threading.Tasks
 open Database
 open Domain.Core
 open Domain.Workflows
-open Generator.Bot.Services
 open Infrastructure.Core
 open Microsoft.Extensions.Localization
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Infrastructure.Workflows
-open Telegram.Bot.Types.Enums
 
 type AddSourcePlaylistCommandHandler
   (
     _bot: ITelegramBotClient,
     _context: AppDbContext,
-    _playlistCommandHandler: PlaylistCommandHandler,
-    _emptyCommandDataHandler: EmptyCommandDataHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _localizer: IStringLocalizer<Messages>,
     loadCurrentPreset: User.LoadCurrentPreset
   ) =
-  member this.HandleAsync data (message: Message) =
+  member this.HandleAsync replyToMessage data (message: Message) =
     let userId = UserId message.From.Id
-    async {
-      let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+    task {
+      let! client = _spotifyClientProvider.GetAsync message.From.Id
 
       let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
@@ -41,36 +36,16 @@ type AddSourcePlaylistCommandHandler
 
       let rawPlaylistId = Playlist.RawPlaylistId data
 
-      let! includePlaylistResult = rawPlaylistId |> includePlaylist
+      let! includePlaylistResult = rawPlaylistId |> includePlaylist |> Async.StartAsTask
 
       return!
         match includePlaylistResult with
         | Ok playlist ->
-          _bot.SendTextMessageAsync(
-            ChatId(message.Chat.Id),
-            $"*{playlist.Name |> Telegram.Workflows.escapeMarkdownString}* successfully included\!",
-            ParseMode.MarkdownV2,
-            replyToMessageId = message.MessageId
-          )
-          :> Task
-          |> Async.AwaitTask
+          replyToMessage $"*{playlist.Name |> Telegram.Workflows.escapeMarkdownString}* successfully included\!"
         | Error error ->
           match error with
           | Playlist.IdParsing _ ->
-            _bot.SendTextMessageAsync(
-              ChatId(message.Chat.Id),
-              String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
-              replyToMessageId = message.MessageId
-            )
-            :> Task
-            |> Async.AwaitTask
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
           | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            _bot.SendTextMessageAsync(
-              ChatId(message.Chat.Id),
-              String.Format(Messages.PlaylistNotFoundInSpotify, id),
-              replyToMessageId = message.MessageId
-            )
-            :> Task
-            |> Async.AwaitTask
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
     }
-    |> Async.StartAsTask

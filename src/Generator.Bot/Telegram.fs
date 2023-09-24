@@ -12,6 +12,14 @@ open Telegram.Core
 open Telegram.Workflows
 
 let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text,
+      ParseMode.MarkdownV2
+    )
+    |> Task.map ignore
+let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
   fun text buttons ->
     let replyMarkup =
       buttons
@@ -23,6 +31,16 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
       text,
       ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
+let replyToMessage (bot: ITelegramBotClient) userId (messageId: int) : ReplyToMessage =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text,
+      ParseMode.MarkdownV2,
+      replyToMessageId = messageId
     )
     |> Task.map ignore
 
@@ -55,6 +73,17 @@ let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
       text,
       ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
+let askForReply (bot: ITelegramBotClient) userId messageId : AskForReply =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text,
+      ParseMode.MarkdownV2,
+      replyToMessageId = messageId,
+      replyMarkup = ForceReplyMarkup()
     )
     |> Task.map ignore
 

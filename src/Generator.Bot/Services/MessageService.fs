@@ -26,7 +26,6 @@ type MessageService
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
-    _emptyCommandDataHandler: EmptyCommandDataHandler,
     _bot: ITelegramBotClient,
     _context: AppDbContext
   ) =
@@ -37,15 +36,10 @@ type MessageService
     let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage listPresets
     sendUserPresets (message.From.Id |> UserId)
 
-  let askForPlaylistSize sendMessage (message: Message) =
-    let askForPlaylistSize = Telegram.Workflows.askForPlaylistSize sendMessage
-
-    askForPlaylistSize (message.From.Id |> UserId)
-
-  let includePlaylist (message: Message) =
+  let includePlaylist replyToMessage (message: Message) =
     match message.Text with
-    | CommandData data -> _addSourcePlaylistCommandHandler.HandleAsync data message
-    | _ -> _emptyCommandDataHandler.HandleAsync message
+    | CommandData data -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage data message
+    | _ -> replyToMessage "You have entered empty playlist url"
 
   let validateUserLogin handleCommandFunction (message: Message) =
     task{
@@ -56,19 +50,6 @@ type MessageService
           _unauthorizedUserCommandHandler.HandleAsync message
         else
           handleCommandFunction message
-    }
-
-  let askForIncludedPlaylist (message: Message) =
-    task {
-      let! _ =
-        _bot.SendTextMessageAsync(
-          message.From.Id |> ChatId,
-          Messages.SendIncludedPlaylist,
-          replyMarkup = ForceReplyMarkup(),
-          replyToMessageId = message.MessageId
-        )
-
-      ()
     }
 
   let sendSettingsMessage sendKeyboard (message: Message) =
@@ -87,31 +68,31 @@ type MessageService
 
     sendCurrentPresetInfo (message.From.Id |> UserId)
 
-  let getProcessReplyToMessageTextFunc sendKeyboard sendMessage (replyToMessage: Message) : (Message -> Task<unit>) =
-    match replyToMessage.Text with
-    | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard
-    | Equals Messages.SendIncludedPlaylist -> fun m -> _addSourcePlaylistCommandHandler.HandleAsync m.Text m
+  let getProcessReplyToMessageTextFunc sendKeyboard sendMessage replyToMessage (repliedMessage: Message) : (Message -> Task<unit>) =
+    match repliedMessage.Text with
+    | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage
+    | Equals Messages.SendIncludedPlaylist -> fun m -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage m.Text m
 
-  let getProcessMessageTextFunc sendKeyboard sendMessage text =
+  let getProcessMessageTextFunc sendKeyboard sendMessage sendButtons replyToMessage askForReply text =
     match text with
     | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard
-    | StartsWith "/generate" -> validateUserLogin _generateCommandHandler.HandleAsync
-    | StartsWith "/addsourceplaylist" -> validateUserLogin includePlaylist
-    | StartsWith "/addhistoryplaylist" -> validateUserLogin _addHistoryPlaylistCommandHandler.HandleAsync
-    | StartsWith "/settargetplaylist" -> validateUserLogin _setTargetedPlaylistCommandHandler.HandleAsync
-    | Equals Messages.SetPlaylistSize -> validateUserLogin (askForPlaylistSize sendMessage)
-    | Equals Messages.GeneratePlaylist -> validateUserLogin _generateCommandHandler.HandleAsync
-    | Equals Messages.MyPresets -> sendUserPresets sendMessage
+    | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage)
+    | StartsWith "/addsourceplaylist" -> validateUserLogin (includePlaylist replyToMessage)
+    | StartsWith "/addhistoryplaylist" -> validateUserLogin (_addHistoryPlaylistCommandHandler.HandleAsync replyToMessage)
+    | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage)
+    | Equals Messages.SetPlaylistSize -> validateUserLogin (fun m -> askForReply Messages.SendPlaylistSize)
+    | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage)
+    | Equals Messages.MyPresets -> sendUserPresets sendButtons
     | Equals Messages.Settings -> (sendSettingsMessage sendKeyboard)
-    | Equals Messages.IncludePlaylist -> askForIncludedPlaylist
+    | Equals Messages.IncludePlaylist -> (fun m -> askForReply Messages.SendIncludedPlaylist)
     | Equals "Back" -> (sendCurrentPresetInfo sendKeyboard)
-    | _ -> validateUserLogin _unknownCommandHandler.HandleAsync
+    | _ -> validateUserLogin (_unknownCommandHandler.HandleAsync replyToMessage)
 
-  let processTextMessage sendKeyboard sendMessage (message: Message) =
+  let processTextMessage sendKeyboard sendMessage sendButtons replyToMessage askForReply (message: Message) =
     let processMessageText =
       match isNull message.ReplyToMessage with
-      | false -> getProcessReplyToMessageTextFunc sendKeyboard sendMessage message.ReplyToMessage
-      | _ -> getProcessMessageTextFunc sendKeyboard sendMessage message.Text
+      | false -> getProcessReplyToMessageTextFunc sendKeyboard sendMessage replyToMessage message.ReplyToMessage
+      | _ -> getProcessMessageTextFunc sendKeyboard sendMessage sendButtons replyToMessage askForReply message.Text
 
     processMessageText message
 
@@ -120,10 +101,13 @@ type MessageService
     let userId = message.From.Id |> UserId
     let sendMessage = Telegram.sendMessage _bot userId
     let sendKeyboard = Telegram.sendKeyboard _bot userId
+    let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
+    let sendButtons = Telegram.sendButtons _bot userId
+    let askForReply = Telegram.askForReply _bot userId message.MessageId
 
     let processMessage =
       match message.Type with
-      | MessageType.Text -> processTextMessage sendKeyboard sendMessage
+      | MessageType.Text -> processTextMessage sendKeyboard sendMessage sendButtons replyToMessage askForReply
       | _ -> (fun _ -> Task.FromResult())
 
     processMessage message

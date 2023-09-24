@@ -18,9 +18,12 @@ let buttonsPerPage = 20
 type MessageButton = string * string
 type KeyboardButton = string
 
-type SendMessage = string -> MessageButton seq seq -> Task<unit>
+type SendMessage = string -> Task<unit>
+type SendButtons = string -> MessageButton seq seq -> Task<unit>
+type ReplyToMessage = string -> Task<unit>
 type SendKeyboard = string -> KeyboardButton seq seq -> Task<unit>
 type EditMessage = string -> MessageButton seq seq -> Task<unit>
+type AskForReply = string -> Task<unit>
 
 let parseAction (str: string) =
   match str with
@@ -61,7 +64,7 @@ let parseAction (str: string) =
 
     | [|"p"|] -> Action.ShowUserPresets
 
-let sendUserPresets (sendMessage: SendMessage) (listPresets: User.ListPresets) : SendUserPresets =
+let sendUserPresets (sendButtons: SendButtons) (listPresets: User.ListPresets) : SendUserPresets =
   fun userId ->
     task {
       let! presets = listPresets userId |> Async.StartAsTask
@@ -71,7 +74,7 @@ let sendUserPresets (sendMessage: SendMessage) (listPresets: User.ListPresets) :
         |> Seq.map (fun p -> MessageButton(p.Name, $"p|{p.Id |> PresetId.value}|i"))
         |> Seq.singleton
 
-      do! sendMessage "Your presets" keyboardMarkup
+      do! sendButtons "Your presets" keyboardMarkup
     }
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-])", "\$1")
@@ -261,10 +264,6 @@ let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedT
 
       return! sendPresetInfo presetId
     }
-
-let askForPlaylistSize (sendMessage: SendMessage) : AskForPlaylistSize =
-  fun userId ->
-    sendMessage Messages.SendPlaylistSize Seq.empty
 
 let sendSettingsMessage (sendKeyboard:SendKeyboard) (getCurrentPresetId: User.GetCurrentPresetId) (getPresetMessage: GetPresetMessage) : SendSettingsMessage =
   fun userId ->

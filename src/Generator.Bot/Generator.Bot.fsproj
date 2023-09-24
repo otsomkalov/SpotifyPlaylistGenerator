@@ -12,8 +12,6 @@
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Telegram.fs"/>
-    <Compile Include="Services\EmptyCommandDataHandler.fs"/>
-    <Compile Include="Services\Playlist\PlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\AddSourcePlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs"/>
     <Compile Include="Services\Playlist\AddHistoryPlaylistCommandHandler.fs"/>
