@@ -7,7 +7,6 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Resources
 open System
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Generator.Bot.Services
@@ -15,26 +14,22 @@ open Infrastructure.Core
 open Shared.Services
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
-open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.ReplyMarkups
 
 type AddHistoryPlaylistCommandHandler
   (
-    _playlistCommandHandler: PlaylistCommandHandler,
     _context: AppDbContext,
     _bot: ITelegramBotClient,
     _spotifyClientProvider: SpotifyClientProvider,
-    _emptyCommandDataHandler: EmptyCommandDataHandler,
     loadCurrentPreset: User.LoadCurrentPreset
   ) =
 
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync replyToMessage (message: Message) =
     match message.Text with
     | CommandData data ->
       let userId = UserId message.From.Id
 
-      async {
-        let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+      task {
+        let! client = _spotifyClientProvider.GetAsync message.From.Id
 
         let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
@@ -47,37 +42,17 @@ type AddHistoryPlaylistCommandHandler
 
         let rawPlaylistId = Playlist.RawPlaylistId data
 
-        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist
+        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist |> Async.StartAsTask
 
         return!
           match excludePlaylistResult with
           | Ok playlist ->
-            _bot.SendTextMessageAsync(
-              ChatId(message.Chat.Id),
-              $"*{playlist.Name |> Workflows.escapeMarkdownString}* successfully excluded\!",
-              ParseMode.MarkdownV2,
-              replyToMessageId = message.MessageId
-            )
-            :> Task
-            |> Async.AwaitTask
+            replyToMessage $"*{playlist.Name}* successfully excluded!"
           | Error error ->
             match error with
             | Playlist.ExcludePlaylistError.IdParsing _ ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
+              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
             | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistNotFoundInSpotify, id),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
+              replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
       }
-      |> Async.StartAsTask
-    | _ -> _emptyCommandDataHandler.HandleAsync message
+    | _ -> replyToMessage "You have entered empty playlist url"

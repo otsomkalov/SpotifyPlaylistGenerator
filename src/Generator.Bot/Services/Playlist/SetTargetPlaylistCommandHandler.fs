@@ -19,22 +19,20 @@ open Infrastructure.Workflows
 type SetTargetPlaylistCommandHandler
   (
     _bot: ITelegramBotClient,
-    _playlistCommandHandler: PlaylistCommandHandler,
     _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
-    _emptyCommandDataHandler: EmptyCommandDataHandler,
     getCurrentPresetId: User.GetCurrentPresetId,
     loadPreset: Preset.Load,
     connectionMultiplexer: IConnectionMultiplexer
   ) =
 
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync replyToMessage (message: Message) =
     match message.Text with
     | CommandData data ->
       let userId = UserId message.From.Id
 
-      async {
-        let! client = _spotifyClientProvider.GetAsync message.From.Id |> Async.AwaitTask
+      task {
+        let! client = _spotifyClientProvider.GetAsync message.From.Id
 
         let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
@@ -47,7 +45,7 @@ type SetTargetPlaylistCommandHandler
 
         let rawPlaylistId = Playlist.RawPlaylistId data
 
-        let! targetPlaylistResult = rawPlaylistId |> targetPlaylist
+        let! targetPlaylistResult = rawPlaylistId |> targetPlaylist |> Async.StartAsTask
 
         let! currentPresetId = getCurrentPresetId userId
 
@@ -55,40 +53,19 @@ type SetTargetPlaylistCommandHandler
           match targetPlaylistResult with
           | Ok playlist ->
 
-            let sendMessage = Telegram.sendMessage _bot userId
+            let sendButtons = Telegram.sendButtons _bot userId
             let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
 
-            let showTargetedPlaylist = Telegram.Workflows.showTargetedPlaylist sendMessage loadPreset countPlaylistTracks
+            let showTargetedPlaylist = Telegram.Workflows.showTargetedPlaylist sendButtons loadPreset countPlaylistTracks
 
             showTargetedPlaylist currentPresetId playlist.Id
-            :> Task
-            |> Async.AwaitTask
           | Error error ->
             match error with
             | Playlist.TargetPlaylistError.IdParsing _ ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
+              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
             | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                String.Format(Messages.PlaylistNotFoundInSpotify, id),
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
+              replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
             | Playlist.TargetPlaylistError.AccessError _ ->
-              _bot.SendTextMessageAsync(
-                ChatId(message.Chat.Id),
-                Messages.PlaylistIsReadonly,
-                replyToMessageId = message.MessageId
-              )
-              :> Task
-              |> Async.AwaitTask
+              replyToMessage Messages.PlaylistIsReadonly
       }
-      |> Async.StartAsTask
-    | _ -> _emptyCommandDataHandler.HandleAsync message
+    | _ -> replyToMessage "You have entered empty playlist url"

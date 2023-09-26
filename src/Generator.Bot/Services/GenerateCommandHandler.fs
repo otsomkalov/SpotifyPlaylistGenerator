@@ -23,15 +23,6 @@ type GenerateCommandHandler
     _queueClient: QueueClient,
     loadCurrentPreset: Domain.Workflows.User.LoadCurrentPreset
   ) =
-  let handleWrongCommandDataAsync (message: Message) =
-    task {
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "Command data should be boolean value indicates either refresh tracks cache or not",
-        replyToMessageId = message.MessageId
-      )
-      |> ignore
-    }
 
   let sendSQSMessageAsync message =
     task {
@@ -42,64 +33,54 @@ type GenerateCommandHandler
       ()
     }
 
-  let sendGenerateMessageAsync (message: Message) queueMessage =
+  let sendGenerateMessageAsync replyToMessage (message: Message) queueMessage =
     task {
-
       do! sendSQSMessageAsync queueMessage
-
-      _bot.SendTextMessageAsync(
-        ChatId(message.Chat.Id),
-        "Your playlist generation requests is queued",
-        replyToMessageId = message.MessageId
-      )
-      |> ignore
+      do! replyToMessage "Your playlist generation requests is queued"
     }
 
-  let handleCommandDataAsync (message: Message) refreshCache currentPresetId =
+  let handleCommandDataAsync replyToMessage (message: Message) refreshCache currentPresetId =
     let queueMessage =
       { TelegramId = message.From.Id
         RefreshCache = refreshCache
         PresetId = currentPresetId }
 
-    sendGenerateMessageAsync message queueMessage
+    sendGenerateMessageAsync replyToMessage message queueMessage
 
-  let handleEmptyCommandAsync (message: Message) currentPresetId =
+  let handleEmptyCommandAsync replyToMessage (message: Message) currentPresetId =
     let queueMessage =
       { TelegramId = message.From.Id
         RefreshCache = false
         PresetId = currentPresetId }
 
-    sendGenerateMessageAsync message queueMessage
+    sendGenerateMessageAsync replyToMessage message queueMessage
 
-  let validateCommandDataAsync (message: Message) data currentPresetId =
+  let validateCommandDataAsync replyToMessage (message: Message) data currentPresetId =
     match data with
-    | Bool value -> handleCommandDataAsync message value currentPresetId
-    | _ -> handleWrongCommandDataAsync message
+    | Bool value -> handleCommandDataAsync replyToMessage message value currentPresetId
+    | _ -> replyToMessage "Command data should be boolean value indicates either refresh tracks cache or not"
 
-  let handleCommandAsync (message: Message) presetId =
+  let handleCommandAsync replyToMessage (message: Message) presetId =
     task {
       let presetId = presetId |> PresetId.value
 
       return!
         match message.Text with
-        | CommandData data -> validateCommandDataAsync message data presetId
-        | _ -> handleEmptyCommandAsync message presetId
+        | CommandData data -> validateCommandDataAsync replyToMessage message data presetId
+        | _ -> handleEmptyCommandAsync replyToMessage message presetId
     }
 
-  let handleUserPlaylistsValidationErrorAsync (message: Message) errors =
-    task {
-      let errorsText =
+  let handleUserPlaylistsValidationErrorAsync replyToMessage (message: Message) errors =
+    let errorsText =
         errors
         |> Seq.map (function
           | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
           | Preset.ValidationError.NoTargetedPlaylists -> "No target playlists!")
         |> String.concat Environment.NewLine
 
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), errorsText, replyToMessageId = message.MessageId)
-      |> ignore
-    }
+    replyToMessage errorsText
 
-  member this.HandleAsync(message: Message) =
+  member this.HandleAsync replyToMessage (message: Message) =
     task {
       let! preset = loadCurrentPreset (message.From.Id |> UserId)
 
@@ -107,6 +88,6 @@ type GenerateCommandHandler
 
       return!
         match validationResult with
-        | Preset.ValidationResult.Ok -> handleCommandAsync message preset.Id
-        | Preset.ValidationResult.Errors errors -> handleUserPlaylistsValidationErrorAsync message errors
+        | Preset.ValidationResult.Ok -> handleCommandAsync replyToMessage message preset.Id
+        | Preset.ValidationResult.Errors errors -> handleUserPlaylistsValidationErrorAsync replyToMessage message errors
     }

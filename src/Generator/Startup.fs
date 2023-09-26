@@ -56,9 +56,7 @@ type Startup() =
       .AddScoped<StartCommandHandler>()
       .AddScoped<GenerateCommandHandler>()
       .AddScoped<UnknownCommandHandler>()
-      .AddScoped<EmptyCommandDataHandler>()
 
-      .AddScoped<PlaylistCommandHandler>()
       .AddScoped<AddSourcePlaylistCommandHandler>()
       .AddScoped<SetTargetPlaylistCommandHandler>()
       .AddScoped<AddHistoryPlaylistCommandHandler>()

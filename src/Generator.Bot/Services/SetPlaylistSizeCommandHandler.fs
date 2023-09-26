@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
+open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Resources
@@ -17,13 +18,10 @@ type SetPlaylistSizeCommandHandler
     _context: AppDbContext,
     setPlaylistSize: PresetSettings.SetPlaylistSize
   ) =
-  let handleWrongCommandDataAsync (message: Message) =
-    task {
-      _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.WrongPlaylistSize, replyToMessageId = message.MessageId)
-      |> ignore
-    }
+  let handleWrongCommandDataAsync replyToMessage (message: Message) : Task<unit> =
+    replyToMessage Messages.WrongPlaylistSize
 
-  let setPlaylistSizeAsync sendKeyboard size (message: Message) =
+  let setPlaylistSizeAsync sendKeyboard replyToMessage size (message: Message) =
     let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
     let loadPreset = Infrastructure.Workflows.Preset.load _context
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
@@ -38,16 +36,15 @@ type SetPlaylistSizeCommandHandler
 
         return! sendSettingsMessage userId
       | Error e ->
-        _bot.SendTextMessageAsync(ChatId(message.Chat.Id), e, replyToMessageId = message.MessageId)
-        |> ignore
+        do! replyToMessage e
     }
 
-  member this.HandleAsync sendKeyboard (message: Message) =
+  member this.HandleAsync sendKeyboard replyToMessage (message: Message) =
     task {
       let processMessageFunc =
         match message.Text with
-        | Int size -> setPlaylistSizeAsync sendKeyboard size
-        | _ -> handleWrongCommandDataAsync
+        | Int size -> setPlaylistSizeAsync sendKeyboard replyToMessage size
+        | _ -> handleWrongCommandDataAsync replyToMessage
 
       return! processMessageFunc message
     }

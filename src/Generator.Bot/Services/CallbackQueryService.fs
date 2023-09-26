@@ -5,6 +5,7 @@ open Database
 open Domain
 open Domain.Core
 open Infrastructure
+open Resources
 open Telegram
 open Telegram.Core
 open Generator.Bot
@@ -31,18 +32,16 @@ type CallbackQueryService
     let removeTargetedPlaylist = TargetedPlaylist.remove _context
     let listPresets = User.listPresets _context
 
-    let sendMessage = Telegram.sendMessage _bot userId
+    let askForReply = Telegram.askForReply _bot userId callbackQuery.Message.MessageId
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
     let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
-    let updateTargetedPlaylist = TargetedPlaylist.update _context
     let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist _context
     let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist _context
     let updateSettings = Preset.updateSettings _context
     let loadPreset = Preset.load _context
 
     let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updateSettings
-    let askForPlaylistSize = Workflows.askForPlaylistSize sendMessage
 
     let sendPresetInfo =
       Workflows.sendPresetInfo editMessage getPresetMessage
@@ -97,7 +96,7 @@ type CallbackQueryService
     | Action.OverwriteTargetedPlaylist(presetId, playlistId) -> overwriteTargetedPlaylist presetId playlistId
     | Action.RemoveTargetedPlaylist(presetId, playlistId) -> removeTargetedPlaylist presetId playlistId
 
-    | Action.AskForPlaylistSize -> askForPlaylistSize userId
+    | Action.AskForPlaylistSize -> askForReply Messages.SendPlaylistSize
 
     | Action.IncludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Include
     | Action.ExcludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Exclude

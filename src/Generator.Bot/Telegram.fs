@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Generator.Bot.Telegram
 
+open System.Text.RegularExpressions
 open Domain.Workflows
 open Infrastructure.Helpers
 open Shared.Services
@@ -11,7 +12,17 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
 
+let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-!])", "\$1")
+
 let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text |> escapeMarkdownString,
+      ParseMode.MarkdownV2
+    )
+    |> Task.map ignore
+let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
   fun text buttons ->
     let replyMarkup =
       buttons
@@ -20,9 +31,19 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
 
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
-      text,
+      text |> escapeMarkdownString,
       ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
+let replyToMessage (bot: ITelegramBotClient) userId (messageId: int) : ReplyToMessage =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text |> escapeMarkdownString,
+      ParseMode.MarkdownV2,
+      replyToMessageId = messageId
     )
     |> Task.map ignore
 
@@ -36,7 +57,7 @@ let sendKeyboard (bot: ITelegramBotClient) userId : SendKeyboard =
 
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
-      text,
+      text |> escapeMarkdownString,
       ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
     )
@@ -52,9 +73,20 @@ let editMessage (bot: ITelegramBotClient) messageId userId: EditMessage =
     bot.EditMessageTextAsync(
       (userId |> UserId.value |> ChatId),
       messageId,
-      text,
+      text |> escapeMarkdownString,
       ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
+    )
+    |> Task.map ignore
+
+let askForReply (bot: ITelegramBotClient) userId messageId : AskForReply =
+  fun text ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text |> escapeMarkdownString,
+      ParseMode.MarkdownV2,
+      replyToMessageId = messageId,
+      replyMarkup = ForceReplyMarkup()
     )
     |> Task.map ignore
 

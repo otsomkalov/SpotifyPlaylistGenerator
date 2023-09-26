@@ -13,7 +13,6 @@ type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 type SendSettingsMessage = UserId -> Task<unit>
 
 type SendPresetInfo = PresetId -> Task<unit>
-type AskForPlaylistSize = UserId -> Task<unit>
 type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 type GetPresetMessage = PresetId -> Task<string * string * string>
 
