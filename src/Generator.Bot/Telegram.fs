@@ -12,7 +12,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
 
-let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-])", "\$1")
+let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-!])", "\$1")
 
 let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
   fun text ->
