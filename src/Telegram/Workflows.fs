@@ -1,6 +1,5 @@
 ﻿module Telegram.Workflows
 
-open System.Text.RegularExpressions
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
@@ -77,8 +76,6 @@ let sendUserPresets (sendButtons: SendButtons) (listPresets: User.ListPresets) :
       do! sendButtons "Your presets" keyboardMarkup
     }
 
-let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-])", "\$1")
-
 let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
   fun presetId ->
     task{
@@ -103,7 +100,7 @@ let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
           (preset.Settings.PlaylistSize |> PlaylistSize.value)
         )
 
-      return (text |> escapeMarkdownString, buttonText, buttonData)
+      return (text, buttonText, buttonData)
     }
 
 let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessage) : SendPresetInfo =
@@ -192,7 +189,7 @@ let showIncludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       let replyMarkup =
         createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
 
-      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next included playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
     }
 
 let enableIncludedPlaylist (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : EnableIncludedPlaylist =
@@ -232,7 +229,7 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       let replyMarkup =
         createPlaylistsPage page preset.ExcludedPlaylist createButtonFromPlaylist preset.Id
 
-      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next excluded playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
     }
 
 let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowTargetedPlaylists =
@@ -252,7 +249,7 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       let replyMarkup =
         createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
 
-      return! editMessage $"Preset *{preset.Name |> escapeMarkdownString}* has the next targeted playlists:" replyMarkup
+      return! editMessage $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
     }
 
 let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) : SetLikedTracksHandling =
@@ -312,7 +309,6 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
 
       let messageText =
         sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
-        |> escapeMarkdownString
 
       let buttons =
         seq {
@@ -341,7 +337,6 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
 
       let messageText =
         sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
-        |> escapeMarkdownString
 
       let replyMarkup =
         seq {
@@ -374,7 +369,6 @@ let showTargetedPlaylist
 
       let messageText =
         sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
-        |> escapeMarkdownString
 
       let presetId' = (presetId |> PresetId.value)
       let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
