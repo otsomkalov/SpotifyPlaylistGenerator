@@ -47,7 +47,7 @@ type AddHistoryPlaylistCommandHandler
         return!
           match excludePlaylistResult with
           | Ok playlist ->
-            replyToMessage $"*{playlist.Name |> Workflows.escapeMarkdownString}* successfully excluded\!"
+            replyToMessage $"*{playlist.Name}* successfully excluded\!"
           | Error error ->
             match error with
             | Playlist.ExcludePlaylistError.IdParsing _ ->

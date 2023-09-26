@@ -41,7 +41,7 @@ type AddSourcePlaylistCommandHandler
       return!
         match includePlaylistResult with
         | Ok playlist ->
-          replyToMessage $"*{playlist.Name |> Telegram.Workflows.escapeMarkdownString}* successfully included\!"
+          replyToMessage $"*{playlist.Name}* successfully included\!"
         | Error error ->
           match error with
           | Playlist.IdParsing _ ->
