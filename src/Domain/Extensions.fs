@@ -3,6 +3,22 @@
 open System.Threading.Tasks
 
 [<RequireQualifiedAccess>]
+module Task =
+  let map mapping task' =
+    task {
+      let! value = task'
+
+      return mapping value
+    }
+
+  let bind mapping task' =
+    task{
+      let! value = task'
+
+      return! mapping value
+    }
+
+[<RequireQualifiedAccess>]
 module Result =
   let ofOption error option =
     match option with

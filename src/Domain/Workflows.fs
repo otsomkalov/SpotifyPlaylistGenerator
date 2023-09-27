@@ -37,17 +37,26 @@ module User =
 module Preset =
   type Load = PresetId -> Async<Preset>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
+  type GetRecommendations = int -> string list -> Task<string list>
 
   let validate: Preset.Validate =
     fun preset ->
-      match preset.IncludedPlaylists, preset.TargetedPlaylists with
-      | [], [] ->
-        [ Preset.ValidationError.NoIncludedPlaylists
-          Preset.ValidationError.NoTargetedPlaylists ]
+      match preset.IncludedPlaylists, preset.Settings.LikedTracksHandling, preset.TargetedPlaylists with
+      | [], PresetSettings.LikedTracksHandling.Include, [] ->
+        [ Preset.ValidationError.NoTargetedPlaylists ]
         |> Preset.ValidationResult.Errors
-      | [], _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
-      | _, [] -> [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
-      | _, _ -> Preset.ValidationResult.Ok
+      | [], _, [] ->
+        [ Preset.ValidationError.NoIncludedPlaylists
+          Preset.ValidationError.NoTargetedPlaylists
+        ]
+        |> Preset.ValidationResult.Errors
+      | [], PresetSettings.LikedTracksHandling.Exclude, _ ->
+        [ Preset.ValidationError.NoIncludedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | [], PresetSettings.LikedTracksHandling.Ignore, _ ->
+        [ Preset.ValidationError.NoIncludedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | _ -> Preset.ValidationResult.Ok
 
 [<RequireQualifiedAccess>]
 module PresetSettings =
@@ -147,6 +156,7 @@ module Playlist =
     (loadPreset: Preset.Load)
     (updateTargetedPlaylist: UpdateTracks)
     (shuffler: Shuffler)
+    (getRecommendations: Preset.GetRecommendations)
     : Playlist.Generate =
     fun presetId ->
       async {
@@ -197,7 +207,24 @@ module Playlist =
           presetId |> PresetId.value
         )
 
-        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
+        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds |> shuffler
+
+        let! potentialTracksIds =
+          if preset.Settings.RecommendationsEnabled then
+            potentialTracksIds
+            |> List.take 5
+            |> (getRecommendations 100)
+            |> Task.map ((@) potentialTracksIds)
+            |> Async.AwaitTask
+          else
+            potentialTracksIds |> async.Return
+
+        logger.LogInformation(
+          "User with Telegram id {TelegramId} has {RecommendedTracksCount} recommended tracks in preset {PresetId}",
+          preset.UserId |> UserId.value,
+          includedTracks.Length,
+          presetId |> PresetId.value
+        )
 
         logger.LogInformation(
           "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks in preset {PresetId}",
@@ -208,7 +235,6 @@ module Playlist =
 
         let tracksIdsToImport =
           potentialTracksIds
-          |> shuffler
           |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
           |> List.map TrackId
 

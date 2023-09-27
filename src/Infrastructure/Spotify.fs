@@ -8,7 +8,21 @@ open Microsoft.Extensions.Options
 open Shared.Settings
 open SpotifyAPI.Web
 open StackExchange.Redis
-open Infrastructure.Helpers
+open Domain.Extensions
+
+let getRecommendations (client: ISpotifyClient) : Preset.GetRecommendations =
+  fun count tracks ->
+    task{
+      let request = RecommendationsRequest()
+
+      for track in tracks do request.SeedTracks.Add(track)
+
+      request.Limit <- count
+
+      let! recommendationsResponse = client.Browse.GetRecommendations(request)
+
+      return recommendationsResponse.Tracks |> Seq.map (fun t -> t.Id) |> Seq.toList
+    }
 
 let getTracksIds (tracks: FullTrack seq) =
   tracks

@@ -8,7 +8,7 @@ open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.ReplyMarkups
-open Infrastructure.Helpers
+open Domain.Extensions
 
 type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: IOptions<SpotifySettings>) =
   let _spotifySettings = _spotifyOptions.Value
