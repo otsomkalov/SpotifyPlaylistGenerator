@@ -19,7 +19,6 @@ type MessageService
   (
     _startCommandHandler: StartCommandHandler,
     _generateCommandHandler: GenerateCommandHandler,
-    _unknownCommandHandler: UnknownCommandHandler,
     _addSourcePlaylistCommandHandler: AddSourcePlaylistCommandHandler,
     _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
     _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
@@ -52,62 +51,39 @@ type MessageService
           handleCommandFunction message
     }
 
-  let sendSettingsMessage sendKeyboard (message: Message) =
-    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
-    let loadPreset = Infrastructure.Workflows.Preset.load _context
-    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage sendKeyboard getCurrentPresetId getPresetMessage
-
-    sendSettingsMessage (message.From.Id |> UserId)
-
-  let sendCurrentPresetInfo sendKeyboard (message: Message) =
-    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
-    let loadPreset = Infrastructure.Workflows.Preset.load _context
-    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard getCurrentPresetId getPresetMessage
-
-    sendCurrentPresetInfo (message.From.Id |> UserId)
-
-  let getProcessReplyToMessageTextFunc sendKeyboard sendMessage replyToMessage (repliedMessage: Message) : (Message -> Task<unit>) =
-    match repliedMessage.Text with
-    | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage
-    | Equals Messages.SendIncludedPlaylist -> fun m -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage m.Text m
-
-  let getProcessMessageTextFunc sendKeyboard sendMessage sendButtons replyToMessage askForReply text =
-    match text with
-    | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard
-    | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage)
-    | StartsWith "/addsourceplaylist" -> validateUserLogin (includePlaylist replyToMessage)
-    | StartsWith "/addhistoryplaylist" -> validateUserLogin (_addHistoryPlaylistCommandHandler.HandleAsync replyToMessage)
-    | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage)
-    | Equals Messages.SetPlaylistSize -> validateUserLogin (fun m -> askForReply Messages.SendPlaylistSize)
-    | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage)
-    | Equals Messages.MyPresets -> sendUserPresets sendButtons
-    | Equals Messages.Settings -> (sendSettingsMessage sendKeyboard)
-    | Equals Messages.IncludePlaylist -> (fun m -> askForReply Messages.SendIncludedPlaylist)
-    | Equals "Back" -> (sendCurrentPresetInfo sendKeyboard)
-    | _ -> validateUserLogin (_unknownCommandHandler.HandleAsync replyToMessage)
-
-  let processTextMessage sendKeyboard sendMessage sendButtons replyToMessage askForReply (message: Message) =
-    let processMessageText =
-      match isNull message.ReplyToMessage with
-      | false -> getProcessReplyToMessageTextFunc sendKeyboard sendMessage replyToMessage message.ReplyToMessage
-      | _ -> getProcessMessageTextFunc sendKeyboard sendMessage sendButtons replyToMessage askForReply message.Text
-
-    processMessageText message
-
   member this.ProcessAsync(message: Message) =
-
     let userId = message.From.Id |> UserId
-    let sendMessage = Telegram.sendMessage _bot userId
+
     let sendKeyboard = Telegram.sendKeyboard _bot userId
     let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
     let sendButtons = Telegram.sendButtons _bot userId
     let askForReply = Telegram.askForReply _bot userId message.MessageId
+    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
+    let loadPreset = Infrastructure.Workflows.Preset.load _context
+    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
 
-    let processMessage =
-      match message.Type with
-      | MessageType.Text -> processTextMessage sendKeyboard sendMessage sendButtons replyToMessage askForReply
-      | _ -> (fun _ -> Task.FromResult())
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard getCurrentPresetId getPresetMessage
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage sendKeyboard getCurrentPresetId getPresetMessage
 
-    processMessage message
+    match message.Type with
+    | MessageType.Text ->
+      match isNull message.ReplyToMessage with
+      | false ->
+        match message.ReplyToMessage.Text with
+        | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
+        | Equals Messages.SendIncludedPlaylist -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+      | _ ->
+        match message.Text with
+        | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard message
+        | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
+        | StartsWith "/addsourceplaylist" -> validateUserLogin (includePlaylist replyToMessage) message
+        | StartsWith "/addhistoryplaylist" -> validateUserLogin (_addHistoryPlaylistCommandHandler.HandleAsync replyToMessage) message
+        | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage) message
+        | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
+        | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
+        | Equals Messages.MyPresets -> sendUserPresets sendButtons message
+        | Equals Messages.Settings -> sendSettingsMessage userId
+        | Equals Messages.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
+        | Equals "Back" -> sendCurrentPresetInfo userId
+        | _ -> replyToMessage "Unknown command"
+    | _ -> Task.FromResult()
