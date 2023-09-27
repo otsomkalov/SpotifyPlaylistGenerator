@@ -209,22 +209,23 @@ module Playlist =
 
         let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds |> shuffler
 
-        let! potentialTracksIds =
+        let! recommendedTracks =
           if preset.Settings.RecommendationsEnabled then
             potentialTracksIds
             |> List.take 5
             |> (getRecommendations 100)
-            |> Task.map ((@) potentialTracksIds)
             |> Async.AwaitTask
           else
-            potentialTracksIds |> async.Return
+            [] |> async.Return
 
         logger.LogInformation(
           "User with Telegram id {TelegramId} has {RecommendedTracksCount} recommended tracks in preset {PresetId}",
           preset.UserId |> UserId.value,
-          includedTracks.Length,
+          recommendedTracks.Length,
           presetId |> PresetId.value
         )
+
+        let potentialTracksIds = potentialTracksIds @ recommendedTracks
 
         logger.LogInformation(
           "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks in preset {PresetId}",
