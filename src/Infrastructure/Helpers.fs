@@ -5,22 +5,6 @@ open System.Threading.Tasks
 open SpotifyAPI.Web
 
 [<RequireQualifiedAccess>]
-module Task =
-  let map mapping task' =
-    task {
-      let! value = task'
-
-      return mapping value
-    }
-
-  let bind mapping task' =
-    task{
-      let! value = task'
-
-      return! mapping value
-    }
-
-[<RequireQualifiedAccess>]
 module TaskOption =
   let map mapping taskOption =
     task {

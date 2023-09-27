@@ -3,7 +3,6 @@ module Generator.Bot.Telegram
 
 open System.Text.RegularExpressions
 open Domain.Workflows
-open Infrastructure.Helpers
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -11,6 +10,7 @@ open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
+open Domain.Extensions
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-!])", "\$1")
 

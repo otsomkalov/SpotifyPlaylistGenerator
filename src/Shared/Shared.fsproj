@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
-    <PackageReference Include="SpotifyAPI.Web" Version="6.2.2" />
+    <PackageReference Include="SpotifyAPI.Web" Version="6.3.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.96" />
     <PackageReference Include="Telegram.Bot" Version="17.0.0" />
     <PackageReference Include="FSharp.SystemTextJson" Version="0.17.4" />

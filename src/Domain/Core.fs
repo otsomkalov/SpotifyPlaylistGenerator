@@ -49,7 +49,8 @@ module PresetSettings =
 
   type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
-      PlaylistSize: PlaylistSize }
+      PlaylistSize: PlaylistSize
+      RecommendationsEnabled: bool }
 
   type SetPlaylistSize = UserId -> PlaylistSize -> Task
   type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task

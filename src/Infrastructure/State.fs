@@ -4,7 +4,7 @@ module Infrastructure.State
 open System
 open System.Threading.Tasks
 open StackExchange.Redis
-open Infrastructure.Helpers
+open Domain.Extensions
 
 type StateKey = private StateKey of string
 

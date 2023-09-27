@@ -35,6 +35,7 @@ type GeneratorFunctions
       let listTracks = Playlist.listTracks logger client
       let listLikedTracks = User.listLikedTracks client
       let sendMessage = Telegram.sendMessage _bot userId
+      let getRecommendations = Spotify.getRecommendations client
 
       let listPlaylistTracks = Cache.listOrRefresh playlistsCache message.RefreshCache listTracks
 
@@ -48,7 +49,7 @@ type GeneratorFunctions
       do! sendMessage "Generating playlist..."
 
       let generatePlaylist =
-        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetedPlaylist List.shuffle
+        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetedPlaylist List.shuffle getRecommendations
 
       let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
 
