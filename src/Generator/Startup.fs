@@ -55,7 +55,6 @@ type Startup() =
       .AddScoped<UnauthorizedUserCommandHandler>()
       .AddScoped<StartCommandHandler>()
       .AddScoped<GenerateCommandHandler>()
-      .AddScoped<UnknownCommandHandler>()
 
       .AddScoped<AddSourcePlaylistCommandHandler>()
       .AddScoped<SetTargetPlaylistCommandHandler>()
