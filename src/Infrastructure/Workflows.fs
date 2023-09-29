@@ -261,3 +261,13 @@ module Preset =
 
         return! collection.ReplaceOneAsync(presetsFilter, dbPreset) |> Task.map ignore
       }
+
+  let save (db: IMongoDatabase) : Preset.Save =
+    fun preset ->
+      task {
+        let collection = db.GetCollection "presets"
+
+        let dbPreset = preset |> Preset.toDb
+
+        return! collection.InsertOneAsync(dbPreset)
+      }

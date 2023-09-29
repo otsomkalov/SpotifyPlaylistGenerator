@@ -66,7 +66,7 @@ type StartCommandHandler
 
   let createUserAsync userId =
 
-    let defaultPresetId = Infrastructure.Core.PresetId.create()
+    let defaultPresetId = PresetId.create()
 
     let user ={
       Id = UserId userId

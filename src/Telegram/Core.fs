@@ -67,3 +67,7 @@ type AuthState =
   | Unauthorized
 
 type CheckAuth = UserId -> Task<AuthState>
+
+[<RequireQualifiedAccess>]
+module Message =
+  type CreatePreset = string -> Task<unit>

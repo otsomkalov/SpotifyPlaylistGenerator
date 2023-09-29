@@ -5,6 +5,8 @@ open Domain.Core
 open Domain.Extensions
 open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Control
+open shortid
+open shortid.Configuration
 
 [<RequireQualifiedAccess>]
 module UserId =
@@ -12,6 +14,11 @@ module UserId =
 
 [<RequireQualifiedAccess>]
 module PresetId =
+  let create () =
+    let options = GenerationOptions(true, false, 12)
+
+    ShortId.Generate(options) |> PresetId
+
   let value (PresetId id) = id
 
 [<RequireQualifiedAccess>]
@@ -44,8 +51,17 @@ module User =
       |> Task.taskMap update
 
 [<RequireQualifiedAccess>]
+module SimplePreset =
+  let fromPreset (preset: Preset) =
+    {
+      Id = preset.Id
+      Name = preset.Name
+    }
+
+[<RequireQualifiedAccess>]
 module Preset =
   type Load = PresetId -> Task<Preset>
+  type Save = Preset -> Task<unit>
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
   type GetRecommendations = int -> string list -> Task<string list>
@@ -54,8 +70,7 @@ module Preset =
     fun preset ->
       match preset.IncludedPlaylists, preset.Settings.LikedTracksHandling, preset.TargetedPlaylists with
       | [], PresetSettings.LikedTracksHandling.Include, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
       | [], PresetSettings.LikedTracksHandling.Exclude, [] ->
         [ Preset.ValidationError.NoIncludedPlaylists
           Preset.ValidationError.NoTargetedPlaylists ]
@@ -65,20 +80,13 @@ module Preset =
           Preset.ValidationError.NoTargetedPlaylists ]
         |> Preset.ValidationResult.Errors
       | _, PresetSettings.LikedTracksHandling.Include, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
       | _, PresetSettings.LikedTracksHandling.Exclude, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
-      | _, PresetSettings.LikedTracksHandling.Ignore, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
+      | _, PresetSettings.LikedTracksHandling.Ignore, [] -> [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
       | [], PresetSettings.LikedTracksHandling.Exclude, _ ->
-        [ Preset.ValidationError.NoIncludedPlaylists ]
-        |> Preset.ValidationResult.Errors
-      | [], PresetSettings.LikedTracksHandling.Ignore, _ ->
-        [ Preset.ValidationError.NoIncludedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
+      | [], PresetSettings.LikedTracksHandling.Ignore, _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
       | _ -> Preset.ValidationResult.Ok
 
   let setLikedTracksHandling (load: Load) (update: Update) : Preset.SetLikedTracksHandling =
@@ -101,6 +109,32 @@ module Preset =
             Settings = { p.Settings with PlaylistSize = size } })
       |> Task.taskMap update
 
+  let create (savePreset: Save) (loadUser: User.Load) (updateUser: User.Update) userId : Preset.Create =
+    fun name ->
+      task{
+        let newPreset =
+          { Id = PresetId.create ()
+            Name = name
+            IncludedPlaylists = []
+            ExcludedPlaylist = []
+            TargetedPlaylists = []
+            Settings =
+              { PlaylistSize = (PresetSettings.PlaylistSize 20)
+                RecommendationsEnabled = false
+                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include }
+            UserId = userId }
+
+        let! user = loadUser userId
+
+        let userPreset = newPreset |> SimplePreset.fromPreset
+        let updatedUser = {user with Presets = user.Presets |> List.append [userPreset] }
+
+        do! updateUser updatedUser
+        do! savePreset newPreset
+
+        return newPreset.Id
+      }
+
 [<RequireQualifiedAccess>]
 module Playlist =
   type ListTracks = ReadablePlaylistId -> Async<string list>
@@ -119,7 +153,12 @@ module Playlist =
 
   type CountTracks = PlaylistId -> Task<int64>
 
-  let includePlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.IncludePlaylist =
+  let includePlaylist
+    (parseId: ParseId)
+    (loadFromSpotify: LoadFromSpotify)
+    (loadPreset: Preset.Load)
+    (updatePreset: Preset.Update)
+    : Playlist.IncludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.IncludePlaylistError.IdParsing
 
     let loadFromSpotify =
@@ -148,7 +187,12 @@ module Playlist =
       |> AsyncResult.map IncludedPlaylist.fromSpotifyPlaylist
       |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
 
-  let excludePlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.ExcludePlaylist =
+  let excludePlaylist
+    (parseId: ParseId)
+    (loadFromSpotify: LoadFromSpotify)
+    (loadPreset: Preset.Load)
+    (updatePreset: Preset.Update)
+    : Playlist.ExcludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.ExcludePlaylistError.IdParsing
 
     let loadFromSpotify =
@@ -177,7 +221,12 @@ module Playlist =
       |> AsyncResult.map ExcludedPlaylist.fromSpotifyPlaylist
       |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
 
-  let targetPlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.TargetPlaylist =
+  let targetPlaylist
+    (parseId: ParseId)
+    (loadFromSpotify: LoadFromSpotify)
+    (loadPreset: Preset.Load)
+    (updatePreset: Preset.Update)
+    : Playlist.TargetPlaylist =
     let parseId = parseId >> Result.mapError Playlist.TargetPlaylistError.IdParsing
 
     let loadFromSpotify =
@@ -273,10 +322,7 @@ module Playlist =
 
         let! recommendedTracks =
           if preset.Settings.RecommendationsEnabled then
-            includedTracksIds
-            |> List.take 5
-            |> (getRecommendations 100)
-            |> Async.AwaitTask
+            includedTracksIds |> List.take 5 |> (getRecommendations 100) |> Async.AwaitTask
           else
             [] |> async.Return
 

@@ -1,20 +1,20 @@
 ﻿namespace Generator.Bot.Services
 
 open System.Threading.Tasks
-open Database
 open Domain.Core
 open Domain.Workflows
+open Infrastructure.Workflows
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Microsoft.FSharp.Core
+open MongoDB.Driver
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Resources
 open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.ReplyMarkups
 
 type MessageService
   (
@@ -29,7 +29,7 @@ type MessageService
     _bot: ITelegramBotClient,
     loadUser: User.Load,
     loadPreset: Preset.Load,
-    updatePreset: Preset.Update
+    _database: IMongoDatabase
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -60,9 +60,15 @@ type MessageService
     let sendButtons = Telegram.sendButtons _bot userId
     let askForReply = Telegram.askForReply _bot userId message.MessageId
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
+    let savePreset = Preset.save _database
+    let updateUser = User.update _database
+    let createPreset = Preset.create savePreset loadUser updateUser userId
 
     let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard loadUser getPresetMessage
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser getPresetMessage sendKeyboard
+    let sendPresetInfo =
+      Telegram.Workflows.sendPresetInfo sendButtons getPresetMessage
+    let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
     match message.Type with
     | MessageType.Text ->
@@ -71,6 +77,7 @@ type MessageService
         match message.ReplyToMessage.Text with
         | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
         | Equals Messages.SendIncludedPlaylist -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+        | Equals Messages.SendPresetName -> createPreset message.Text
       | _ ->
         match message.Text with
         | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard message
@@ -79,6 +86,7 @@ type MessageService
         | StartsWith "/addhistoryplaylist" -> validateUserLogin (_addHistoryPlaylistCommandHandler.HandleAsync replyToMessage) message
         | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage) message
         | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
+        | Equals Messages.CreatePreset -> askForReply Messages.SendPresetName
         | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
         | Equals Messages.MyPresets -> sendUserPresets sendButtons message
         | Equals Messages.Settings -> sendSettingsMessage userId

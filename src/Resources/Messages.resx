@@ -96,5 +96,7 @@ Preset settings:
     <data name="CreatePreset" xml:space="preserve">
         <value>➕ Create preset</value>
     </data>
-
+    <data name="SendPresetName" xml:space="preserve">
+        <value>Send new preset name in reply to this message</value>
+    </data>
 </root>

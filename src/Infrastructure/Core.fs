@@ -4,8 +4,6 @@ open Domain.Workflows
 open Resources
 open System
 open Domain.Core
-open shortid
-open shortid.Configuration
 
 [<RequireQualifiedAccess>]
 module TrackId =
@@ -33,10 +31,3 @@ module PlaylistSize =
     | Error e -> ArgumentException(e, nameof size) |> raise
 
   let value (PresetSettings.PlaylistSize size) = size
-
-[<RequireQualifiedAccess>]
-module PresetId =
-  let create () =
-     let options = GenerationOptions(true, false, 12)
-
-     ShortId.Generate(options) |> PresetId
