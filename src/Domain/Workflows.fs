@@ -234,7 +234,7 @@ module Playlist =
           |> Seq.map (fun p -> p.Id)
           |> Seq.map listPlaylistTracks
           |> Async.Parallel
-          |> Async.map List.concat
+          |> Async.map (List.concat >> shuffler)
 
         logger.LogInformation(
           "User with Telegram id {TelegramId} has {SourceTracksCount} source tracks in preset {PresetId}",
@@ -271,11 +271,9 @@ module Playlist =
           presetId |> PresetId.value
         )
 
-        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds |> shuffler
-
         let! recommendedTracks =
           if preset.Settings.RecommendationsEnabled then
-            potentialTracksIds
+            includedTracksIds
             |> List.take 5
             |> (getRecommendations 100)
             |> Async.AwaitTask
@@ -289,7 +287,9 @@ module Playlist =
           presetId |> PresetId.value
         )
 
-        let potentialTracksIds = potentialTracksIds @ recommendedTracks
+        let includedTracksIds = includedTracksIds @ recommendedTracks
+
+        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
 
         logger.LogInformation(
           "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks in preset {PresetId}",
