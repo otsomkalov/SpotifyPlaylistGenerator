@@ -120,6 +120,7 @@ module Preset =
 
   type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
+  type Create = string -> Task<PresetId>
 
 [<RequireQualifiedAccess>]
 module User =

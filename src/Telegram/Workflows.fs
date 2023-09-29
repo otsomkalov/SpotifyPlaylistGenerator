@@ -297,6 +297,7 @@ let sendCurrentPresetInfo
             let buttons =
               seq {
                 seq { KeyboardButton(Messages.MyPresets) }
+                seq { KeyboardButton(Messages.CreatePreset) }
                 seq { KeyboardButton(Messages.IncludePlaylist) }
                 seq { KeyboardButton(Messages.Settings) }
               }
@@ -452,3 +453,13 @@ let overwriteTargetedPlaylist
 
       return! showTargetedPlaylist presetId playlistId
     }
+
+[<RequireQualifiedAccess>]
+module Message =
+  let createPreset (createPreset : Preset.Create) (sendPresetInfo: SendPresetInfo) : Message.CreatePreset =
+    fun name ->
+      task{
+        let! presetId = createPreset name
+
+        return! sendPresetInfo presetId
+      }

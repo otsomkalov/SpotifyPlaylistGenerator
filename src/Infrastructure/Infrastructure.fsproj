@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="shortid" Version="4.0.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="6.3.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.96"/>
   </ItemGroup>

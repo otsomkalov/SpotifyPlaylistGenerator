@@ -252,6 +252,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Send new preset name in reply to this message.
+        /// </summary>
+        public static string SendPresetName {
+            get {
+                return ResourceManager.GetString("SendPresetName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to #️⃣ Set playlist size.
         /// </summary>
         public static string SetPlaylistSize {
