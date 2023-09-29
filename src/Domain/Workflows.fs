@@ -29,13 +29,24 @@ module WritablePlaylistId =
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = Async<string list>
-  type LoadCurrentPreset = UserId -> Async<Preset>
-  type LoadPreset = PresetId -> Async<SimplePreset>
-  type GetCurrentPresetId = UserId -> Async<PresetId>
+  type Load = UserId -> Task<User>
+  type Update = User -> Task<unit>
+  type Create = User -> Task<unit>
+  type Exists = UserId -> Task<bool>
+
+  let setCurrentPreset (load: Load) (update: Update) : User.SetCurrentPreset =
+    fun userId presetId ->
+      userId
+      |> load
+      |> Task.map (fun u ->
+        { u with
+            CurrentPresetId = Some presetId })
+      |> Task.taskMap update
 
 [<RequireQualifiedAccess>]
 module Preset =
-  type Load = PresetId -> Async<Preset>
+  type Load = PresetId -> Task<Preset>
+  type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
   type GetRecommendations = int -> string list -> Task<string list>
 
@@ -45,10 +56,22 @@ module Preset =
       | [], PresetSettings.LikedTracksHandling.Include, [] ->
         [ Preset.ValidationError.NoTargetedPlaylists ]
         |> Preset.ValidationResult.Errors
-      | [], _, [] ->
+      | [], PresetSettings.LikedTracksHandling.Exclude, [] ->
         [ Preset.ValidationError.NoIncludedPlaylists
-          Preset.ValidationError.NoTargetedPlaylists
-        ]
+          Preset.ValidationError.NoTargetedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | [], PresetSettings.LikedTracksHandling.Ignore, [] ->
+        [ Preset.ValidationError.NoIncludedPlaylists
+          Preset.ValidationError.NoTargetedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | _, PresetSettings.LikedTracksHandling.Include, [] ->
+        [ Preset.ValidationError.NoTargetedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | _, PresetSettings.LikedTracksHandling.Exclude, [] ->
+        [ Preset.ValidationError.NoTargetedPlaylists ]
+        |> Preset.ValidationResult.Errors
+      | _, PresetSettings.LikedTracksHandling.Ignore, [] ->
+        [ Preset.ValidationError.NoTargetedPlaylists ]
         |> Preset.ValidationResult.Errors
       | [], PresetSettings.LikedTracksHandling.Exclude, _ ->
         [ Preset.ValidationError.NoIncludedPlaylists ]
@@ -58,21 +81,25 @@ module Preset =
         |> Preset.ValidationResult.Errors
       | _ -> Preset.ValidationResult.Ok
 
-[<RequireQualifiedAccess>]
-module PresetSettings =
-  type Load = UserId -> Task<PresetSettings.PresetSettings>
+  let setLikedTracksHandling (load: Load) (update: Update) : Preset.SetLikedTracksHandling =
+    fun presetId handling ->
+      presetId
+      |> load
+      |> Task.map (fun p ->
+        { p with
+            Settings =
+              { p.Settings with
+                  LikedTracksHandling = handling } })
+      |> Task.taskMap update
 
-  type Update = UserId -> PresetSettings.PresetSettings -> Task
-
-  let setPlaylistSize (loadPresetSettings: Load) (updatePresetSettings: Update) : PresetSettings.SetPlaylistSize =
-    fun userId playlistSize ->
-      task {
-        let! presetSettings = loadPresetSettings userId
-
-        let updatedSettings = { presetSettings with PlaylistSize = playlistSize }
-
-        do! updatePresetSettings userId updatedSettings
-      }
+  let setPlaylistSize (load: Load) (update: Update) : Preset.SetPlaylistSize =
+    fun presetId size ->
+      presetId
+      |> load
+      |> Task.map (fun p ->
+        { p with
+            Settings = { p.Settings with PlaylistSize = size } })
+      |> Task.taskMap update
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -92,43 +119,65 @@ module Playlist =
 
   type CountTracks = PlaylistId -> Task<int64>
 
-  let includePlaylist
-    (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
-    (includeInStorage: IncludeInStorage)
-    : Playlist.IncludePlaylist =
+  let includePlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.IncludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.IncludePlaylistError.IdParsing
 
     let loadFromSpotify =
       (loadFromSpotify >> Async.AwaitTask)
       >> AsyncResult.mapError Playlist.IncludePlaylistError.MissingFromSpotify
 
-    parseId
-    >> Result.asyncBind loadFromSpotify
-    >> AsyncResult.map IncludedPlaylist.fromSpotifyPlaylist
-    >> AsyncResult.asyncMap includeInStorage
+    fun presetId rawPlaylistId ->
+      let updatePreset playlist =
+        task {
+          let! preset = loadPreset presetId |> Async.AwaitTask
 
-  let excludePlaylist
-    (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
-    (excludeInStorage: ExcludeInStorage)
-    : Playlist.ExcludePlaylist =
+          let updatedIncludedPlaylists = preset.IncludedPlaylists |> List.append [ playlist ]
+
+          let updatedPreset =
+            { preset with
+                IncludedPlaylists = updatedIncludedPlaylists }
+
+          do! updatePreset updatedPreset
+
+          return playlist
+        }
+
+      rawPlaylistId
+      |> parseId
+      |> Result.asyncBind loadFromSpotify
+      |> AsyncResult.map IncludedPlaylist.fromSpotifyPlaylist
+      |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
+
+  let excludePlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.ExcludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.ExcludePlaylistError.IdParsing
 
     let loadFromSpotify =
       (loadFromSpotify >> Async.AwaitTask)
       >> AsyncResult.mapError Playlist.ExcludePlaylistError.MissingFromSpotify
 
-    parseId
-    >> Result.asyncBind loadFromSpotify
-    >> AsyncResult.map ExcludedPlaylist.fromSpotifyPlaylist
-    >> AsyncResult.asyncMap excludeInStorage
+    fun presetId rawPlaylistId ->
+      let updatePreset playlist =
+        task {
+          let! preset = loadPreset presetId |> Async.AwaitTask
 
-  let targetPlaylist
-    (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
-    (targetInStorage: TargetInStorage)
-    : Playlist.TargetPlaylist =
+          let updatedExcludedPlaylists = preset.ExcludedPlaylist |> List.append [ playlist ]
+
+          let updatedPreset =
+            { preset with
+                ExcludedPlaylist = updatedExcludedPlaylists }
+
+          do! updatePreset updatedPreset
+
+          return playlist
+        }
+
+      rawPlaylistId
+      |> parseId
+      |> Result.asyncBind loadFromSpotify
+      |> AsyncResult.map ExcludedPlaylist.fromSpotifyPlaylist
+      |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
+
+  let targetPlaylist (parseId: ParseId) (loadFromSpotify: LoadFromSpotify) (loadPreset: Preset.Load) (updatePreset: Preset.Update) : Playlist.TargetPlaylist =
     let parseId = parseId >> Result.mapError Playlist.TargetPlaylistError.IdParsing
 
     let loadFromSpotify =
@@ -136,16 +185,31 @@ module Playlist =
       >> AsyncResult.mapError Playlist.TargetPlaylistError.MissingFromSpotify
 
     let checkAccess playlist =
-      let mapResult = TargetedPlaylist.fromSpotifyPlaylist playlist
+      playlist
+      |> TargetedPlaylist.fromSpotifyPlaylist
+      |> Result.ofOption (Playlist.AccessError() |> Playlist.TargetPlaylistError.AccessError)
 
-      match mapResult with
-      | Some r -> Ok r
-      | None -> Playlist.AccessError() |> Playlist.TargetPlaylistError.AccessError |> Error
+    fun presetId rawPlaylistId ->
+      let updatePreset playlist =
+        task {
+          let! preset = loadPreset presetId |> Async.AwaitTask
 
-    parseId
-    >> Result.asyncBind loadFromSpotify
-    >> AsyncResult.bindSync checkAccess
-    >> AsyncResult.asyncMap targetInStorage
+          let updatedTargetedPlaylists = preset.TargetedPlaylists |> List.append [ playlist ]
+
+          let updatedPreset =
+            { preset with
+                TargetedPlaylists = updatedTargetedPlaylists }
+
+          do! updatePreset updatedPreset
+
+          return playlist
+        }
+
+      rawPlaylistId
+      |> parseId
+      |> Result.asyncBind loadFromSpotify
+      |> AsyncResult.bindSync checkAccess
+      |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
 
   type Shuffler = string list -> string list
 
@@ -160,7 +224,7 @@ module Playlist =
     : Playlist.Generate =
     fun presetId ->
       async {
-        let! preset = loadPreset presetId
+        let! preset = loadPreset presetId |> Async.AwaitTask
 
         let! likedTracks = listLikedTracks
 
@@ -247,22 +311,48 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
-  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  let enable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
 
-  let enable (enableIncludedPlaylist: Enable) : IncludedPlaylist.Enable =
-    enableIncludedPlaylist
+        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = true }
 
-  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists =
+                preset.IncludedPlaylists
+                |> List.filter ((<>) playlist)
+                |> List.append [ updatedPlaylist ] }
 
-  let disable (disableIncludedPlaylist: Disable) : IncludedPlaylist.Disable =
-    disableIncludedPlaylist
+        return! updatePreset updatedPreset
+      }
+
+  let disable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Disable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = false }
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists =
+                preset.IncludedPlaylists
+                |> List.filter ((<>) playlist)
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
   type Update = PresetId -> TargetedPlaylist -> Task<unit>
   type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
 
-  let overwriteTargetedPlaylist (loadPreset: Preset.Load) (updatePlaylist: Update) : TargetedPlaylist.OverwriteTracks =
+  let overwriteTargetedPlaylist (loadPreset: Preset.Load) (updatePreset: Preset.Update) : TargetedPlaylist.OverwriteTracks =
     fun presetId targetedPlaylistId ->
       task {
         let! preset = loadPreset presetId
@@ -272,10 +362,17 @@ module TargetedPlaylist =
 
         let updatedPlaylist = { targetPlaylist with Overwrite = true }
 
-        do! updatePlaylist presetId updatedPlaylist
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.filter ((<>) targetPlaylist)
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
       }
 
-  let appendToTargetedPlaylist (loadPreset: Preset.Load) (updatePlaylist: Update) : TargetedPlaylist.AppendTracks =
+  let appendToTargetedPlaylist (loadPreset: Preset.Load) (updatePreset: Preset.Update) : TargetedPlaylist.AppendTracks =
     fun presetId targetPlaylistId ->
       task {
         let! preset = loadPreset presetId
@@ -283,10 +380,73 @@ module TargetedPlaylist =
         let targetPlaylist =
           preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
 
-        let updatedPlaylist = { targetPlaylist with Overwrite = false }
+        let updatedPlaylist =
+          { targetPlaylist with
+              Overwrite = false }
 
-        do! updatePlaylist presetId updatedPlaylist
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.filter ((<>) targetPlaylist)
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
       }
 
-  let remove (removeTargetedPlaylist: Remove) : TargetedPlaylist.Remove =
-    removeTargetedPlaylist
+  let overwriteTracks (loadPreset: Preset.Load) (updatePreset: Preset.Update) : TargetedPlaylist.OverwriteTracks =
+    fun presetId targetPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let targetPlaylist =
+          preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
+
+        let updatedPlaylist = { targetPlaylist with Overwrite = true }
+
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.filter ((<>) targetPlaylist)
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let appendTracks (loadPreset: Preset.Load) (updatePreset: Preset.Update) : TargetedPlaylist.AppendTracks =
+    fun presetId targetPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let targetPlaylist =
+          preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
+
+        let updatedPlaylist =
+          { targetPlaylist with
+              Overwrite = false }
+
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.filter ((<>) targetPlaylist)
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let remove (loadPreset: Preset.Load) (updatePreset: Preset.Update) : TargetedPlaylist.Remove =
+    fun presetId targetPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let targetPlaylists =
+          preset.TargetedPlaylists |> List.filter (fun p -> p.Id <> targetPlaylistId)
+
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists = targetPlaylists }
+
+        return! updatePreset updatedPreset
+      }

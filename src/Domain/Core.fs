@@ -52,14 +52,11 @@ module PresetSettings =
       PlaylistSize: PlaylistSize
       RecommendationsEnabled: bool }
 
-  type SetPlaylistSize = UserId -> PlaylistSize -> Task
-  type SetLikedTracksHandling = UserId -> LikedTracksHandling -> Task
-
 [<RequireQualifiedAccess>]
 module PlaylistSize =
   let value (PresetSettings.PlaylistSize size) = size
 
-type PresetId = PresetId of int
+type PresetId = PresetId of string
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -72,7 +69,11 @@ type Preset =
     TargetedPlaylists: TargetedPlaylist list
     UserId: UserId }
 
-type User = { Id: UserId }
+type User = {
+  Id: UserId
+  CurrentPresetId: PresetId option
+  Presets: SimplePreset list
+}
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -95,9 +96,9 @@ module Playlist =
     | MissingFromSpotify of MissingFromSpotifyError
     | AccessError of AccessError
 
-  type IncludePlaylist = RawPlaylistId -> Async<Result<IncludedPlaylist, IncludePlaylistError>>
-  type ExcludePlaylist = RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
-  type TargetPlaylist = RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
+  type IncludePlaylist = PresetId -> RawPlaylistId -> Async<Result<IncludedPlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = PresetId -> RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = PresetId -> RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
 
   type GenerateError = GenerateError of string
   type Generate = PresetId -> Async<Result<unit, GenerateError>>
@@ -118,10 +119,10 @@ module Preset =
   type Validate = Preset -> ValidationResult
 
   type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+  type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module User =
-  type ListPresets = UserId -> Async<SimplePreset seq>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
@@ -166,5 +167,5 @@ module TargetedPlaylist =
       { Id = (id |> WritablePlaylistId)
         Name = name
         Enabled = true
-        Overwrite = true }
+        Overwrite = false }
       |> Some

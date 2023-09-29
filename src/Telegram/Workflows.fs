@@ -7,6 +7,7 @@ open Resources
 open Telegram.Constants
 open Telegram.Core
 open Telegram.Helpers
+open Domain.Extensions
 
 [<Literal>]
 let keyboardColumns = 4
@@ -28,48 +29,48 @@ let parseAction (str: string) =
   match str with
   | _ ->
     match str.Split("|") with
-    | [| "p"; Int id; "i" |] -> PresetId id |> Action.ShowPresetInfo
-    | [| "p"; Int id; "c" |] -> PresetId id |> Action.SetCurrentPreset
+    | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
+    | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
 
-    | [| "p"; Int id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
-    | [| "p"; Int presetId; "ip"; playlistId; "i" |] ->
+    | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "ip"; playlistId; "i" |] ->
       Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; Int presetId; "ip"; playlistId; "e" |] ->
+    | [| "p"; presetId; "ip"; playlistId; "e" |] ->
       Action.EnableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; Int presetId; "ip"; playlistId; "d" |] ->
+    | [| "p"; presetId; "ip"; playlistId; "d" |] ->
       Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; Int presetId; "ip"; playlistId; "rm" |] ->
+    | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
       Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; Int presetId; "ep"; playlistId; "i" |] ->
+    | [| "p"; presetId; "ep"; playlistId; "i" |] ->
       Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; Int id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
-    | [| "p"; Int presetId; "ep"; playlistId; "rm" |] ->
+    | [| "p"; id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "ep"; playlistId; "rm" |] ->
       Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; Int id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
-    | [| "p"; Int presetId; "tp"; playlistId; "i" |] ->
+    | [| "p"; id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "tp"; playlistId; "i" |] ->
       Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; Int presetId; "tp"; playlistId; "a" |] ->
+    | [| "p"; presetId; "tp"; playlistId; "a" |] ->
       Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; Int presetId; "tp"; playlistId; "o" |] ->
+    | [| "p"; presetId; "tp"; playlistId; "o" |] ->
       Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; Int presetId; "tp"; playlistId; "rm" |] ->
+    | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
       Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
-    | [| "p"; Int presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
-    | [| "p"; Int presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
-    | [| "p"; Int presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
 
     | [|"p"|] -> Action.ShowUserPresets
 
-let sendUserPresets (sendButtons: SendButtons) (listPresets: User.ListPresets) : SendUserPresets =
+let sendUserPresets (sendButtons: SendButtons) (loadUser: User.Load) : SendUserPresets =
   fun userId ->
     task {
-      let! presets = listPresets userId |> Async.StartAsTask
+      let! user = loadUser userId
 
       let keyboardMarkup =
-        presets
+        user.Presets
         |> Seq.map (fun p -> MessageButton(p.Name, $"p|{p.Id |> PresetId.value}|i"))
         |> Seq.singleton
 
@@ -79,7 +80,7 @@ let sendUserPresets (sendButtons: SendButtons) (listPresets: User.ListPresets) :
 let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
   fun presetId ->
     task{
-      let! preset = loadPreset presetId |> Async.StartAsTask
+      let! preset = loadPreset presetId
 
       let presetId = presetId |> PresetId.value
 
@@ -113,14 +114,14 @@ let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessag
       let keyboardMarkup =
         seq {
           seq {
-            MessageButton("Included playlists", $"p|%i{presetId}|ip|0")
-            MessageButton("Excluded playlists", $"p|%i{presetId}|ep|0")
-            MessageButton("Target playlists", $"p|%i{presetId}|tp|0")
+            MessageButton("Included playlists", $"p|%s{presetId}|ip|0")
+            MessageButton("Excluded playlists", $"p|%s{presetId}|ep|0")
+            MessageButton("Target playlists", $"p|%s{presetId}|tp|0")
           }
 
           seq { MessageButton(buttonText, buttonData) }
 
-          seq { MessageButton("Set as current", $"p|%i{presetId}|c") }
+          seq { MessageButton("Set as current", $"p|%s{presetId}|c") }
 
           seq { MessageButton("<< Back >>", "p")}
         }
@@ -177,7 +178,7 @@ let showIncludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
     fun (playlist: IncludedPlaylist) ->
       MessageButton(
         playlist.Name,
-        sprintf "p|%i|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
       )
 
   fun presetId page ->
@@ -217,7 +218,7 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
     fun (playlist: ExcludedPlaylist) ->
       MessageButton(
         playlist.Name,
-        sprintf "p|%i|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
       )
 
   fun presetId page ->
@@ -237,7 +238,7 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
     fun (playlist: TargetedPlaylist) ->
       MessageButton(
         playlist.Name,
-        sprintf "p|%i|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
+        sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
       )
 
   fun presetId page ->
@@ -262,10 +263,10 @@ let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedT
       return! sendPresetInfo presetId
     }
 
-let sendSettingsMessage (sendKeyboard:SendKeyboard) (getCurrentPresetId: User.GetCurrentPresetId) (getPresetMessage: GetPresetMessage) : SendSettingsMessage =
+let sendSettingsMessage (loadUser: User.Load) (getPresetMessage: GetPresetMessage) (sendKeyboard:SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
-      let! currentPresetId = getCurrentPresetId userId
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
       let! text, _, _ = getPresetMessage currentPresetId
 
@@ -280,22 +281,36 @@ let sendSettingsMessage (sendKeyboard:SendKeyboard) (getCurrentPresetId: User.Ge
 
 let sendCurrentPresetInfo
   (sendKeyboard: SendKeyboard)
-  (getCurrentPresetId: User.GetCurrentPresetId)
+  (loadUser: User.Load)
   (getPresetMessage: GetPresetMessage)
   : SendCurrentPresetInfo =
   fun userId ->
     task {
-      let! currentPresetId = getCurrentPresetId userId
-      let! text, _, _ = getPresetMessage currentPresetId
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId)
 
-      let buttons =
-        seq {
-          seq { KeyboardButton(Messages.MyPresets) }
-          seq { KeyboardButton(Messages.IncludePlaylist) }
-          seq { KeyboardButton(Messages.Settings) }
-        }
+      return!
+        match currentPresetId with
+        | Some presetId ->
+          task{
+            let! text, _, _ = getPresetMessage presetId
 
-      return! sendKeyboard text buttons
+            let buttons =
+              seq {
+                seq { KeyboardButton(Messages.MyPresets) }
+                seq { KeyboardButton(Messages.IncludePlaylist) }
+                seq { KeyboardButton(Messages.Settings) }
+              }
+
+            return! sendKeyboard text buttons
+          }
+        | None ->
+          let buttons =
+              seq {
+                seq { KeyboardButton(Messages.MyPresets) }
+                seq { KeyboardButton(Messages.CreatePreset) }
+              }
+
+          sendKeyboard "You did not select current preset" buttons
     }
 let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowIncludedPlaylist =
   fun presetId playlistId ->
@@ -315,11 +330,11 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
           seq {
             MessageButton(
               "Remove",
-              sprintf "p|%i|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+              sprintf "p|%s|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
             )
           }
 
-          seq { MessageButton("<< Back >>", sprintf "p|%i|ip|%i" (presetId |> PresetId.value) 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%s|ip|%i" (presetId |> PresetId.value) 0) }
         }
 
       return! editMessage messageText buttons
@@ -343,11 +358,11 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
           seq {
             MessageButton(
               "Remove",
-              sprintf "p|%i|ep|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+              sprintf "p|%s|ep|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
             )
           }
 
-          seq { MessageButton("<< Back >>", sprintf "p|%i|ep|%i" (presetId |> PresetId.value) 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%s|ep|%i" (presetId |> PresetId.value) 0) }
         }
 
       return! editMessage messageText replyMarkup
@@ -375,18 +390,18 @@ let showTargetedPlaylist
 
       let buttonText, buttonDataBuilder =
         if targetPlaylist.Overwrite then
-          ("Append", sprintf "p|%i|tp|%s|a")
+          ("Append", sprintf "p|%s|tp|%s|a")
         else
-          ("Overwrite", sprintf "p|%i|tp|%s|o")
+          ("Overwrite", sprintf "p|%s|tp|%s|o")
 
       let buttonData = buttonDataBuilder presetId' playlistId'
 
       let buttons =
         seq {
           seq { MessageButton(buttonText, buttonData) }
-          seq { MessageButton("Remove", sprintf "p|%i|tp|%s|rm" presetId' playlistId') }
+          seq { MessageButton("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
 
-          seq { MessageButton("<< Back >>", sprintf "p|%i|tp|%i" presetId' 0) }
+          seq { MessageButton("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
         }
 
       return! editMessage messageText buttons

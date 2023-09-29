@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Database.Entities
+open MongoDB.Driver
 open SpotifyAPI.Web
 open Infrastructure
 open System.Net
@@ -13,51 +14,12 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Infrastructure.Mapping
-open Microsoft.EntityFrameworkCore
 open System.Linq
 open Infrastructure.Helpers
 open Microsoft.Extensions.Logging
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
 open Domain.Extensions
-
-[<RequireQualifiedAccess>]
-module PresetSettings =
-  let load (context: AppDbContext) : PresetSettings.Load =
-    let loadFromDb userId =
-      context.Users
-        .AsNoTracking()
-        .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun p -> p.Settings)
-        .Where(fun u -> u.Id = userId)
-        .Select(fun u -> u.CurrentPreset.Settings)
-        .FirstOrDefaultAsync()
-
-    UserId.value >> loadFromDb >> Task.map PresetSettings.fromDb
-
-  let update (context: AppDbContext) : PresetSettings.Update =
-    fun userId settings ->
-      task {
-        let userId = userId |> UserId.value
-
-        let! dbPreset =
-          context.Users
-            .Include(fun u -> u.CurrentPreset)
-            .ThenInclude(fun p -> p.Settings)
-            .Where(fun u -> u.Id = userId)
-            .Select(fun u -> u.CurrentPreset)
-            .FirstOrDefaultAsync()
-
-        let updatedDbSettings = settings |> PresetSettings.toDb
-
-        dbPreset.Settings <- updatedDbSettings
-
-        context.Presets.Update(dbPreset) |> ignore
-
-        let! _ = context.SaveChangesAsync()
-
-        return ()
-      }
 
 [<RequireQualifiedAccess>]
 module User =
@@ -81,64 +43,56 @@ module User =
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks = listLikedTracks' client 0
 
-  let loadCurrentPreset (context: AppDbContext) : User.LoadCurrentPreset =
+  let load (db: IMongoDatabase) : User.Load =
     fun userId ->
-      let userId = userId |> UserId.value
-
-      context.Users
-        .AsNoTracking()
-        .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.SourcePlaylists)
-        .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.HistoryPlaylists)
-        .Include(fun u -> u.CurrentPreset)
-        .ThenInclude(fun x -> x.TargetPlaylists)
-        .Where(fun u -> u.Id = userId)
-        .Select(fun u -> u.CurrentPreset)
-        .FirstOrDefaultAsync()
-      |> Async.AwaitTask
-      |> Async.map Preset.fromDb
-
-  let listPresets (context: AppDbContext) : User.ListPresets =
-    let listPresets userId =
-      context.Presets.AsNoTracking().Where(fun p -> p.UserId = userId).ToListAsync()
-
-    UserId.value
-    >> listPresets
-    >> Task.map (Seq.map SimplePreset.fromDb)
-    >> Async.AwaitTask
-
-  let loadPreset (context: AppDbContext) : User.LoadPreset =
-    let loadPreset presetId =
-      context.Presets.AsNoTracking().FirstOrDefaultAsync(fun p -> p.Id = presetId)
-
-    PresetId.value >> loadPreset >> Task.map SimplePreset.fromDb >> Async.AwaitTask
-
-  let getCurrentPresetId (context: AppDbContext) : User.GetCurrentPresetId =
-    fun userId ->
-      let userId = userId |> UserId.value
-
-      context.Users
-        .AsNoTracking()
-        .Where(fun u -> u.Id = userId)
-        .Select(fun u -> u.CurrentPresetId)
-        .FirstOrDefaultAsync()
-      |> Task.map (fun id -> id.Value |> PresetId)
-      |> Async.AwaitTask
-
-  let setCurrentPreset (context: AppDbContext) : User.SetCurrentPreset =
-    fun userId presetId ->
       task {
-        let userId = userId |> UserId.value
-        let presetId = presetId |> PresetId.value
+        let collection = db.GetCollection "users"
+        let id = userId |> UserId.value
 
-        let! user = context.Users.FirstOrDefaultAsync(fun u -> u.Id = userId)
+        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
 
-        user.CurrentPresetId <- presetId
+        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
 
-        user |> context.Update |> ignore
+        return User.fromDb dbUser
+      }
 
-        do! context.SaveChangesAsync() |> Task.map ignore
+  let update (db: IMongoDatabase) : User.Update =
+    fun user ->
+      task {
+        let collection = db.GetCollection "users"
+        let id = user.Id |> UserId.value
+
+        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+
+        let dbUser = user |> User.toDb
+
+        return! collection.ReplaceOneAsync(usersFilter, dbUser) |> Task.map ignore
+      }
+
+  let exists (db: IMongoDatabase) : User.Exists =
+    fun userId ->
+      task {
+        let collection = db.GetCollection "users"
+        let id = userId |> UserId.value
+
+        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+
+        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
+
+        return not (isNull dbUser)
+      }
+
+  let create (db: IMongoDatabase) : User.Create =
+    fun user ->
+      task {
+        let dbUser = user |> User.toDb
+        let dbPresets = user.Presets |> Seq.map (SimplePreset.toFullDb user.Id)
+
+        let usersCollection = db.GetCollection "users"
+        let presetsCollection = db.GetCollection "presets"
+
+        do! usersCollection.InsertOneAsync(dbUser)
+        do! presetsCollection.InsertManyAsync(dbPresets)
       }
 
 [<RequireQualifiedAccess>]
@@ -182,80 +136,6 @@ module TargetedPlaylist =
         |> Task.WhenAll
         |> Async.AwaitTask
 
-  let overwriteTargetedPlaylist (context: AppDbContext) : TargetedPlaylist.OverwriteTracks =
-    fun presetId targetPlaylistId ->
-      task {
-        let targetPlaylistId =
-          targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
-
-        let presetId = presetId |> PresetId.value
-
-        let! targetPlaylist =
-          context.TargetPlaylists
-            .Where(fun p -> p.PresetId = presetId && p.Url = targetPlaylistId)
-            .FirstOrDefaultAsync()
-
-        targetPlaylist.Overwrite <- true
-
-        context.Update(targetPlaylist) |> ignore
-
-        let! _ = context.SaveChangesAsync()
-
-        return ()
-      }
-
-  let appendToTargetedPlaylist (context: AppDbContext) : TargetedPlaylist.AppendTracks =
-    fun presetId targetPlaylistId ->
-      task {
-        let targetPlaylistId =
-          targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
-
-        let presetId = presetId |> PresetId.value
-
-        let! targetPlaylist =
-          context.TargetPlaylists
-            .Where(fun p -> p.PresetId = presetId && p.Url = targetPlaylistId)
-            .FirstOrDefaultAsync()
-
-        targetPlaylist.Overwrite <- false
-
-        context.Update(targetPlaylist) |> ignore
-
-        let! _ = context.SaveChangesAsync()
-
-        return ()
-      }
-
-  let remove (context: AppDbContext) : TargetedPlaylist.Remove =
-    fun presetId targetPlaylistId ->
-      task {
-        let presetId = presetId |> PresetId.value
-        let playlistId = targetPlaylistId |> WritablePlaylistId.value |> PlaylistId.value
-
-        let! dbPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun tp -> tp.PresetId = presetId && tp.Url = playlistId)
-
-        do context.Remove dbPlaylist |> ignore
-
-        return! context.SaveChangesAsync() |> Task.map ignore
-      }
-
-  let update (context: AppDbContext) : TargetedPlaylist.Update =
-    fun presetId targetPlaylist ->
-      let presetId = presetId |> PresetId.value
-
-      let targetPlaylistId =
-        targetPlaylist.Id |> WritablePlaylistId.value |> PlaylistId.value
-
-      task {
-        let! dbPlaylist = context.TargetPlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = targetPlaylistId && tp.PresetId = presetId)
-
-        dbPlaylist.Name <- targetPlaylist.Name
-        dbPlaylist.Overwrite <- targetPlaylist.Overwrite
-
-        do context.Update(dbPlaylist) |> ignore
-
-        return! context.SaveChangesAsync() |> Task.map ignore
-      }
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -331,78 +211,21 @@ module Playlist =
 
           let playlist =
             if playlist.Owner.Id = currentUser.Id then
-               WriteableSpotifyPlaylist(
-                 { Id = playlist.Id |> PlaylistId
-                   Name = playlist.Name }
-               ) |> SpotifyPlaylist.Writable
-             else
-               WriteableSpotifyPlaylist(
-                 { Id = playlist.Id |> PlaylistId
-                   Name = playlist.Name }
-               ) |> SpotifyPlaylist.Writable
+              WriteableSpotifyPlaylist(
+                { Id = playlist.Id |> PlaylistId
+                  Name = playlist.Name }
+              )
+              |> SpotifyPlaylist.Writable
+            else
+              WriteableSpotifyPlaylist(
+                { Id = playlist.Id |> PlaylistId
+                  Name = playlist.Name }
+              )
+              |> SpotifyPlaylist.Writable
 
           return playlist |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
-      }
-
-  let includeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.IncludeInStorage =
-    fun playlist ->
-      async {
-        let! currentPreset = loadCurrentPreset userId
-
-        let! _ =
-          SourcePlaylist(
-            Name = playlist.Name,
-            Url = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
-            PresetId = (currentPreset.Id |> PresetId.value)
-          )
-          |> context.SourcePlaylists.AddAsync
-          |> ValueTask.asTask
-          |> Async.AwaitTask
-
-        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
-
-        return playlist
-      }
-
-  let excludeInStorage (context: AppDbContext) userId (loadCurrentPreset: User.LoadCurrentPreset) : Playlist.ExcludeInStorage =
-    fun playlist ->
-      task {
-        let! currentPreset = loadCurrentPreset userId
-
-        let! _ =
-          HistoryPlaylist(
-            Name = playlist.Name,
-            Url = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
-            PresetId = (currentPreset.Id |> PresetId.value)
-          )
-          |> context.HistoryPlaylists.AddAsync
-
-        let! _ = context.SaveChangesAsync()
-
-        return playlist
-      }
-      |> Async.AwaitTask
-
-  let targetInStorage (context: AppDbContext) userId : Playlist.TargetInStorage =
-    fun playlist ->
-      async {
-        let! currentPreset = User.loadCurrentPreset context userId
-
-        let! _ =
-          TargetPlaylist(
-            Name = playlist.Name,
-            Url = (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value),
-            PresetId = (currentPreset.Id |> PresetId.value)
-          )
-          |> context.TargetPlaylists.AddAsync
-          |> ValueTask.asTask
-          |> Async.AwaitTask
-
-        let! _ = context.SaveChangesAsync() |> Async.AwaitTask
-
-        return playlist
       }
 
   let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
@@ -411,74 +234,30 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module Preset =
-  let load (context: AppDbContext) : Preset.Load =
-    let loadDbPreset presetId =
-      context.Presets
-        .AsNoTracking()
-        .AsNoTracking()
-        .Include(fun x -> x.SourcePlaylists)
-        .Include(fun x -> x.HistoryPlaylists)
-        .Include(fun x -> x.TargetPlaylists)
-        .FirstOrDefaultAsync(fun p -> p.Id = presetId)
-      |> Async.AwaitTask
-
-    PresetId.value >> loadDbPreset >> Async.map Preset.fromDb
-
-  let updateSettings (context: AppDbContext) : Preset.UpdateSettings =
-    fun (presetId: PresetId) settings ->
+  let load (db: IMongoDatabase) : Preset.Load =
+    fun presetId ->
       task {
-        let (PresetId presetId) = presetId
+        let collection = db.GetCollection "presets"
 
-        let! dbPreset = context.Presets.FirstOrDefaultAsync(fun p -> p.Id = presetId)
+        let id = presetId |> PresetId.value
 
-        let updatedDbSettings = settings |> PresetSettings.toDb
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
 
-        dbPreset.Settings <- updatedDbSettings
+        let! dbPreset = collection.Find(presetsFilter).SingleOrDefaultAsync()
 
-        context.Presets.Update(dbPreset) |> ignore
-
-        let! _ = context.SaveChangesAsync()
-
-        return ()
+        return dbPreset |> Preset.fromDb
       }
 
-  let setLikedTracksHandling (loadPreset: Preset.Load) (updateSettings: Preset.UpdateSettings) : Preset.SetLikedTracksHandling =
-    fun presetId likedTracksHandling ->
-      loadPreset presetId
-      |> Async.StartAsTask
-      |> Task.map (fun p ->
-        { p.Settings with
-            LikedTracksHandling = likedTracksHandling })
-      |> Task.bind (updateSettings presetId)
-
-[<RequireQualifiedAccess>]
-module IncludedPlaylist =
-  let enable (context: AppDbContext) : IncludedPlaylist.Enable =
-    fun presetId playlistId ->
-      let presetId = presetId |> PresetId.value
-      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-
+  let update (db: IMongoDatabase) : Preset.Update =
+    fun preset ->
       task {
-        let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
+        let collection = db.GetCollection "presets"
 
-        dbPlaylist.Disabled <- false
+        let dbPreset = preset |> Preset.toDb
 
-        do dbPlaylist |> context.Update |> ignore
+        let id = preset.Id |> PresetId.value
 
-        return! context.SaveChangesAsync() |> Task.map ignore
-      }
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
 
-  let disable (context: AppDbContext) : IncludedPlaylist.Disable =
-    fun presetId playlistId ->
-      let presetId = presetId |> PresetId.value
-      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-
-      task {
-        let! dbPlaylist = context.SourcePlaylists.FirstOrDefaultAsync(fun tp -> tp.Url = playlistId && tp.PresetId = presetId)
-
-        dbPlaylist.Disabled <- true
-
-        do dbPlaylist |> context.Update |> ignore
-
-        return! context.SaveChangesAsync() |> Task.map ignore
+        return! collection.ReplaceOneAsync(presetsFilter, dbPreset) |> Task.map ignore
       }

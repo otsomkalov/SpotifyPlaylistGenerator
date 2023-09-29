@@ -11,19 +11,17 @@ public class Settings
 
 public class Preset
 {
-    public int Id { get; set; }
+    public string Id { get; set; }
 
     public string Name { get; set; }
 
-    public virtual long UserId { get; set; }
+    public long UserId { get; set; }
 
     public Settings Settings { get; set; }
 
-    public virtual User User { get; set; }
+    public IEnumerable<IncludedPlaylist> IncludedPlaylists { get; set; } = Array.Empty<IncludedPlaylist>();
 
-    public virtual IEnumerable<SourcePlaylist> SourcePlaylists { get; set; }
+    public IEnumerable<ExcludedPlaylist> ExcludedPlaylists { get; set; } = Array.Empty<ExcludedPlaylist>();
 
-    public virtual IEnumerable<HistoryPlaylist> HistoryPlaylists { get; set; }
-
-    public virtual IEnumerable<TargetPlaylist> TargetPlaylists { get; set; }
+    public IEnumerable<TargetedPlaylist> TargetedPlaylists { get; set; } = Array.Empty<TargetedPlaylist>();
 }

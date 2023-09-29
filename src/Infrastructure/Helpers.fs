@@ -4,18 +4,6 @@ open System
 open System.Threading.Tasks
 open SpotifyAPI.Web
 
-[<RequireQualifiedAccess>]
-module TaskOption =
-  let map mapping taskOption =
-    task {
-      let! option = taskOption
-
-      return
-        match option with
-        | Some v -> mapping v |> Some
-        | None -> None
-    }
-
 module Spotify =
   let (|ApiException|_|) (ex: exn) =
     match ex with

@@ -1,42 +1,23 @@
 ﻿namespace Database.Entities;
 
-public enum PlaylistType
-{
-    Source,
-    History,
-    Target
-}
-
 public abstract class Playlist
 {
-    public int Id { get; init; }
+    public string Id { get; init; }
 
     public string Name { get; set; }
 
-    public virtual PlaylistType PlaylistType { get; }
-
-    public string Url { get; set; }
-
     public bool Disabled { get; set; }
-
-    public virtual int PresetId { get; set; }
-
-    public virtual Preset Preset { get; set; }
 }
 
-public class SourcePlaylist : Playlist
+public class IncludedPlaylist : Playlist
 {
-    public override PlaylistType PlaylistType => PlaylistType.Source;
 }
 
-public class HistoryPlaylist : Playlist
+public class ExcludedPlaylist : Playlist
 {
-    public override PlaylistType PlaylistType => PlaylistType.History;
 }
 
-public class TargetPlaylist : Playlist
+public class TargetedPlaylist : Playlist
 {
-    public override PlaylistType PlaylistType => PlaylistType.Target;
-
     public bool Overwrite { get; set; }
 }

@@ -1,8 +1,8 @@
 ﻿namespace Generator.Bot.Services.Playlist
 
+open Domain.Extensions
 open Resources
 open System
-open Database
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -15,10 +15,11 @@ open Infrastructure.Workflows
 type AddSourcePlaylistCommandHandler
   (
     _bot: ITelegramBotClient,
-    _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
     _localizer: IStringLocalizer<Messages>,
-    loadCurrentPreset: User.LoadCurrentPreset
+    loadPreset: Preset.Load,
+    updatePreset: Preset.Update,
+    loadUser: User.Load
   ) =
   member this.HandleAsync replyToMessage data (message: Message) =
     let userId = UserId message.From.Id
@@ -29,14 +30,14 @@ type AddSourcePlaylistCommandHandler
 
       let parsePlaylistId = Playlist.parseId
 
-      let includeInStorage = Playlist.includeInStorage _context userId loadCurrentPreset
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
       let includePlaylist =
-        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify includeInStorage
+        Playlist.includePlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
 
       let rawPlaylistId = Playlist.RawPlaylistId data
 
-      let! includePlaylistResult = rawPlaylistId |> includePlaylist |> Async.StartAsTask
+      let! includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId |> Async.StartAsTask
 
       return!
         match includePlaylistResult with

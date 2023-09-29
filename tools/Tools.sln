@@ -1,12 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SetPlaylistsNames", "SetPlaylistsNames\SetPlaylistsNames.fsproj", "{695596B6-1E3A-414B-9FBF-79AAD25C002E}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Migrator", "Migrator\Migrator.fsproj", "{E3DB5655-8563-450C-977B-00CDBEB4FA44}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Project", "Project", "{9B431865-014C-4659-9975-3610124BA9D5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "..\src\Generator\Generator.fsproj", "{3D946CBA-19C5-45E0-91E5-998C99B21AD2}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MongoMigrator", "MongoMigrator\MongoMigrator.fsproj", "{A93DC47F-7A06-4877-8D90-2D2DDF4E3E58}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Database", "..\src\Database\Database.csproj", "{F9BC4BF7-A903-4369-86BC-48EA022D53A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,20 +12,16 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{695596B6-1E3A-414B-9FBF-79AAD25C002E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{695596B6-1E3A-414B-9FBF-79AAD25C002E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{695596B6-1E3A-414B-9FBF-79AAD25C002E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{695596B6-1E3A-414B-9FBF-79AAD25C002E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E3DB5655-8563-450C-977B-00CDBEB4FA44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E3DB5655-8563-450C-977B-00CDBEB4FA44}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E3DB5655-8563-450C-977B-00CDBEB4FA44}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E3DB5655-8563-450C-977B-00CDBEB4FA44}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3D946CBA-19C5-45E0-91E5-998C99B21AD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3D946CBA-19C5-45E0-91E5-998C99B21AD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3D946CBA-19C5-45E0-91E5-998C99B21AD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3D946CBA-19C5-45E0-91E5-998C99B21AD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A93DC47F-7A06-4877-8D90-2D2DDF4E3E58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A93DC47F-7A06-4877-8D90-2D2DDF4E3E58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A93DC47F-7A06-4877-8D90-2D2DDF4E3E58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A93DC47F-7A06-4877-8D90-2D2DDF4E3E58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9BC4BF7-A903-4369-86BC-48EA022D53A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9BC4BF7-A903-4369-86BC-48EA022D53A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9BC4BF7-A903-4369-86BC-48EA022D53A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9BC4BF7-A903-4369-86BC-48EA022D53A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{3D946CBA-19C5-45E0-91E5-998C99B21AD2} = {9B431865-014C-4659-9975-3610124BA9D5}
+		{F9BC4BF7-A903-4369-86BC-48EA022D53A5} = {9B431865-014C-4659-9975-3610124BA9D5}
 	EndGlobalSection
 EndGlobal

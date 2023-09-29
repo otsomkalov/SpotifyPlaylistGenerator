@@ -4,8 +4,10 @@ open Azure.Storage.Queues
 open Database
 open Domain
 open Domain.Core
+open Domain.Workflows
 open Infrastructure
 open Resources
+open MongoDB.Driver
 open Telegram
 open Telegram.Core
 open Generator.Bot
@@ -17,38 +19,38 @@ open Telegram.Bot.Types
 type CallbackQueryService
   (
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
-    _context: AppDbContext,
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
     getPresetMessage: GetPresetMessage,
-    _connectionMultiplexer: IConnectionMultiplexer
+    _connectionMultiplexer: IConnectionMultiplexer,
+    loadPreset: Preset.Load,
+    updatePreset: Preset.Update,
+    loadUser: User.Load,
+    _database: IMongoDatabase
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
 
-    let enableIncludedPlaylist = IncludedPlaylist.enable _context
-    let disableIncludedPlaylist = IncludedPlaylist.disable _context
-    let removeTargetedPlaylist = TargetedPlaylist.remove _context
-    let listPresets = User.listPresets _context
+    let updateUser = User.update _database
+    let enableIncludedPlaylist = IncludedPlaylist.enable loadPreset updatePreset
+    let disableIncludedPlaylist = IncludedPlaylist.disable loadPreset updatePreset
+    let removeTargetedPlaylist = TargetedPlaylist.remove loadPreset updatePreset
 
     let askForReply = Telegram.askForReply _bot userId callbackQuery.Message.MessageId
     let editMessage = Telegram.editMessage _bot callbackQuery.Message.MessageId userId
     let answerCallbackQuery = Telegram.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
-    let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist _context
-    let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist _context
-    let updateSettings = Preset.updateSettings _context
-    let loadPreset = Preset.load _context
-
-    let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updateSettings
+    let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist loadPreset updatePreset
+    let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist loadPreset updatePreset
+    let setCurrentPreset = Domain.Workflows.User.setCurrentPreset loadUser updateUser
+    let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updatePreset
 
     let sendPresetInfo =
       Workflows.sendPresetInfo editMessage getPresetMessage
 
-    let setCurrentPreset = Infrastructure.Workflows.User.setCurrentPreset _context
-    let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
-    let showUserPresets = Workflows.sendUserPresets editMessage listPresets
+    let setCurrentPreset = Telegram.Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
+    let showUserPresets = Workflows.sendUserPresets editMessage loadUser
 
     let showIncludedPlaylists =
       Workflows.showIncludedPlaylists loadPreset editMessage

@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Database
 open Domain.Core
+open Domain.Workflows
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
@@ -26,13 +27,13 @@ type MessageService
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _bot: ITelegramBotClient,
-    _context: AppDbContext
+    loadUser: User.Load,
+    loadPreset: Preset.Load,
+    updatePreset: Preset.Update
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
-    let listPresets = Infrastructure.Workflows.User.listPresets _context
-
-    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage listPresets
+    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage loadUser
     sendUserPresets (message.From.Id |> UserId)
 
   let includePlaylist replyToMessage (message: Message) =
@@ -58,12 +59,10 @@ type MessageService
     let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
     let sendButtons = Telegram.sendButtons _bot userId
     let askForReply = Telegram.askForReply _bot userId message.MessageId
-    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
-    let loadPreset = Infrastructure.Workflows.Preset.load _context
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard getCurrentPresetId getPresetMessage
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage sendKeyboard getCurrentPresetId getPresetMessage
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard loadUser getPresetMessage
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser getPresetMessage sendKeyboard
 
     match message.Type with
     | MessageType.Text ->

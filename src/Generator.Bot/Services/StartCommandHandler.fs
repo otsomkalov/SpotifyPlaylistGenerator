@@ -2,19 +2,18 @@
 
 open System.Threading.Tasks
 open Generator.Bot
-open Database
-open Database.Entities
 open Domain.Core
 open Domain.Workflows
 open Infrastructure
-open Infrastructure.Spotify
 open Infrastructure.Workflows
+open Infrastructure.Spotify
+open Microsoft.Extensions.Logging
+open MongoDB.Driver
 open Shared.Services
 open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
-open Microsoft.EntityFrameworkCore
 
 type StartCommand = { AuthState: Telegram.Core.AuthState; Text: string }
 type ProcessStartCommand = StartCommand -> Task<unit>
@@ -22,21 +21,22 @@ type ProcessStartCommand = StartCommand -> Task<unit>
 type StartCommandHandler
   (
     _bot: ITelegramBotClient,
-    _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
     _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     getState: State.GetState,
     createClientFromTokenResponse: CreateClientFromTokenResponse,
     cacheToken: TokenProvider.CacheToken,
-    checkAuth: Telegram.Core.CheckAuth
+    checkAuth: Telegram.Core.CheckAuth,
+    loadPreset: Preset.Load,
+    loadUser: User.Load,
+    userExists: User.Exists,
+    _database: IMongoDatabase
   ) =
 
   let sendMessageAsync sendKeyboard (message: Message) =
 
-    let loadPreset = Preset.load _context
-    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard getCurrentPresetId getPresetMessage
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard loadUser getPresetMessage
 
     sendCurrentPresetInfo (message.From.Id |> UserId)
 
@@ -65,26 +65,25 @@ type StartCommandHandler
     }
 
   let createUserAsync userId =
-    task {
-      let user = Database.Entities.User(Id = userId)
-      let preset = Preset(Name = "Default", User = user)
 
-      let _ = preset |> _context.Presets.AddAsync
+    let defaultPresetId = Infrastructure.Core.PresetId.create()
 
-      let! _ = _context.SaveChangesAsync()
-
-      user.CurrentPreset <- preset
-
-      let _ = _context.Users.Update(user)
-
-      let! _ = _context.SaveChangesAsync()
-
-      ()
+    let user ={
+      Id = UserId userId
+      CurrentPresetId = Some defaultPresetId
+      Presets = [
+        {Id = defaultPresetId
+         Name = "Default"}
+      ]
     }
+
+    let createUser = User.create _database
+
+    createUser user
 
   let handleEmptyCommandAsync (message: Message) =
     task {
-      let! userExists = _context.Users.AsNoTracking().AnyAsync(fun u -> u.Id = message.From.Id)
+      let! userExists = userExists (UserId message.From.Id)
 
       if not userExists then
         do! createUserAsync message.From.Id

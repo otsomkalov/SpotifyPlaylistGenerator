@@ -4,7 +4,6 @@ namespace Generator
 
 open System
 open Azure.Storage.Queues
-open Database
 open Domain.Core
 open Generator.Bot
 open Generator.Bot.Services
@@ -15,6 +14,7 @@ open Microsoft.Azure.Functions.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
+open MongoDB.Driver
 open Shared
 open Shared.Services
 open Shared.Settings
@@ -35,6 +35,16 @@ type Startup() =
 
     QueueClient(settings.ConnectionString, settings.QueueName)
 
+  let configureMongoClient (options: IOptions<DatabaseSettings>) =
+    let settings = options.Value
+
+    MongoClient(settings.ConnectionString) :> IMongoClient
+
+  let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: IMongoClient) =
+    let settings = options.Value
+
+    mongoClient.GetDatabase(settings.Name)
+
   override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
 
     builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
@@ -50,6 +60,9 @@ type Startup() =
     services.AddSingleton<IConnectionMultiplexer>(configureRedisCache)
 
     services.AddSingleton<QueueClient>(configureQueueClient)
+
+    services.AddSingletonFunc<IMongoClient, IOptions<DatabaseSettings>>(configureMongoClient)
+    services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
     services
       .AddScoped<UnauthorizedUserCommandHandler>()
@@ -67,16 +80,10 @@ type Startup() =
 
     services.AddLocalization()
 
-    services.AddSingletonFunc<User.LoadCurrentPreset, AppDbContext>(User.loadCurrentPreset)
-    services.AddSingletonFunc<User.ListPresets, AppDbContext>(User.listPresets)
-    services.AddSingletonFunc<User.LoadPreset, AppDbContext>(User.loadPreset)
-    services.AddSingletonFunc<User.GetCurrentPresetId, AppDbContext>(User.getCurrentPresetId)
-
-    services.AddSingletonFunc<Preset.Load, AppDbContext>(Preset.load)
-
-    services.AddScopedFunc<PresetSettings.Load, AppDbContext>(PresetSettings.load)
-    services.AddScopedFunc<PresetSettings.Update, AppDbContext>(PresetSettings.update)
-    services.AddScopedFunc<PresetSettings.SetPlaylistSize, PresetSettings.Load, PresetSettings.Update>(PresetSettings.setPlaylistSize)
+    services.AddScopedFunc<Preset.Load, IMongoDatabase>(Preset.load)
+    services.AddScopedFunc<Preset.Update, IMongoDatabase>(Preset.update)
+    services.AddScopedFunc<User.Load, IMongoDatabase>(User.load)
+    services.AddScopedFunc<User.Exists, IMongoDatabase>(User.exists)
 
     services.AddScopedFunc<Telegram.Core.GetPresetMessage, Preset.Load>(Telegram.Workflows.getPresetMessage)
     services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)

@@ -5,13 +5,13 @@ open System.Text.Json
 open Azure.Storage.Queues
 open Database
 open Domain.Core
+open Domain.Extensions
 open Infrastructure.Workflows
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Shared.QueueMessages
 open Generator.Bot.Helpers
-open Microsoft.EntityFrameworkCore
 open Infrastructure.Core
 open Domain.Workflows
 
@@ -19,9 +19,9 @@ type GenerateCommandHandler
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
-    _context: AppDbContext,
     _queueClient: QueueClient,
-    loadCurrentPreset: Domain.Workflows.User.LoadCurrentPreset
+    loadUser: User.Load,
+    loadPreset: Preset.Load
   ) =
 
   let sendSQSMessageAsync message =
@@ -82,7 +82,9 @@ type GenerateCommandHandler
 
   member this.HandleAsync replyToMessage (message: Message) =
     task {
-      let! preset = loadCurrentPreset (message.From.Id |> UserId)
+      let userId = message.From.Id |> UserId
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      let! preset = loadPreset currentPresetId
 
       let validationResult = Preset.validate preset
 

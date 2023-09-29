@@ -4,7 +4,6 @@ open Generator.Bot
 open Resources
 open System
 open System.Threading.Tasks
-open Database
 open Domain.Core
 open Domain.Workflows
 open Generator.Bot.Services
@@ -15,15 +14,16 @@ open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
+open Domain.Extensions
 
 type SetTargetPlaylistCommandHandler
   (
     _bot: ITelegramBotClient,
-    _context: AppDbContext,
     _spotifyClientProvider: SpotifyClientProvider,
-    getCurrentPresetId: User.GetCurrentPresetId,
+    connectionMultiplexer: IConnectionMultiplexer,
     loadPreset: Preset.Load,
-    connectionMultiplexer: IConnectionMultiplexer
+    updatePreset: Preset.Update,
+    loadUser: User.Load
   ) =
 
   member this.HandleAsync replyToMessage (message: Message) =
@@ -38,16 +38,12 @@ type SetTargetPlaylistCommandHandler
 
         let parsePlaylistId = Playlist.parseId
 
-        let targetInStorage = Playlist.targetInStorage _context userId
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
         let targetPlaylist =
-          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify targetInStorage
+          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
 
-        let rawPlaylistId = Playlist.RawPlaylistId data
-
-        let! targetPlaylistResult = rawPlaylistId |> targetPlaylist |> Async.StartAsTask
-
-        let! currentPresetId = getCurrentPresetId userId
+        let! targetPlaylistResult = targetPlaylist currentPresetId (Playlist.RawPlaylistId data) |> Async.StartAsTask
 
         return!
           match targetPlaylistResult with
@@ -62,7 +58,7 @@ type SetTargetPlaylistCommandHandler
           | Error error ->
             match error with
             | Playlist.TargetPlaylistError.IdParsing _ ->
-              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, data))
             | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
               replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
             | Playlist.TargetPlaylistError.AccessError _ ->

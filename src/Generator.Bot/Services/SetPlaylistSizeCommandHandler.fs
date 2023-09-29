@@ -1,38 +1,36 @@
 ﻿namespace Generator.Bot.Services
 
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Resources
-open Database
 open Generator.Bot
 open Microsoft.FSharp.Core
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Helpers
 open Infrastructure.Core
+open Domain.Extensions
 
 type SetPlaylistSizeCommandHandler
   (
     _bot: ITelegramBotClient,
-    _context: AppDbContext,
-    setPlaylistSize: PresetSettings.SetPlaylistSize
+    loadUser: User.Load,
+    loadPreset: Preset.Load,
+    updatePreset: Preset.Update
   ) =
-  let handleWrongCommandDataAsync replyToMessage (message: Message) : Task<unit> =
-    replyToMessage Messages.WrongPlaylistSize
 
   let setPlaylistSizeAsync sendKeyboard replyToMessage size (message: Message) =
-    let getCurrentPresetId = Infrastructure.Workflows.User.getCurrentPresetId _context
-    let loadPreset = Infrastructure.Workflows.Preset.load _context
     let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage sendKeyboard getCurrentPresetId getPresetMessage
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage  loadUser getPresetMessage sendKeyboard
+    let setPlaylistSize = Domain.Workflows.Preset.setPlaylistSize loadPreset updatePreset
 
     task {
       match PlaylistSize.tryCreate size with
       | Ok playlistSize ->
-        let userId = message.From.Id |> UserId
+        let userId = UserId message.From.Id
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
-        do! setPlaylistSize userId playlistSize
+        do! setPlaylistSize currentPresetId playlistSize
 
         return! sendSettingsMessage userId
       | Error e ->
@@ -40,11 +38,6 @@ type SetPlaylistSizeCommandHandler
     }
 
   member this.HandleAsync sendKeyboard replyToMessage (message: Message) =
-    task {
-      let processMessageFunc =
-        match message.Text with
-        | Int size -> setPlaylistSizeAsync sendKeyboard replyToMessage size
-        | _ -> handleWrongCommandDataAsync replyToMessage
-
-      return! processMessageFunc message
-    }
+    match message.Text with
+    | Int size -> setPlaylistSizeAsync sendKeyboard replyToMessage size message
+    | _ -> replyToMessage Messages.WrongPlaylistSize
