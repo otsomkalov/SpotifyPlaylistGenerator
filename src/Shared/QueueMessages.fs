@@ -4,7 +4,7 @@ open Microsoft.FSharp.Core
 
 type GeneratePlaylistMessage =
   { TelegramId: int64
-    PresetId: int
+    PresetId: string
     RefreshCache: bool }
 
 module MessageTypes =

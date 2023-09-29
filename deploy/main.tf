@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">=3.37.0"
+      version = ">=3.75.0"
     }
   }
 }
@@ -73,7 +73,7 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
   name = "func-spotify-playlist-generator-${var.env}"
 
   functions_extension_version = "~4"
-  builtin_logging_enabled = false
+  builtin_logging_enabled     = false
 
   site_config {
     application_insights_key = azurerm_application_insights.appi-spotify-playlist-generator.instrumentation_key
@@ -86,6 +86,7 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
     Spotify__ClientSecret      = var.spotify-client-secret
     Spotify__CallbackUrl       = var.spotify-callback-url
     Database__ConnectionString = var.database-connection-string
+    Database__Name             = var.database-name
     GeneratorSchedule          = var.generator-schedule
     Redis__ConnectionString    = var.redis-connection-string
     Storage__ConnectionString  = azurerm_storage_account.st-spotify-playlist-generator.primary_connection_string

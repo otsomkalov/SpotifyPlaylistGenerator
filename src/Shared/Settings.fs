@@ -23,6 +23,7 @@ module DatabaseSettings =
 
 type DatabaseSettings() =
   member val ConnectionString = "" with get, set
+  member val Name = "" with get, set
 
 module StorageSettings =
   [<Literal>]

@@ -14,13 +14,15 @@ open Infrastructure.Core
 open Shared.Services
 open Generator.Bot.Helpers
 open Infrastructure.Workflows
+open Domain.Extensions
 
 type AddHistoryPlaylistCommandHandler
   (
-    _context: AppDbContext,
     _bot: ITelegramBotClient,
     _spotifyClientProvider: SpotifyClientProvider,
-    loadCurrentPreset: User.LoadCurrentPreset
+    loadPreset: Preset.Load,
+    updatePreset: Preset.Update,
+    loadUser: User.Load
   ) =
 
   member this.HandleAsync replyToMessage (message: Message) =
@@ -35,14 +37,14 @@ type AddHistoryPlaylistCommandHandler
 
         let parsePlaylistId = Playlist.parseId
 
-        let excludeInStorage = Playlist.excludeInStorage _context userId loadCurrentPreset
-
         let excludePlaylist =
-          Playlist.excludePlaylist parsePlaylistId checkPlaylistExistsInSpotify excludeInStorage
+          Playlist.excludePlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
+
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
         let rawPlaylistId = Playlist.RawPlaylistId data
 
-        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist |> Async.StartAsTask
+        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId |> Async.StartAsTask
 
         return!
           match excludePlaylistResult with

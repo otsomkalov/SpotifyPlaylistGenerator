@@ -4,6 +4,8 @@ open Domain.Workflows
 open Resources
 open System
 open Domain.Core
+open shortid
+open shortid.Configuration
 
 [<RequireQualifiedAccess>]
 module TrackId =
@@ -34,7 +36,7 @@ module PlaylistSize =
 
 [<RequireQualifiedAccess>]
 module PresetId =
-  let create id =
-    match id |> Option.ofNullable with
-    | Some id -> PresetId id
-    | None -> raise (ArgumentNullException(nameof id, "Given null preset id"))
+  let create () =
+     let options = GenerationOptions(true, false, 12)
+
+     ShortId.Generate(options) |> PresetId

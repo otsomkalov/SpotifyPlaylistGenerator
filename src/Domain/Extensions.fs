@@ -18,6 +18,13 @@ module Task =
       return! mapping value
     }
 
+  let taskMap (mapping: 'a -> Task<'b>) task' =
+    task {
+      let! value = task'
+
+      return! mapping value
+    }
+
 [<RequireQualifiedAccess>]
 module Result =
   let ofOption error option =

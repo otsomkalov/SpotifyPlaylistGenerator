@@ -93,4 +93,8 @@ Preset settings:
     <data name="MyPresets" xml:space="preserve">
         <value>🗄️ My presets</value>
     </data>
+    <data name="CreatePreset" xml:space="preserve">
+        <value>➕ Create preset</value>
+    </data>
+
 </root>
