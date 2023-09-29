@@ -1,7 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
 open Azure.Storage.Queues
-open Database
 open Domain
 open Domain.Core
 open Domain.Workflows
@@ -46,11 +45,16 @@ type CallbackQueryService
     let setCurrentPreset = Domain.Workflows.User.setCurrentPreset loadUser updateUser
     let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updatePreset
 
+    let removePreset = Preset.remove _database
+    let removePreset = Domain.Workflows.Preset.remove loadUser removePreset updateUser
+
+    let showUserPresets = Workflows.sendUserPresets editMessage loadUser
+    let removePreset = Workflows.CallbackQuery.removePreset removePreset showUserPresets
+
     let sendPresetInfo =
       Workflows.sendPresetInfo editMessage getPresetMessage
 
     let setCurrentPreset = Telegram.Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
-    let showUserPresets = Workflows.sendUserPresets editMessage loadUser
 
     let showIncludedPlaylists =
       Workflows.showIncludedPlaylists loadPreset editMessage
@@ -81,6 +85,7 @@ type CallbackQueryService
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId -> setCurrentPreset userId presetId
+    | Action.RemovePreset presetId -> removePreset presetId
 
     | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
     | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId

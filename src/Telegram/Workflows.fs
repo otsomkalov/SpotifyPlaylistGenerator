@@ -31,6 +31,7 @@ let parseAction (str: string) =
     match str.Split("|") with
     | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
     | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
+    | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
 
     | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
     | [| "p"; presetId; "ip"; playlistId; "i" |] ->
@@ -122,6 +123,8 @@ let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessag
           seq { MessageButton(buttonText, buttonData) }
 
           seq { MessageButton("Set as current", $"p|%s{presetId}|c") }
+
+          seq { MessageButton("Remove", sprintf "p|%s|rm" presetId) }
 
           seq { MessageButton("<< Back >>", "p")}
         }
@@ -462,4 +465,14 @@ module Message =
         let! presetId = createPreset name
 
         return! sendPresetInfo presetId
+      }
+
+[<RequireQualifiedAccess>]
+module CallbackQuery =
+  let removePreset (removePreset: Preset.Remove) (sendUserPresets: SendUserPresets) : CallbackQuery.RemovePreset =
+    fun presetId ->
+      task{
+        let! removedPreset = removePreset presetId
+
+        return! sendUserPresets removedPreset.UserId
       }

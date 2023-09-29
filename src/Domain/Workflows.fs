@@ -65,6 +65,7 @@ module Preset =
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
   type GetRecommendations = int -> string list -> Task<string list>
+  type Remove = PresetId -> Task<Preset>
 
   let validate: Preset.Validate =
     fun preset ->
@@ -111,7 +112,7 @@ module Preset =
 
   let create (savePreset: Save) (loadUser: User.Load) (updateUser: User.Update) userId : Preset.Create =
     fun name ->
-      task{
+      task {
         let newPreset =
           { Id = PresetId.create ()
             Name = name
@@ -127,12 +128,33 @@ module Preset =
         let! user = loadUser userId
 
         let userPreset = newPreset |> SimplePreset.fromPreset
-        let updatedUser = {user with Presets = user.Presets |> List.append [userPreset] }
+
+        let updatedUser =
+          { user with
+              Presets = user.Presets |> List.append [ userPreset ] }
 
         do! updateUser updatedUser
         do! savePreset newPreset
 
         return newPreset.Id
+      }
+
+  let remove (loadUser: User.Load) (remove: Remove) (updateUser: User.Update) : Preset.Remove =
+    fun presetId ->
+      task {
+        let! preset = remove presetId
+
+        let! user = loadUser preset.UserId
+
+        let userPreset = preset |> SimplePreset.fromPreset
+
+        let updatedUser =
+          { user with
+              Presets = user.Presets |> List.except [ userPreset ] }
+
+        do! updateUser updatedUser
+
+        return preset
       }
 
 [<RequireQualifiedAccess>]
@@ -369,7 +391,7 @@ module IncludedPlaylist =
           { preset with
               IncludedPlaylists =
                 preset.IncludedPlaylists
-                |> List.filter ((<>) playlist)
+                |> List.except [ playlist ]
                 |> List.append [ updatedPlaylist ] }
 
         return! updatePreset updatedPreset
@@ -387,7 +409,7 @@ module IncludedPlaylist =
           { preset with
               IncludedPlaylists =
                 preset.IncludedPlaylists
-                |> List.filter ((<>) playlist)
+                |> List.except [ playlist ]
                 |> List.append [ updatedPlaylist ] }
 
         return! updatePreset updatedPreset
@@ -412,7 +434,7 @@ module TargetedPlaylist =
           { preset with
               TargetedPlaylists =
                 preset.TargetedPlaylists
-                |> List.filter ((<>) targetPlaylist)
+                |> List.except [ targetPlaylist ]
                 |> List.append [ updatedPlaylist ] }
 
         return! updatePreset updatedPreset
@@ -434,7 +456,7 @@ module TargetedPlaylist =
           { preset with
               TargetedPlaylists =
                 preset.TargetedPlaylists
-                |> List.filter ((<>) targetPlaylist)
+                |> List.except [ targetPlaylist ]
                 |> List.append [ updatedPlaylist ] }
 
         return! updatePreset updatedPreset
@@ -454,7 +476,7 @@ module TargetedPlaylist =
           { preset with
               TargetedPlaylists =
                 preset.TargetedPlaylists
-                |> List.filter ((<>) targetPlaylist)
+                |> List.except [ targetPlaylist ]
                 |> List.append [ updatedPlaylist ] }
 
         return! updatePreset updatedPreset
