@@ -33,6 +33,10 @@ type OverwriteTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 type RemoveTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
+module CallbackQuery =
+  type RemovePreset = PresetId -> Task<unit>
+
+[<RequireQualifiedAccess>]
 type Action =
 
   | ShowIncludedPlaylists of presetId: PresetId * page: Page
@@ -53,6 +57,7 @@ type Action =
 
   | ShowPresetInfo of presetId: PresetId
   | SetCurrentPreset of presetId: PresetId
+  | RemovePreset of presetId: PresetId
 
   | AskForPlaylistSize
 

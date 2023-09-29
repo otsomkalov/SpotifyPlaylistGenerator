@@ -271,3 +271,16 @@ module Preset =
 
         return! collection.InsertOneAsync(dbPreset)
       }
+
+  let remove (db: IMongoDatabase) : Preset.Remove =
+    fun presetId ->
+      task{
+        let collection = db.GetCollection "presets"
+
+        let id = presetId |> PresetId.value
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
+
+        let! dbPreset = collection.FindOneAndDeleteAsync(presetsFilter)
+
+        return dbPreset |> Preset.fromDb
+      }
