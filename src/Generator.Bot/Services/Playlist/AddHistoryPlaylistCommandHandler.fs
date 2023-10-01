@@ -25,36 +25,33 @@ type AddHistoryPlaylistCommandHandler
     loadUser: User.Load
   ) =
 
-  member this.HandleAsync replyToMessage (message: Message) =
-    match message.Text with
-    | CommandData data ->
-      let userId = UserId message.From.Id
+  member this.HandleAsync replyToMessage data (message: Message) =
+    let userId = UserId message.From.Id
 
-      task {
-        let! client = _spotifyClientProvider.GetAsync message.From.Id
+    task {
+      let! client = _spotifyClientProvider.GetAsync message.From.Id
 
-        let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
-        let parsePlaylistId = Playlist.parseId
+      let parsePlaylistId = Playlist.parseId
 
-        let excludePlaylist =
-          Playlist.excludePlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
+      let excludePlaylist =
+        Playlist.excludePlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
 
-        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
-        let rawPlaylistId = Playlist.RawPlaylistId data
+      let rawPlaylistId = Playlist.RawPlaylistId data
 
-        let! excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId |> Async.StartAsTask
+      let! excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId |> Async.StartAsTask
 
-        return!
-          match excludePlaylistResult with
-          | Ok playlist ->
-            replyToMessage $"*{playlist.Name}* successfully excluded!"
-          | Error error ->
-            match error with
-            | Playlist.ExcludePlaylistError.IdParsing _ ->
-              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-            | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-              replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
-      }
-    | _ -> replyToMessage "You have entered empty playlist url"
+      return!
+        match excludePlaylistResult with
+        | Ok playlist ->
+          replyToMessage $"*{playlist.Name}* successfully excluded!"
+        | Error error ->
+          match error with
+          | Playlist.ExcludePlaylistError.IdParsing _ ->
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+          | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+    }

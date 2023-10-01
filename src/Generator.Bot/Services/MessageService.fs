@@ -41,6 +41,11 @@ type MessageService
     | CommandData data -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage data message
     | _ -> replyToMessage "You have entered empty playlist url"
 
+  let excludePlaylist replyToMessage (message: Message) =
+    match message.Text with
+    | CommandData data -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage data message
+    | _ -> replyToMessage "You have entered empty playlist url"
+
   let validateUserLogin handleCommandFunction (message: Message) =
     task{
       let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
@@ -77,13 +82,14 @@ type MessageService
         match message.ReplyToMessage.Text with
         | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
         | Equals Messages.SendIncludedPlaylist -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+        | Equals Messages.SendExcludedPlaylist -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
         | Equals Messages.SendPresetName -> createPreset message.Text
       | _ ->
         match message.Text with
         | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard message
         | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
-        | StartsWith "/addsourceplaylist" -> validateUserLogin (includePlaylist replyToMessage) message
-        | StartsWith "/addhistoryplaylist" -> validateUserLogin (_addHistoryPlaylistCommandHandler.HandleAsync replyToMessage) message
+        | StartsWith "/include" -> validateUserLogin (includePlaylist replyToMessage) message
+        | StartsWith "/exclude" -> validateUserLogin (excludePlaylist replyToMessage) message
         | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage) message
         | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
         | Equals Messages.CreatePreset -> askForReply Messages.SendPresetName
@@ -91,6 +97,7 @@ type MessageService
         | Equals Messages.MyPresets -> sendUserPresets sendButtons message
         | Equals Messages.Settings -> sendSettingsMessage userId
         | Equals Messages.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
+        | Equals Messages.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
         | Equals "Back" -> sendCurrentPresetInfo userId
         | _ -> replyToMessage "Unknown command"
     | _ -> Task.FromResult()
