@@ -78,6 +78,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ➖ Exclude playlist.
+        /// </summary>
+        public static string ExcludePlaylist {
+            get {
+                return ResourceManager.GetString("ExcludePlaylist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 🎵 Generate playlist.
         /// </summary>
         public static string GeneratePlaylist {
@@ -234,7 +243,16 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Send included playlist.
+        ///   Looks up a localized string similar to Send id/url of Spotify playlist to exclude it tracks from generation.
+        /// </summary>
+        public static string SendExcludedPlaylist {
+            get {
+                return ResourceManager.GetString("SendExcludedPlaylist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send id/url of Spotify playlist to include it tracks into generation.
         /// </summary>
         public static string SendIncludedPlaylist {
             get {
