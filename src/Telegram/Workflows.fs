@@ -301,7 +301,11 @@ let sendCurrentPresetInfo
               seq {
                 seq { KeyboardButton(Messages.MyPresets) }
                 seq { KeyboardButton(Messages.CreatePreset) }
-                seq { KeyboardButton(Messages.IncludePlaylist); KeyboardButton(Messages.ExcludePlaylist) }
+                seq {
+                  KeyboardButton(Messages.IncludePlaylist)
+                  KeyboardButton(Messages.ExcludePlaylist)
+                  KeyboardButton(Messages.TargetPlaylist)
+                }
                 seq { KeyboardButton(Messages.Settings) }
               }
 
