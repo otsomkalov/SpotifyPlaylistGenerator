@@ -26,42 +26,39 @@ type SetTargetPlaylistCommandHandler
     loadUser: User.Load
   ) =
 
-  member this.HandleAsync replyToMessage (message: Message) =
-    match message.Text with
-    | CommandData data ->
-      let userId = UserId message.From.Id
+  member this.HandleAsync replyToMessage data (message: Message) =
+    let userId = UserId message.From.Id
 
-      task {
-        let! client = _spotifyClientProvider.GetAsync message.From.Id
+    task {
+      let! client = _spotifyClientProvider.GetAsync message.From.Id
 
-        let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
 
-        let parsePlaylistId = Playlist.parseId
+      let parsePlaylistId = Playlist.parseId
 
-        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
 
-        let targetPlaylist =
-          Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
+      let targetPlaylist =
+        Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
 
-        let! targetPlaylistResult = targetPlaylist currentPresetId (Playlist.RawPlaylistId data) |> Async.StartAsTask
+      let! targetPlaylistResult = targetPlaylist currentPresetId (Playlist.RawPlaylistId data) |> Async.StartAsTask
 
-        return!
-          match targetPlaylistResult with
-          | Ok playlist ->
+      return!
+        match targetPlaylistResult with
+        | Ok playlist ->
 
-            let sendButtons = Telegram.sendButtons _bot userId
-            let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
+          let sendButtons = Telegram.sendButtons _bot userId
+          let countPlaylistTracks = Playlist.countTracks connectionMultiplexer
 
-            let showTargetedPlaylist = Telegram.Workflows.showTargetedPlaylist sendButtons loadPreset countPlaylistTracks
+          let showTargetedPlaylist = Telegram.Workflows.showTargetedPlaylist sendButtons loadPreset countPlaylistTracks
 
-            showTargetedPlaylist currentPresetId playlist.Id
-          | Error error ->
-            match error with
-            | Playlist.TargetPlaylistError.IdParsing _ ->
-              replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, data))
-            | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-              replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
-            | Playlist.TargetPlaylistError.AccessError _ ->
-              replyToMessage Messages.PlaylistIsReadonly
-      }
-    | _ -> replyToMessage "You have entered empty playlist url"
+          showTargetedPlaylist currentPresetId playlist.Id
+        | Error error ->
+          match error with
+          | Playlist.TargetPlaylistError.IdParsing _ ->
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, data))
+          | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+          | Playlist.TargetPlaylistError.AccessError _ ->
+            replyToMessage Messages.PlaylistIsReadonly
+    }

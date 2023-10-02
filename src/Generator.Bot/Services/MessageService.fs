@@ -46,6 +46,11 @@ type MessageService
     | CommandData data -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage data message
     | _ -> replyToMessage "You have entered empty playlist url"
 
+  let targetPlaylist replyToMessage (message: Message) =
+    match message.Text with
+    | CommandData data -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage data message
+    | _ -> replyToMessage "You have entered empty playlist url"
+
   let validateUserLogin handleCommandFunction (message: Message) =
     task{
       let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
@@ -90,7 +95,7 @@ type MessageService
         | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
         | StartsWith "/include" -> validateUserLogin (includePlaylist replyToMessage) message
         | StartsWith "/exclude" -> validateUserLogin (excludePlaylist replyToMessage) message
-        | StartsWith "/settargetplaylist" -> validateUserLogin (_setTargetedPlaylistCommandHandler.HandleAsync replyToMessage) message
+        | StartsWith "/target" -> validateUserLogin (targetPlaylist replyToMessage) message
         | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
         | Equals Messages.CreatePreset -> askForReply Messages.SendPresetName
         | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
@@ -98,6 +103,7 @@ type MessageService
         | Equals Messages.Settings -> sendSettingsMessage userId
         | Equals Messages.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
         | Equals Messages.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
+        | Equals Messages.TargetPlaylist -> askForReply Messages.SendExcludedPlaylist
         | Equals "Back" -> sendCurrentPresetInfo userId
         | _ -> replyToMessage "Unknown command"
     | _ -> Task.FromResult()

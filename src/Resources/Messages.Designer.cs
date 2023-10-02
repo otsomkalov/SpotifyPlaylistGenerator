@@ -279,6 +279,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Send id/url of Spotify playlist to save generated tracks into.
+        /// </summary>
+        public static string SendTargetPlaylist {
+            get {
+                return ResourceManager.GetString("SendTargetPlaylist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to #️⃣ Set playlist size.
         /// </summary>
         public static string SetPlaylistSize {
@@ -293,6 +302,15 @@ namespace Resources {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 📩 Target playlist.
+        /// </summary>
+        public static string TargetPlaylist {
+            get {
+                return ResourceManager.GetString("TargetPlaylist", resourceCulture);
             }
         }
         
