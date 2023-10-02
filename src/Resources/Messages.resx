@@ -81,11 +81,17 @@ Preset settings:
     <data name="ExcludePlaylist" xml:space="preserve">
         <value>➖ Exclude playlist</value>
     </data>
+    <data name="TargetPlaylist" xml:space="preserve">
+        <value>📩 Target playlist</value>
+    </data>
     <data name="SendIncludedPlaylist" xml:space="preserve">
         <value>Send id/url of Spotify playlist to include it tracks into generation</value>
     </data>
     <data name="SendExcludedPlaylist" xml:space="preserve">
         <value>Send id/url of Spotify playlist to exclude it tracks from generation</value>
+    </data>
+    <data name="SendTargetPlaylist" xml:space="preserve">
+        <value>Send id/url of Spotify playlist to save generated tracks into</value>
     </data>
     <data name="PlaylistIdCannotBeParsed">
         <value>Cannot parse provided playlist id: {0}</value>
