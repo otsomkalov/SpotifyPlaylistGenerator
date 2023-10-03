@@ -107,7 +107,8 @@ module PresetSettings =
          | PresetSettings.LikedTracksHandling.Include -> Nullable true
          | PresetSettings.LikedTracksHandling.Exclude -> Nullable false
          | PresetSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
-      PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value)
+      PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value),
+      RecommendationsEnabled = settings.RecommendationsEnabled
     )
 
 [<RequireQualifiedAccess>]
