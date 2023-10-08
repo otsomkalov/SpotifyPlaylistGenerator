@@ -85,7 +85,6 @@ type Startup() =
     services.AddScopedFunc<User.Load, IMongoDatabase>(User.load)
     services.AddScopedFunc<User.Exists, IMongoDatabase>(User.exists)
 
-    services.AddScopedFunc<Telegram.Core.GetPresetMessage, Preset.Load>(Telegram.Workflows.getPresetMessage)
     services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
 
     services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)

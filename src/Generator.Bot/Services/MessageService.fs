@@ -69,15 +69,14 @@ type MessageService
     let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
     let sendButtons = Telegram.sendButtons _bot userId
     let askForReply = Telegram.askForReply _bot userId message.MessageId
-    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
     let savePreset = Preset.save _database
     let updateUser = User.update _database
     let createPreset = Preset.create savePreset loadUser updateUser userId
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard loadUser getPresetMessage
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser getPresetMessage sendKeyboard
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo loadUser loadPreset sendKeyboard
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
     let sendPresetInfo =
-      Telegram.Workflows.sendPresetInfo sendButtons getPresetMessage
+      Telegram.Workflows.sendPresetInfo loadPreset sendButtons
     let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
     match message.Type with

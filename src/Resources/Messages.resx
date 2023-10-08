@@ -25,7 +25,8 @@
         <value>Preset name: *{0}*
 Preset settings:
 *Include liked tracks* - {1}
-*Playlist size* - {2}</value>
+*Recommendations* - {2}
+*Playlist size* - {3}</value>
     </data>
     <data name="Updated" xml:space="preserve">
         <value>Updated</value>
@@ -110,5 +111,17 @@ Preset settings:
     </data>
     <data name="SendPresetName" xml:space="preserve">
         <value>Send new preset name in reply to this message</value>
+    </data>
+    <data name="RecommendationsEnabled" xml:space="preserve">
+        <value>➕ Recommendations are enabled</value>
+    </data>
+    <data name="RecommendationsDisabled" xml:space="preserve">
+        <value>➖ Recommendations are disabled</value>
+    </data>
+    <data name="EnableRecommendations" xml:space="preserve">
+        <value>➕ Enable recommendations</value>
+    </data>
+    <data name="DisableRecommendations" xml:space="preserve">
+        <value>➖ Disable recommendations</value>
     </data>
 </root>

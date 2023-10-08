@@ -52,11 +52,7 @@ module User =
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
-  let fromPreset (preset: Preset) =
-    {
-      Id = preset.Id
-      Name = preset.Name
-    }
+  let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
 
 [<RequireQualifiedAccess>]
 module Preset =
@@ -156,6 +152,24 @@ module Preset =
 
         return preset
       }
+
+  let enableRecommendations (loadPreset: Load) (update: Update) : Preset.EnableRecommendations =
+    loadPreset
+    >> Task.map (fun p ->
+      { p with
+          Settings =
+            { p.Settings with
+                RecommendationsEnabled = true } })
+    >> Task.bind update
+
+  let disableRecommendations (loadPreset: Load) (update: Update) : Preset.DisableRecommendations =
+    loadPreset
+    >> Task.map (fun p ->
+      { p with
+          Settings =
+            { p.Settings with
+                RecommendationsEnabled = false } })
+    >> Task.bind update
 
 [<RequireQualifiedAccess>]
 module Playlist =
