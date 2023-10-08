@@ -20,8 +20,7 @@ type SetPlaylistSizeCommandHandler
   ) =
 
   let setPlaylistSizeAsync sendKeyboard replyToMessage size (message: Message) =
-    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage  loadUser getPresetMessage sendKeyboard
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
     let setPlaylistSize = Domain.Workflows.Preset.setPlaylistSize loadPreset updatePreset
 
     task {

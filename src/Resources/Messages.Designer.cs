@@ -69,6 +69,24 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ➖ Disable recommendations.
+        /// </summary>
+        public static string DisableRecommendations {
+            get {
+                return ResourceManager.GetString("DisableRecommendations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ➕ Enable recommendations.
+        /// </summary>
+        public static string EnableRecommendations {
+            get {
+                return ResourceManager.GetString("EnableRecommendations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➖ Exclude liked.
         /// </summary>
         public static string ExcludeLikedTracks {
@@ -234,11 +252,30 @@ namespace Resources {
         ///   Looks up a localized string similar to Preset name: *{0}*
         ///Preset settings:
         ///*Include liked tracks* - {1}
-        ///*Playlist size* - {2}.
+        ///*Recommendations* - {2}
+        ///*Playlist size* - {3}.
         /// </summary>
         public static string PresetInfo {
             get {
                 return ResourceManager.GetString("PresetInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ➖ Recommendations are disabled.
+        /// </summary>
+        public static string RecommendationsDisabled {
+            get {
+                return ResourceManager.GetString("RecommendationsDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ➕ Recommendations are enabled.
+        /// </summary>
+        public static string RecommendationsEnabled {
+            get {
+                return ResourceManager.GetString("RecommendationsEnabled", resourceCulture);
             }
         }
         

@@ -11,3 +11,7 @@ module CallbackQueryConstants =
   let ignoreLikedTracks = "ignore-liked-tracks"
   [<Literal>]
   let setPlaylistSize = "sps"
+  [<Literal>]
+  let enableRecommendations = "er"
+  [<Literal>]
+  let disableRecommendations = "dr"

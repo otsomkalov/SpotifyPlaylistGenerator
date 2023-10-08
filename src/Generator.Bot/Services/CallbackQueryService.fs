@@ -20,7 +20,6 @@ type CallbackQueryService
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
-    getPresetMessage: GetPresetMessage,
     _connectionMultiplexer: IConnectionMultiplexer,
     loadPreset: Preset.Load,
     updatePreset: Preset.Update,
@@ -44,6 +43,8 @@ type CallbackQueryService
     let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist loadPreset updatePreset
     let setCurrentPreset = Domain.Workflows.User.setCurrentPreset loadUser updateUser
     let setLikedTracksHandling = Preset.setLikedTracksHandling loadPreset updatePreset
+    let enableRecommendations = Preset.enableRecommendations loadPreset updatePreset
+    let disableRecommendations = Preset.disableRecommendations loadPreset updatePreset
 
     let removePreset = Preset.remove _database
     let removePreset = Domain.Workflows.Preset.remove loadUser removePreset updateUser
@@ -52,7 +53,7 @@ type CallbackQueryService
     let removePreset = Workflows.CallbackQuery.removePreset removePreset showUserPresets
 
     let sendPresetInfo =
-      Workflows.sendPresetInfo editMessage getPresetMessage
+      Workflows.sendPresetInfo loadPreset editMessage
 
     let setCurrentPreset = Telegram.Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
 
@@ -82,6 +83,11 @@ type CallbackQueryService
     let setLikedTracksHandling =
       Workflows.setLikedTracksHandling answerCallbackQuery setLikedTracksHandling sendPresetInfo
 
+    let enableRecommendations =
+      Workflows.enableRecommendations enableRecommendations answerCallbackQuery sendPresetInfo
+    let disableRecommendations =
+      Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
+
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId -> setCurrentPreset userId presetId
@@ -108,5 +114,8 @@ type CallbackQueryService
     | Action.IncludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Include
     | Action.ExcludeLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Exclude
     | Action.IgnoreLikedTracks presetId -> setLikedTracksHandling presetId PresetSettings.LikedTracksHandling.Ignore
+
+    | Action.EnableRecommendations presetId -> enableRecommendations presetId
+    | Action.DisableRecommendations presetId -> disableRecommendations presetId
 
     | Action.ShowUserPresets -> showUserPresets userId

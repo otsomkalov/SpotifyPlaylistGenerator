@@ -7,7 +7,6 @@ open Domain.Workflows
 open Infrastructure
 open Infrastructure.Workflows
 open Infrastructure.Spotify
-open Microsoft.Extensions.Logging
 open MongoDB.Driver
 open Shared.Services
 open SpotifyAPI.Web
@@ -35,8 +34,7 @@ type StartCommandHandler
 
   let sendMessageAsync sendKeyboard (message: Message) =
 
-    let getPresetMessage = Telegram.Workflows.getPresetMessage loadPreset
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo sendKeyboard loadUser getPresetMessage
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo loadUser loadPreset sendKeyboard
 
     sendCurrentPresetInfo (message.From.Id |> UserId)
 

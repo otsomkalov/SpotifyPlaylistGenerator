@@ -123,6 +123,9 @@ module Preset =
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<Preset>
 
+  type EnableRecommendations = PresetId -> Task<unit>
+  type DisableRecommendations = PresetId -> Task<unit>
+
 [<RequireQualifiedAccess>]
 module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>

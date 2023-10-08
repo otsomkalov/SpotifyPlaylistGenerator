@@ -63,6 +63,9 @@ let parseAction (str: string) =
     | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
     | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
 
+    | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
+
     | [|"p"|] -> Action.ShowUserPresets
 
 let sendUserPresets (sendButtons: SendButtons) (loadUser: User.Load) : SendUserPresets =
@@ -78,14 +81,12 @@ let sendUserPresets (sendButtons: SendButtons) (loadUser: User.Load) : SendUserP
       do! sendButtons "Your presets" keyboardMarkup
     }
 
-let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
-  fun presetId ->
+let private getPresetMessage =
+  fun (preset: Preset) ->
     task{
-      let! preset = loadPreset presetId
+      let presetId = preset.Id |> PresetId.value
 
-      let presetId = presetId |> PresetId.value
-
-      let messageText, buttonText, buttonData =
+      let likedTracksHandlingText, likedTracksButtonText, likedTracksButtonData =
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
           Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.excludeLikedTracks}"
@@ -94,21 +95,33 @@ let getPresetMessage (loadPreset: Preset.Load) : GetPresetMessage =
         | PresetSettings.LikedTracksHandling.Ignore ->
           Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.includeLikedTracks}"
 
+      let recommendationsText, recommendationsButtonText, recommendationsButtonData =
+        match preset.Settings.RecommendationsEnabled with
+        | true ->
+          Messages.RecommendationsEnabled, Messages.DisableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.disableRecommendations
+        | false ->
+          Messages.RecommendationsDisabled, Messages.EnableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
+
       let text =
         System.String.Format(
           Messages.PresetInfo,
           preset.Name,
-          messageText,
+          likedTracksHandlingText,
+          recommendationsText,
           (preset.Settings.PlaylistSize |> PlaylistSize.value)
         )
 
-      return (text, buttonText, buttonData)
+      let keyboard = seq {MessageButton(likedTracksButtonText, likedTracksButtonData); MessageButton(recommendationsButtonText, recommendationsButtonData)}
+
+      return (text, keyboard)
     }
 
-let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessage) : SendPresetInfo =
+let sendPresetInfo (loadPreset: Preset.Load) (editMessage: EditMessage) : SendPresetInfo =
   fun presetId ->
     task {
-      let! text, buttonText, buttonData = getPresetMessage presetId
+      let! preset = loadPreset presetId
+
+      let! text, keyboard = getPresetMessage preset
 
       let presetId = presetId |> PresetId.value
 
@@ -120,7 +133,7 @@ let sendPresetInfo (editMessage: EditMessage) (getPresetMessage: GetPresetMessag
             MessageButton("Target playlists", $"p|%s{presetId}|tp|0")
           }
 
-          seq { MessageButton(buttonText, buttonData) }
+          keyboard
 
           seq { MessageButton("Set as current", $"p|%s{presetId}|c") }
 
@@ -266,12 +279,32 @@ let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedT
       return! sendPresetInfo presetId
     }
 
-let sendSettingsMessage (loadUser: User.Load) (getPresetMessage: GetPresetMessage) (sendKeyboard:SendKeyboard) : SendSettingsMessage =
+let enableRecommendations (enableRecommendations: Preset.EnableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : EnableRecommendations =
+  fun presetId ->
+    task{
+      do! enableRecommendations presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
+let disableRecommendations (disableRecommendations: Preset.DisableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : DisableRecommendations =
+  fun presetId ->
+    task{
+      do! disableRecommendations presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
+let sendSettingsMessage (loadUser: User.Load) (loadPreset: Preset.Load) (sendKeyboard:SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
       let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-
-      let! text, _, _ = getPresetMessage currentPresetId
+      let! preset = loadPreset currentPresetId
+      let! text, _ = getPresetMessage preset
 
       let buttons =
         seq {
@@ -283,9 +316,9 @@ let sendSettingsMessage (loadUser: User.Load) (getPresetMessage: GetPresetMessag
     }
 
 let sendCurrentPresetInfo
-  (sendKeyboard: SendKeyboard)
   (loadUser: User.Load)
-  (getPresetMessage: GetPresetMessage)
+  (loadPreset: Preset.Load)
+  (sendKeyboard: SendKeyboard)
   : SendCurrentPresetInfo =
   fun userId ->
     task {
@@ -295,7 +328,8 @@ let sendCurrentPresetInfo
         match currentPresetId with
         | Some presetId ->
           task{
-            let! text, _, _ = getPresetMessage presetId
+            let! preset = loadPreset presetId
+            let! text, _ = getPresetMessage preset
 
             let buttons =
               seq {
