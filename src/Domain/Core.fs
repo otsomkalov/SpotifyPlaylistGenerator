@@ -8,6 +8,10 @@ type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
 type TrackId = TrackId of string
 
+[<RequireQualifiedAccess>]
+module TrackId =
+  let value (TrackId id) = id
+
 type SpotifyPlaylistData =
   { Id: PlaylistId
     Name: string }
@@ -100,8 +104,9 @@ module Playlist =
   type ExcludePlaylist = PresetId -> RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
   type TargetPlaylist = PresetId -> RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
 
-  type GenerateError = GenerateError of string
-  type Generate = PresetId -> Async<Result<unit, GenerateError>>
+  type GenerateError =
+    | NoPotentialTracks
+  type Generate = PresetId -> Task<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
 module Preset =

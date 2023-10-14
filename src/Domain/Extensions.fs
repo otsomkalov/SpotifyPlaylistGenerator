@@ -1,5 +1,6 @@
 ﻿module Domain.Extensions
 
+open System
 open System.Threading.Tasks
 
 [<RequireQualifiedAccess>]
@@ -154,3 +155,10 @@ module AsyncResult =
       let! result = taskResult
       return! Result.asyncMap mapping result
     }
+
+[<RequireQualifiedAccess>]
+module List =
+  let shuffle sequence =
+    let random = Random()
+
+    sequence |> List.sortBy (fun _ -> random.Next())
