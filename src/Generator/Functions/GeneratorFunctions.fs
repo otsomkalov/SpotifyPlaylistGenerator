@@ -69,7 +69,7 @@ type GeneratorFunctions
         Workflows.Preset.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
-        Cache.User.listLikedTracks likedTracksCache logLikedTracks listCachedLikedTracks cacheLikedTracks listLikedTracks userId
+        Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks userId
 
       let sendMessage = Telegram.sendMessage _bot userId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
