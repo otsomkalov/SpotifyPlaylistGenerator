@@ -105,6 +105,7 @@ module Playlist =
   type TargetPlaylist = PresetId -> RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
 
   type GenerateError =
+    | NoIncludedTracks
     | NoPotentialTracks
   type Generate = PresetId -> Task<Result<unit, GenerateError>>
 

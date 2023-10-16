@@ -348,6 +348,44 @@ module Playlist =
   }
 
   let generate (io: GenerateIO) : Playlist.Generate =
+
+    let saveTracks preset =
+      fun tracks ->
+        match tracks with
+        | [] -> Playlist.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
+        | tracks ->
+          task{
+            let tracksIdsToImport =
+              tracks
+              |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
+
+            for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
+              do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
+
+            return Ok()
+          }
+
+    let generateAndSaveTracks preset =
+      fun includedTracks excludedTracks ->
+        match includedTracks with
+        | [] -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
+        | includedTracks ->
+          task{
+            let! recommendedTracks =
+              if preset.Settings.RecommendationsEnabled then
+                includedTracks |> List.take 5 |> (io.GetRecommendations 100)
+              else
+                [] |> Task.FromResult
+
+            let includedTracks = recommendedTracks @ includedTracks
+
+            let potentialTracks = includedTracks |> List.except excludedTracks
+
+            io.LogPotentialTracks potentialTracks.Length
+
+            return! saveTracks preset potentialTracks
+          }
+
     fun presetId ->
       task {
         let! preset = io.LoadPreset presetId
@@ -369,32 +407,7 @@ module Playlist =
           | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
           | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
-        let! recommendedTracks =
-          if preset.Settings.RecommendationsEnabled then
-            includedTracks |> List.take 5 |> (io.GetRecommendations 100)
-          else
-            [] |> Task.FromResult
-
-        let includedTracksIds = includedTracks @ recommendedTracks
-
-        let potentialTracksIds = includedTracksIds |> List.except excludedTracks
-
-        io.LogPotentialTracks potentialTracksIds.Length
-
-        return!
-          match potentialTracksIds with
-          | [] -> Playlist.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
-          | tracks ->
-            task{
-              let tracksIdsToImport =
-                tracks
-                |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
-
-              for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
-                do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
-
-              return Ok()
-            }
+        return! generateAndSaveTracks preset includedTracks excludedTracks
       }
 
 [<RequireQualifiedAccess>]
