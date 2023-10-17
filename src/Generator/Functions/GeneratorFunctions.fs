@@ -1,6 +1,9 @@
 ﻿namespace Generator
 
+open Domain
+open FSharp
 open Generator.Bot
+open Infrastructure.Helpers
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.WebJobs
@@ -11,8 +14,6 @@ open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
 open Telegram.Bot
-open Generator.Extensions
-open Domain.Extensions
 
 type GeneratorFunctions
   (
@@ -32,31 +33,68 @@ type GeneratorFunctions
 
       let userId = message.TelegramId |> UserId
 
-      let listTracks = Playlist.listTracks logger client
-      let listLikedTracks = User.listLikedTracks client
-      let sendMessage = Telegram.sendMessage _bot userId
-      let getRecommendations = Spotify.getRecommendations client
+      let logIncludedTracks =
+        Logf.logfi logger
+          "Preset %s{PresetId} of user %i{TelegramId} has %i{IncludedTracksCount} included tracks"
+          message.PresetId message.TelegramId
 
-      let listPlaylistTracks = Cache.listOrRefresh playlistsCache message.RefreshCache listTracks
+      let logExcludedTracks =
+        Logf.logfi logger
+          "Preset %s{PresetId} of user %i{TelegramId} has %i{ExcludedTracksCount} excluded tracks"
+          message.PresetId message.TelegramId
+
+      let logLikedTracks =
+        Logf.logfi logger
+          "User %i{TelegramId} has %i{LikedTracksCount} liked tracks"
+          message.TelegramId
+
+      let logRecommendedTracks =
+        Logf.logfi logger
+          "Preset %s{PresetId} of user %i{TelegramId} has %i{RecommendedTracksCount} recommended tracks"
+          message.PresetId message.TelegramId
+
+      let logPotentialTracks =
+        Logf.logfi logger
+          "Preset %s{PresetId} of user %i{TelegramId} has %i{PotentialTracksCount} potential tracks"
+          message.PresetId message.TelegramId
+
+      let listTracks = Spotify.Playlist.listTracks logger client
+      let listTracks = Cache.Playlist.listTracks playlistsCache listTracks
+      let listLikedTracks = Spotify.User.listLikedTracks client
+
+      let listIncludedTracks =
+        Workflows.Preset.listIncludedTracks  logIncludedTracks listTracks
+
+      let listExcludedTracks =
+        Workflows.Preset.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
-        Cache.listOrRefreshByKey likedTracksCache message.RefreshCache listLikedTracks message.TelegramId
+        Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks userId
+
+      let sendMessage = Telegram.sendMessage _bot userId
+      let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
 
       let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
 
-      logger.LogInformation("Received request to generate playlist for user with Telegram id {TelegramId}", message.TelegramId)
+      do Logf.logfi logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" message.TelegramId
 
       do! sendMessage "Generating playlist..."
 
-      let generatePlaylist =
-        Domain.Workflows.Playlist.generate logger listPlaylistTracks listLikedTracks loadPreset updateTargetedPlaylist List.shuffle getRecommendations
+      let io: Domain.Workflows.Playlist.GenerateIO =
+        { LogPotentialTracks = logPotentialTracks
+          ListIncludedTracks = listIncludedTracks
+          ListExcludedTracks = listExcludedTracks
+          ListLikedTracks = listLikedTracks
+          LoadPreset = loadPreset
+          UpdateTargetedPlaylists = updateTargetedPlaylist
+          GetRecommendations = getRecommendations }
 
-      let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId) |> Async.StartAsTask
+      let generatePlaylist = Domain.Workflows.Playlist.generate io
 
-      let messageText =
+      let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId)
+
+      return!
         match generatePlaylistResult with
-        | Ok _ -> "Playlist generated!"
-        | Error(Playlist.GenerateError e) -> e
-
-      return! sendMessage messageText
+        | Ok _ -> sendMessage "Playlist generated!"
+        | Error(Playlist.GenerateError.NoPotentialTracks) -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
     }

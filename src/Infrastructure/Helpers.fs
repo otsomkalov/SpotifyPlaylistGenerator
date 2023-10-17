@@ -15,3 +15,14 @@ module Spotify =
 
 module ValueTask =
   let asTask (valueTask: ValueTask<'a>) = valueTask.AsTask()
+
+[<RequireQualifiedAccess>]
+module Task =
+  let tee f t =
+    task{
+      let! v = t
+
+      do f v
+
+      return v
+    }

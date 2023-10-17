@@ -1,72 +1,56 @@
 ﻿module Infrastructure.Cache
 
 open System
+open System.Threading.Tasks
+open Domain.Core
 open Domain.Workflows
-open Infrastructure.Helpers
 open Infrastructure.Core
 open StackExchange.Redis
+open Domain.Extensions
+open Infrastructure.Helpers
 
-type CacheData<'k> = 'k -> string list -> Async<unit>
+let private listCachedTracks (cache: IDatabase) =
+  fun key -> key |> RedisKey |> cache.ListRangeAsync |> Task.map (List.ofArray >> List.map (string >> TrackId))
 
-let private cacheData (cache: IDatabase) : CacheData<'k> =
-  fun key values ->
+let private cacheTracks (cache: IDatabase) =
+  fun key tracks ->
     task {
-      let values = values |> List.map (string >> RedisValue) |> Array.ofSeq
-      let key = RedisKey(key |> string)
+      let values = tracks |> List.map (TrackId.value >> RedisValue) |> Array.ofSeq
+
       let! _ = cache.ListLeftPushAsync(key, values)
       let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7))
 
-      return ()
-    }
-    |> Async.AwaitTask
-
-type ListDataFunc<'k> = 'k -> Async<string list>
-type LoadAndCacheData<'k> = 'k -> Async<string list>
-
-let private loadAndCacheData<'k> loadData (cacheData: CacheData<'k>) : LoadAndCacheData<'k> =
-  fun id ->
-    async {
-      let! data = loadData
-
-      do! cacheData id data
-
-      return data
+      return tracks
     }
 
-type TryListByKey<'k> = 'k -> Async<string list>
+[<RequireQualifiedAccess>]
+module User =
+  let listLikedTracks
+    (cache: IDatabase)
+    logLikedTracks
+    (listLikedTracks: User.ListLikedTracks)
+    userId
+    : User.ListLikedTracks =
+    fun () ->
+      let key = userId |> UserId.value |> string
+      let cacheTracks = cacheTracks cache key
 
-let private tryListByKey<'k> (cache: IDatabase) (loadAndCacheData: LoadAndCacheData<'k>) : TryListByKey<'k> =
-  fun key ->
-    async {
-      let! values = key |> string |> cache.ListRangeAsync |> Async.AwaitTask
+      key
+      |> (listCachedTracks cache)
+      |> Task.taskMap (function
+        | [] -> listLikedTracks () |> Task.taskMap cacheTracks
+        | v -> v |> Task.FromResult)
+      |> Task.tee (fun t -> logLikedTracks t.Length)
 
-      return!
-        match values with
-        | [||] -> loadAndCacheData key
-        | v -> v |> List.ofSeq |> List.map string |> async.Return
-    }
+[<RequireQualifiedAccess>]
+module Playlist =
+  let listTracks (cache: IDatabase) (listTracks: Playlist.ListTracks) : Playlist.ListTracks =
+    fun id ->
+      let key = id |> ReadablePlaylistId.value |> PlaylistId.value
+      let cacheTracks = cacheTracks cache key
 
-type ListOrRefresh<'k> = 'k -> Async<string list>
-
-let listOrRefresh (cache: IDatabase) refreshCache loadData : ListOrRefresh<'k> =
-  let cacheData = cacheData cache
-
-  fun key ->
-    let loadData = loadData key
-    let loadAndCacheData = loadAndCacheData loadData cacheData
-
-    let key = key |> ReadablePlaylistId.value |> PlaylistId.value
-
-    if refreshCache then
-      loadAndCacheData key
-    else
-      tryListByKey cache loadAndCacheData key
-
-let listOrRefreshByKey (cache: IDatabase) refreshCache (loadData: Async<string list>) : ListOrRefresh<'k> =
-  let cacheData = cacheData cache
-  let loadAndCacheData = loadAndCacheData loadData cacheData
-
-  if refreshCache then
-    loadAndCacheData
-  else
-    tryListByKey cache loadAndCacheData
+      key
+      |> (listCachedTracks cache)
+      |> Task.taskMap (function
+        | [] -> (listTracks id) |> Task.taskMap cacheTracks
+        | v -> v |> Task.FromResult)

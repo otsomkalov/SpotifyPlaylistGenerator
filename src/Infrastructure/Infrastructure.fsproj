@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FSharp.Logf" Version="1.2.2" />
     <PackageReference Include="shortid" Version="4.0.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="6.3.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.96"/>

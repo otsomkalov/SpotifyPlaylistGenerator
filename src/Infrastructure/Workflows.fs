@@ -3,10 +3,8 @@
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
-open Database.Entities
 open MongoDB.Driver
 open SpotifyAPI.Web
-open Infrastructure
 open System.Net
 open System.Text.RegularExpressions
 open Database
@@ -14,35 +12,13 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Infrastructure.Mapping
-open System.Linq
 open Infrastructure.Helpers
-open Microsoft.Extensions.Logging
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
 open Domain.Extensions
 
 [<RequireQualifiedAccess>]
 module User =
-  let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
-    async {
-      let! tracks =
-        client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
-        |> Async.AwaitTask
-
-      let! nextTracksIds =
-        if isNull tracks.Next then
-          [] |> async.Return
-        else
-          listLikedTracks' client (offset + 50)
-
-      let currentTracksIds =
-        tracks.Items |> Seq.map (fun x -> x.Track) |> Spotify.getTracksIds
-
-      return List.append nextTracksIds currentTracksIds
-    }
-
-  let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks = listLikedTracks' client 0
-
   let load (db: IMongoDatabase) : User.Load =
     fun userId ->
       task {
@@ -127,52 +103,16 @@ module TargetedPlaylist =
 
           ()
         }
-        |> Async.AwaitTask
       else
         let playlistAddItemsRequest = spotifyTracksIds |> PlaylistAddItemsRequest
 
-        [ cache.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) :> Task
-          client.Playlists.AddItems(playlistId, playlistAddItemsRequest) :> Task ]
+        [ cache.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) |> Task.map ignore
+          client.Playlists.AddItems(playlistId, playlistAddItemsRequest) |> Task.map ignore ]
         |> Task.WhenAll
-        |> Async.AwaitTask
-
+        |> Task.map ignore
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
-    async {
-      let! tracks =
-        client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
-        |> Async.AwaitTask
-
-      let! nextTracksIds =
-        if isNull tracks.Next then
-          [] |> async.Return
-        else
-          listTracks' client playlistId (offset + 100)
-
-      let currentTracksIds =
-        tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> Spotify.getTracksIds
-
-      return List.append nextTracksIds currentTracksIds
-    }
-
-  let listTracks (logger: ILogger) client : Playlist.ListTracks =
-    fun playlistId ->
-      async {
-        try
-          let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-
-          return! listTracks' client playlistId 0
-        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          logger.LogInformation(
-            "Playlist with id {PlaylistId} not found in Spotify",
-            playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-          )
-
-          return []
-      }
-
   let parseId: Playlist.ParseId =
     fun rawPlaylistId ->
       let getPlaylistIdFromUri (uri: Uri) = uri.Segments |> Array.last
@@ -283,4 +223,41 @@ module Preset =
         let! dbPreset = collection.FindOneAndDeleteAsync(presetsFilter)
 
         return dbPreset |> Preset.fromDb
+      }
+
+  let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
+    List.map listTracks
+    >> Task.WhenAll
+    >> Task.map List.concat
+
+  let listIncludedTracks logIncludedTracks (listTracks: Playlist.ListTracks) : Preset.ListIncludedTracks =
+    let listTracks = listPlaylistsTracks listTracks
+
+    fun playlists ->
+      task{
+        let! playlistsTracks =
+          playlists
+          |> List.filter (fun p -> p.Enabled)
+          |> List.map (fun p -> p.Id)
+          |> listTracks
+
+        logIncludedTracks playlistsTracks.Length
+
+        return playlistsTracks
+      }
+
+  let listExcludedTracks logExcludedTracks (listTracks: Playlist.ListTracks) : Preset.ListExcludedTracks =
+    let listTracks = listPlaylistsTracks listTracks
+
+    fun playlists ->
+      task{
+        let! playlistsTracks =
+          playlists
+          |> List.filter (fun p -> p.Enabled)
+          |> List.map (fun p -> p.Id)
+          |> listTracks
+
+        logExcludedTracks playlistsTracks.Length
+
+        return playlistsTracks
       }

@@ -3,7 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Extensions
-open Microsoft.Extensions.Logging
+open IcedTasks.ColdTasks
 open Microsoft.FSharp.Control
 open shortid
 open shortid.Configuration
@@ -35,7 +35,7 @@ module WritablePlaylistId =
 
 [<RequireQualifiedAccess>]
 module User =
-  type ListLikedTracks = Async<string list>
+  type ListLikedTracks = ColdTask<TrackId list>
   type Load = UserId -> Task<User>
   type Update = User -> Task<unit>
   type Create = User -> Task<unit>
@@ -60,8 +60,11 @@ module Preset =
   type Save = Preset -> Task<unit>
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
-  type GetRecommendations = int -> string list -> Task<string list>
+  type GetRecommendations = int -> TrackId list -> Task<TrackId list>
   type Remove = PresetId -> Task<Preset>
+
+  type ListIncludedTracks = IncludedPlaylist list -> Task<TrackId list>
+  type ListExcludedTracks = ExcludedPlaylist list -> Task<TrackId list>
 
   let validate: Preset.Validate =
     fun preset ->
@@ -172,10 +175,48 @@ module Preset =
     >> Task.bind update
 
 [<RequireQualifiedAccess>]
-module Playlist =
-  type ListTracks = ReadablePlaylistId -> Async<string list>
+module IncludedPlaylist =
+  let enable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
 
-  type UpdateTracks = TargetedPlaylist -> TrackId list -> Async<unit>
+        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = true }
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists =
+                preset.IncludedPlaylists
+                |> List.except [ playlist ]
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let disable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Disable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = false }
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists =
+                preset.IncludedPlaylists
+                |> List.except [ playlist ]
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+[<RequireQualifiedAccess>]
+module Playlist =
+  type ListTracks = ReadablePlaylistId -> Task<TrackId list>
+
+  type UpdateTracks = TargetedPlaylist -> TrackId list -> Task<unit>
 
   type ParsedPlaylistId = ParsedPlaylistId of string
 
@@ -296,137 +337,77 @@ module Playlist =
       |> AsyncResult.bindSync checkAccess
       |> AsyncResult.asyncMap (updatePreset >> Async.AwaitTask)
 
-  type Shuffler = string list -> string list
+  type GenerateIO ={
+    LogPotentialTracks: int -> unit
+    ListIncludedTracks: Preset.ListIncludedTracks
+    ListExcludedTracks: Preset.ListExcludedTracks
+    ListLikedTracks: User.ListLikedTracks
+    LoadPreset: Preset.Load
+    UpdateTargetedPlaylists: UpdateTracks
+    GetRecommendations: Preset.GetRecommendations
+  }
 
-  let generate
-    (logger: ILogger)
-    (listPlaylistTracks: ListTracks)
-    (listLikedTracks: User.ListLikedTracks)
-    (loadPreset: Preset.Load)
-    (updateTargetedPlaylist: UpdateTracks)
-    (shuffler: Shuffler)
-    (getRecommendations: Preset.GetRecommendations)
-    : Playlist.Generate =
+  let generate (io: GenerateIO) : Playlist.Generate =
+
+    let saveTracks preset =
+      fun tracks ->
+        match tracks with
+        | [] -> Playlist.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
+        | tracks ->
+          task{
+            let tracksIdsToImport =
+              tracks
+              |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
+
+            for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
+              do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
+
+            return Ok()
+          }
+
+    let generateAndSaveTracks preset =
+      fun includedTracks excludedTracks ->
+        match includedTracks with
+        | [] -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
+        | includedTracks ->
+          task{
+            let! recommendedTracks =
+              if preset.Settings.RecommendationsEnabled then
+                includedTracks |> List.take 5 |> (io.GetRecommendations 100)
+              else
+                [] |> Task.FromResult
+
+            let includedTracks = recommendedTracks @ includedTracks
+
+            let potentialTracks = includedTracks |> List.except excludedTracks
+
+            io.LogPotentialTracks potentialTracks.Length
+
+            return! saveTracks preset potentialTracks
+          }
+
     fun presetId ->
-      async {
-        let! preset = loadPreset presetId |> Async.AwaitTask
+      task {
+        let! preset = io.LoadPreset presetId
 
-        let! likedTracks = listLikedTracks
+        let! likedTracks = io.ListLikedTracks
 
         let! includedTracks =
           preset.IncludedPlaylists
-          |> Seq.filter (fun p -> p.Enabled)
-          |> Seq.map (fun p -> p.Id)
-          |> Seq.map listPlaylistTracks
-          |> Async.Parallel
-          |> Async.map (List.concat >> shuffler)
-
-        logger.LogInformation(
-          "User with Telegram id {TelegramId} has {SourceTracksCount} source tracks in preset {PresetId}",
-          preset.UserId |> UserId.value,
-          includedTracks.Length,
-          presetId |> PresetId.value
-        )
+          |> io.ListIncludedTracks
+          |> Task.map List.shuffle
 
         let! excludedTracks =
           preset.ExcludedPlaylist
-          |> Seq.filter (fun p -> p.Enabled)
-          |> Seq.map (fun p -> p.Id)
-          |> Seq.map listPlaylistTracks
-          |> Async.Parallel
-          |> Async.map List.concat
+          |> io.ListExcludedTracks
 
-        let excludedTracksIds, includedTracksIds =
+        let excludedTracks, includedTracks =
           match preset.Settings.LikedTracksHandling with
           | PresetSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
           | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
           | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
-        logger.LogInformation(
-          "User with Telegram id {TelegramId} has {IncludedTracksCount} included tracks in preset {PresetId}",
-          preset.UserId |> UserId.value,
-          includedTracksIds.Length,
-          presetId |> PresetId.value
-        )
-
-        logger.LogInformation(
-          "User with Telegram id {TelegramId} has {ExcludedTracksCount} excluded tracks in preset {PresetId}",
-          preset.UserId |> UserId.value,
-          excludedTracksIds.Length,
-          presetId |> PresetId.value
-        )
-
-        let! recommendedTracks =
-          if preset.Settings.RecommendationsEnabled then
-            includedTracksIds |> List.take 5 |> (getRecommendations 100) |> Async.AwaitTask
-          else
-            [] |> async.Return
-
-        logger.LogInformation(
-          "User with Telegram id {TelegramId} has {RecommendedTracksCount} recommended tracks in preset {PresetId}",
-          preset.UserId |> UserId.value,
-          recommendedTracks.Length,
-          presetId |> PresetId.value
-        )
-
-        let includedTracksIds = includedTracksIds @ recommendedTracks
-
-        let potentialTracksIds = includedTracksIds |> List.except excludedTracksIds
-
-        logger.LogInformation(
-          "User with Telegram id {TelegramId} has {PotentialTracksCount} potential tracks in preset {PresetId}",
-          preset.UserId |> UserId.value,
-          potentialTracksIds.Length,
-          presetId |> PresetId.value
-        )
-
-        let tracksIdsToImport =
-          potentialTracksIds
-          |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
-          |> List.map TrackId
-
-        for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
-          do! updateTargetedPlaylist playlist tracksIdsToImport
-
-        return Ok()
-      }
-
-[<RequireQualifiedAccess>]
-module IncludedPlaylist =
-  let enable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Enable =
-    fun presetId playlistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
-        let updatedPlaylist = { playlist with Enabled = true }
-
-        let updatedPreset =
-          { preset with
-              IncludedPlaylists =
-                preset.IncludedPlaylists
-                |> List.except [ playlist ]
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
-      }
-
-  let disable (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Disable =
-    fun presetId playlistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
-        let updatedPlaylist = { playlist with Enabled = false }
-
-        let updatedPreset =
-          { preset with
-              IncludedPlaylists =
-                preset.IncludedPlaylists
-                |> List.except [ playlist ]
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
+        return! generateAndSaveTracks preset includedTracks excludedTracks
       }
 
 [<RequireQualifiedAccess>]
