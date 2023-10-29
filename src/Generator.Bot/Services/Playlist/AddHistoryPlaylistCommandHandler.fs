@@ -42,7 +42,7 @@ type AddHistoryPlaylistCommandHandler
 
       let rawPlaylistId = Playlist.RawPlaylistId data
 
-      let! excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId |> Async.StartAsTask
+      let! excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId
 
       return!
         match excludePlaylistResult with
