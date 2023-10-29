@@ -24,7 +24,7 @@ type UnauthorizedUserCommandHandler(_bot: ITelegramBotClient, _spotifyOptions: I
       LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
 
     let replyMarkup =
-      InlineKeyboardButton(Messages.Login, Url = loginRequest.ToUri().ToString())
+      InlineKeyboardButton(Buttons.Login, Url = loginRequest.ToUri().ToString())
       |> InlineKeyboardMarkup
 
     _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.LoginToSpotify, replyMarkup = replyMarkup)

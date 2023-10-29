@@ -65,6 +65,7 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
+    let sendMessage = Telegram.sendMessage _bot userId
     let sendKeyboard = Telegram.sendKeyboard _bot userId
     let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
     let sendButtons = Telegram.sendButtons _bot userId
@@ -91,18 +92,23 @@ type MessageService
       | _ ->
         match message.Text with
         | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard message
+        | Equals "/help" ->
+          sendMessage Messages.Help
+        | Equals "/guide" -> sendMessage Messages.Guide
+        | Equals "/privacy" -> sendMessage Messages.Privacy
+        | Equals "/faq" -> sendMessage Messages.FAQ
         | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
         | StartsWith "/include" -> validateUserLogin (includePlaylist replyToMessage) message
         | StartsWith "/exclude" -> validateUserLogin (excludePlaylist replyToMessage) message
         | StartsWith "/target" -> validateUserLogin (targetPlaylist replyToMessage) message
-        | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
-        | Equals Messages.CreatePreset -> askForReply Messages.SendPresetName
-        | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
-        | Equals Messages.MyPresets -> sendUserPresets sendButtons message
-        | Equals Messages.Settings -> sendSettingsMessage userId
-        | Equals Messages.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
-        | Equals Messages.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
-        | Equals Messages.TargetPlaylist -> askForReply Messages.SendExcludedPlaylist
+        | Equals Buttons.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
+        | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
+        | Equals Buttons.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
+        | Equals Buttons.MyPresets -> sendUserPresets sendButtons message
+        | Equals Buttons.Settings -> sendSettingsMessage userId
+        | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
+        | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
+        | Equals Buttons.TargetPlaylist -> askForReply Messages.SendExcludedPlaylist
         | Equals "Back" -> sendCurrentPresetInfo userId
         | _ -> replyToMessage "Unknown command"
     | _ -> Task.FromResult()

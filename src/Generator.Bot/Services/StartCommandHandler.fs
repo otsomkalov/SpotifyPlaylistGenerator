@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
+open System.Collections.Generic
 open System.Threading.Tasks
 open Generator.Bot
 open Domain.Core
@@ -7,12 +8,17 @@ open Domain.Workflows
 open Infrastructure
 open Infrastructure.Workflows
 open Infrastructure.Spotify
+open Microsoft.Extensions.Options
 open MongoDB.Driver
+open Resources
 open Shared.Services
+open Shared.Settings
 open SpotifyAPI.Web
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
+open Telegram.Bot.Types.ReplyMarkups
+open Domain.Extensions
 
 type StartCommand = { AuthState: Telegram.Core.AuthState; Text: string }
 type ProcessStartCommand = StartCommand -> Task<unit>
@@ -29,8 +35,11 @@ type StartCommandHandler
     loadPreset: Preset.Load,
     loadUser: User.Load,
     userExists: User.Exists,
-    _database: IMongoDatabase
+    _database: IMongoDatabase,
+    _spotifyOptions: IOptions<SpotifySettings>
   ) =
+
+  let _spotifySettings = _spotifyOptions.Value
 
   let sendMessageAsync sendKeyboard (message: Message) =
 
@@ -86,7 +95,22 @@ type StartCommandHandler
       if not userExists then
         do! createUserAsync message.From.Id
 
-      return! _unauthorizedUserCommandHandler.HandleAsync message
+      let scopes =
+        [ Scopes.PlaylistModifyPrivate
+          Scopes.PlaylistModifyPublic
+          Scopes.UserLibraryRead ]
+        |> List<string>
+
+      let loginRequest =
+        LoginRequest(_spotifySettings.CallbackUrl, _spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes)
+
+      let replyMarkup =
+        InlineKeyboardButton(Buttons.Login, Url = loginRequest.ToUri().ToString())
+        |> InlineKeyboardMarkup
+
+      return!
+        _bot.SendTextMessageAsync(ChatId(message.Chat.Id), Messages.Welcome, replyMarkup = replyMarkup)
+        |> Task.map ignore
     }
 
   let overwriteToken sendKeyboard (message: Message) stateKey =

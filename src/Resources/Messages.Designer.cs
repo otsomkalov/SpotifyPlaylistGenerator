@@ -60,83 +60,55 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to ➕ Create preset.
+        ///   Looks up a localized string similar to 
+        ///*Q:* Why tracks, that I&apos;ve added to playlist using Spotify, are not respected by the bot?
+        ///*A:* Bot uses caching in order not to bomb Spotify API with requests. Your playlist tracks is cached once a week. For the moment there is no possibility to force cache clean.
+        ///*Q:* Why sometimes it takes minutes to generate my playlist?
+        ///*A:* When cached playlist tracks expires, we need to fetch tracks from Spotify API, which takes some time.
+        ///        .
         /// </summary>
-        public static string CreatePreset {
+        public static string FAQ {
             get {
-                return ResourceManager.GetString("CreatePreset", resourceCulture);
+                return ResourceManager.GetString("FAQ", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to ➖ Disable recommendations.
+        ///   Looks up a localized string similar to 
+        ///*Your first preset*
+        ///In this guide, we are going to prepare your first preset that will do the next:
+        ///1. Include your liked tracks
+        ///2. Exclude already listened tracks
+        ///3. Get recommendations
+        ///4. Save to targeted playlist
+        ///Steps would be the next:
+        ///1. Login to the bot via Spotify
+        ///2. Click &quot;➕ Create preset&quot; keyboard button
+        ///3. Enter the name for your preset. You may use something like &quot;Recommendations.gen&quot;
+        ///4. You&apos;ll see the info about created preset. Lets configure it:
+        ///    1. By default, preset includes  [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string DisableRecommendations {
+        public static string Guide {
             get {
-                return ResourceManager.GetString("DisableRecommendations", resourceCulture);
+                return ResourceManager.GetString("Guide", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to ➕ Enable recommendations.
+        ///   Looks up a localized string similar to 
+        ///Bot can generate playlists from the other playlists or liked tracks and get Spotify recommendations for them
+        ///
+        ///The idea is based on concept called *presets*: set of *included playlists*, *excluded playlists* and *targeted playlists*:
+        ///1. *Targeted playlists* are your destination playlists for generated tracks
+        ///2. *Included playlists* are the sources for tracks
+        ///3. *Excluded playlists* tracks are removed from both recommended and included tracks
+        ///
+        ///Additionally, *preset* has the next options:
+        ///1. Include/ [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string EnableRecommendations {
+        public static string Help {
             get {
-                return ResourceManager.GetString("EnableRecommendations", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ➖ Exclude liked.
-        /// </summary>
-        public static string ExcludeLikedTracks {
-            get {
-                return ResourceManager.GetString("ExcludeLikedTracks", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ➖ Exclude playlist.
-        /// </summary>
-        public static string ExcludePlaylist {
-            get {
-                return ResourceManager.GetString("ExcludePlaylist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 🎵 Generate playlist.
-        /// </summary>
-        public static string GeneratePlaylist {
-            get {
-                return ResourceManager.GetString("GeneratePlaylist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ❌ Ignore liked.
-        /// </summary>
-        public static string IgnoreLikedTracks {
-            get {
-                return ResourceManager.GetString("IgnoreLikedTracks", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ➕ Include liked.
-        /// </summary>
-        public static string IncludeLikedTracks {
-            get {
-                return ResourceManager.GetString("IncludeLikedTracks", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ➕ Include playlist.
-        /// </summary>
-        public static string IncludePlaylist {
-            get {
-                return ResourceManager.GetString("IncludePlaylist", resourceCulture);
+                return ResourceManager.GetString("Help", resourceCulture);
             }
         }
         
@@ -168,29 +140,11 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Login.
-        /// </summary>
-        public static string Login {
-            get {
-                return ResourceManager.GetString("Login", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Login to Spotify to generate playlist.
         /// </summary>
         public static string LoginToSpotify {
             get {
                 return ResourceManager.GetString("LoginToSpotify", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 🗄️ My presets.
-        /// </summary>
-        public static string MyPresets {
-            get {
-                return ResourceManager.GetString("MyPresets", resourceCulture);
             }
         }
         
@@ -262,6 +216,18 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 
+        ///Bot needs you to log in into Spotify in order to perform some actions, including playlist generation.
+        ///Bot request 3 permissions from you in Spotify: modify public playlists, modify private playlists, read user library (liked tracks).
+        ///        .
+        /// </summary>
+        public static string Privacy {
+            get {
+                return ResourceManager.GetString("Privacy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➖ Recommendations are disabled.
         /// </summary>
         public static string RecommendationsDisabled {
@@ -325,38 +291,26 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to #️⃣ Set playlist size.
-        /// </summary>
-        public static string SetPlaylistSize {
-            get {
-                return ResourceManager.GetString("SetPlaylistSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ⚙ Settings.
-        /// </summary>
-        public static string Settings {
-            get {
-                return ResourceManager.GetString("Settings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 📩 Target playlist.
-        /// </summary>
-        public static string TargetPlaylist {
-            get {
-                return ResourceManager.GetString("TargetPlaylist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Updated.
         /// </summary>
         public static string Updated {
             get {
                 return ResourceManager.GetString("Updated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
+        ///Hello!
+        ///
+        ///To get more information about the bot use /help command.
+        ///
+        ///Use the link below to log in using Spotify and generate playlists.
+        ///        .
+        /// </summary>
+        public static string Welcome {
+            get {
+                return ResourceManager.GetString("Welcome", resourceCulture);
             }
         }
         
