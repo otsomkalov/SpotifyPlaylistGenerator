@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
+open Infrastructure
 open Microsoft.Extensions.Options
 open MongoDB.Driver
 open Shared.Settings
@@ -179,7 +180,7 @@ module Playlist =
       }
 
   let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
-    let database = connectionMultiplexer.GetDatabase 0
+    let database = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
     PlaylistId.value >> RedisKey >> database.ListLengthAsync
 
 [<RequireQualifiedAccess>]
@@ -275,7 +276,7 @@ module Preset =
 [<RequireQualifiedAccess>]
 module Auth =
   let initState (connectionMultiplexer: IConnectionMultiplexer) : Auth.InitState =
-    let database = connectionMultiplexer.GetDatabase 4
+    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
 
     fun userId ->
       task {
@@ -290,7 +291,7 @@ module Auth =
       }
 
   let tryGetInitedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.TryGetInitedAuth =
-    let database = connectionMultiplexer.GetDatabase 4
+    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
 
     fun state ->
       state
@@ -307,7 +308,7 @@ module Auth =
           ))
 
   let saveFulfilledAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.SaveFulfilledAuth =
-    let database = connectionMultiplexer.GetDatabase 4
+    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
 
     fun auth ->
       task {
@@ -336,7 +337,7 @@ module Auth =
       loginRequest.ToUri().ToString()
 
   let tryGetCompletedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.TryGetCompletedAuth =
-    let database = connectionMultiplexer.GetDatabase 4
+    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
 
     fun state ->
       state
@@ -363,7 +364,7 @@ module Auth =
       |> Task.map (fun r -> r.RefreshToken)
 
   let saveCompletedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.SaveCompletedAuth =
-    let database = connectionMultiplexer.GetDatabase 2
+    let database = connectionMultiplexer.GetDatabase Cache.tokensDatabase
 
     fun auth ->
       task {
