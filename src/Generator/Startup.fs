@@ -65,8 +65,6 @@ type Startup() =
     services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
     services
-      .AddScoped<UnauthorizedUserCommandHandler>()
-      .AddScoped<StartCommandHandler>()
       .AddScoped<GenerateCommandHandler>()
 
       .AddScoped<AddSourcePlaylistCommandHandler>()
@@ -87,12 +85,7 @@ type Startup() =
 
     services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
 
-    services.AddSingletonFunc<State.GetState, IConnectionMultiplexer>(State.getState)
-    services.AddSingletonFunc<State.SetState, IConnectionMultiplexer>(State.setState)
-
     services.AddSingletonFunc<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
-
-    services.AddSingletonFunc<Spotify.TokenProvider.CacheToken, IConnectionMultiplexer>(Spotify.TokenProvider.cacheToken)
 
     ()
 

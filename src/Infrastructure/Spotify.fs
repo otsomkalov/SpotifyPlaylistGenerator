@@ -9,7 +9,6 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Shared.Settings
 open SpotifyAPI.Web
-open StackExchange.Redis
 open Domain.Extensions
 open Infrastructure.Helpers
 
@@ -109,13 +108,3 @@ let createClientFromTokenResponse (spotifySettings: IOptions<SpotifySettings>) :
         .WithRetryHandler(retryHandler)
 
     config |> SpotifyClient :> ISpotifyClient
-
-module TokenProvider =
-  type CacheToken = UserId -> string -> Task<unit>
-
-  let cacheToken (connectionMultiplexer: IConnectionMultiplexer) : CacheToken =
-    fun userId token ->
-      let database = connectionMultiplexer.GetDatabase 1
-
-      database.StringSetAsync((userId |> UserId.value |> string), token, (TimeSpan.FromDays 7))
-      |> Task.map ignore

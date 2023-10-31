@@ -1,6 +1,7 @@
 ﻿namespace Generator.Extensions
 
 open System.Runtime.CompilerServices
+open Microsoft.Extensions.Primitives
 
 module ServiceCollection =
   open Microsoft.Extensions.DependencyInjection
@@ -92,3 +93,11 @@ module ServiceCollection =
         let service3 = sp.GetRequiredService<'TDep3>()
 
         factory service1 service2 service3)
+
+module IQueryCollection =
+
+  let (|QueryParam|_|) (stringValues: StringValues) =
+    if stringValues = StringValues.Empty then
+      None
+    else
+      Some(stringValues.ToString())
