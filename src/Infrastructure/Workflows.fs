@@ -69,11 +69,7 @@ module User =
         | true -> Task.FromResult()
         | false ->
           task {
-            let user = {
-              Id = userId
-              Presets = []
-              CurrentPresetId = None
-            }
+            let user = User.create userId
 
             let dbUser = user |> User.toDb
 

@@ -139,6 +139,11 @@ module Preset =
 module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
+  let create userId =
+    { Id = userId
+      CurrentPresetId = None
+      Presets = [] }
+
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
