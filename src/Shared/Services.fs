@@ -14,7 +14,7 @@ type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, create
     if _clientsByTelegramId.ContainsKey(telegramId) then
       _clientsByTelegramId[telegramId] |> Task.FromResult
     else
-      let cache = connectionMultiplexer.GetDatabase(1)
+      let cache = connectionMultiplexer.GetDatabase 2
 
       task {
         let! tokenValue = telegramId |> string |> cache.StringGetAsync
