@@ -25,6 +25,7 @@ type ReplyToMessage = string -> Task<unit>
 type SendKeyboard = string -> KeyboardButton seq seq -> Task<unit>
 type EditMessage = string -> MessageButton seq seq -> Task<unit>
 type AskForReply = string -> Task<unit>
+type SendLink = string -> string -> string -> Task<unit>
 
 let parseAction (str: string) =
   match str.Split("|") with

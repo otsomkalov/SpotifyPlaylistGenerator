@@ -27,6 +27,13 @@ module Task =
     }
 
 [<RequireQualifiedAccess>]
+module Option =
+  let taskMap (mapping: 'a -> Task<'b>) option =
+    match option with
+    | Some v -> mapping v |> Task.map Some
+    | None -> None |> Task.FromResult
+
+[<RequireQualifiedAccess>]
 module Result =
   let ofOption error option =
     match option with
@@ -35,11 +42,7 @@ module Result =
 
   let taskMap mappingTask result =
     match result with
-    | Ok v ->
-      task {
-        let! value = mappingTask v
-        return Ok value
-      }
+    | Ok v -> mappingTask v |> Task.map Ok
     | Error e -> Error e |> Task.FromResult
 
   let taskBind binder result =

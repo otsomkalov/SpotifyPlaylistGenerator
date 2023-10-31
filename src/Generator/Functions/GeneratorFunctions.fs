@@ -25,8 +25,8 @@ type GeneratorFunctions
 
   [<FunctionName("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, logger: ILogger) =
-    let playlistsCache = connectionMultiplexer.GetDatabase 0
-    let likedTracksCache = connectionMultiplexer.GetDatabase 3
+    let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
+    let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase
 
     task {
       let! client = _spotifyClientProvider.GetAsync message.TelegramId

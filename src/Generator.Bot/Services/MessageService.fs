@@ -7,29 +7,33 @@ open Infrastructure.Workflows
 open Generator.Bot
 open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
+open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
 open MongoDB.Driver
 open Shared.Services
+open Shared.Settings
+open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
 open Resources
 open Telegram.Bot.Types.Enums
+open Domain.Extensions
 
 type MessageService
   (
-    _startCommandHandler: StartCommandHandler,
     _generateCommandHandler: GenerateCommandHandler,
     _addSourcePlaylistCommandHandler: AddSourcePlaylistCommandHandler,
     _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
     _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
-    _unauthorizedUserCommandHandler: UnauthorizedUserCommandHandler,
     _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _bot: ITelegramBotClient,
     loadUser: User.Load,
     loadPreset: Preset.Load,
-    _database: IMongoDatabase
+    _database: IMongoDatabase,
+    _connectionMultiplexer: IConnectionMultiplexer,
+    _spotifyOptions: IOptions<SpotifySettings>
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -51,13 +55,13 @@ type MessageService
     | CommandData data -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage data message
     | _ -> replyToMessage "You have entered empty playlist url"
 
-  let validateUserLogin handleCommandFunction (message: Message) =
+  let validateUserLogin sendLoginMessage handleCommandFunction (message: Message) =
     task{
       let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
 
       return!
         if spotifyClient = null then
-          _unauthorizedUserCommandHandler.HandleAsync message
+          sendLoginMessage()
         else
           handleCommandFunction message
     }
@@ -65,6 +69,7 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
+    let sendLink = Telegram.sendLink _bot userId
     let sendKeyboard = Telegram.sendKeyboard _bot userId
     let replyToMessage = Telegram.replyToMessage _bot userId message.MessageId
     let sendButtons = Telegram.sendButtons _bot userId
@@ -79,6 +84,15 @@ type MessageService
       Telegram.Workflows.sendPresetInfo loadPreset sendButtons
     let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
+    let sendLoginMessage () =
+      let initState = Auth.initState _connectionMultiplexer
+      let getLoginLink = Auth.getLoginLink _spotifyOptions
+
+      let getLoginLink = Domain.Workflows.Auth.getLoginLink initState getLoginLink
+
+      getLoginLink userId
+      |> Task.bind (sendLink Messages.LoginToSpotify Messages.Login)
+
     match message.Type with
     | MessageType.Text ->
       match isNull message.ReplyToMessage with
@@ -90,14 +104,31 @@ type MessageService
         | Equals Messages.SendPresetName -> createPreset message.Text
       | _ ->
         match message.Text with
-        | StartsWith "/start" -> _startCommandHandler.HandleAsync sendKeyboard message
-        | StartsWith "/generate" -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
-        | StartsWith "/include" -> validateUserLogin (includePlaylist replyToMessage) message
-        | StartsWith "/exclude" -> validateUserLogin (excludePlaylist replyToMessage) message
-        | StartsWith "/target" -> validateUserLogin (targetPlaylist replyToMessage) message
+        | Equals "/start" ->
+          sendLoginMessage()
+        | CommandWithData "/start" state ->
+          let tryGetAuth = Auth.tryGetCompletedAuth _connectionMultiplexer
+          let getToken = Auth.getToken _spotifyOptions
+          let saveCompletedAuth = Auth.saveCompletedAuth _connectionMultiplexer
+          let createUserIfNotExists = User.createIfNotExists _database
+          let sendErrorMessage =
+            function
+            | Auth.CompleteError.StateNotFound ->
+              replyToMessage "State not found. Try to login via fresh link."
+            | Auth.CompleteError.StateDoesntBelongToUser ->
+              replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
+
+          let completeAuth = Domain.Workflows.Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
+
+          completeAuth userId (state |> Auth.State.parse)
+          |> Task.bind (Result.either (fun () -> sendCurrentPresetInfo userId) sendErrorMessage)
+        | StartsWith "/generate" -> validateUserLogin sendLoginMessage (_generateCommandHandler.HandleAsync replyToMessage) message
+        | StartsWith "/include" -> validateUserLogin sendLoginMessage (includePlaylist replyToMessage) message
+        | StartsWith "/exclude" -> validateUserLogin sendLoginMessage (excludePlaylist replyToMessage) message
+        | StartsWith "/target" -> validateUserLogin sendLoginMessage (targetPlaylist replyToMessage) message
         | Equals Messages.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
         | Equals Messages.CreatePreset -> askForReply Messages.SendPresetName
-        | Equals Messages.GeneratePlaylist -> validateUserLogin (_generateCommandHandler.HandleAsync replyToMessage) message
+        | Equals Messages.GeneratePlaylist -> validateUserLogin sendLoginMessage (_generateCommandHandler.HandleAsync replyToMessage) message
         | Equals Messages.MyPresets -> sendUserPresets sendButtons message
         | Equals Messages.Settings -> sendSettingsMessage userId
         | Equals Messages.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist

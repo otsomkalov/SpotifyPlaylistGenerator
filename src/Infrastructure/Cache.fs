@@ -9,6 +9,15 @@ open StackExchange.Redis
 open Domain.Extensions
 open Infrastructure.Helpers
 
+[<Literal>]
+let playlistsDatabase = 0
+[<Literal>]
+let likedTracksDatabase = 1
+[<Literal>]
+let tokensDatabase = 2
+[<Literal>]
+let authDatabase = 3
+
 let private listCachedTracks (cache: IDatabase) =
   fun key -> key |> RedisKey |> cache.ListRangeAsync |> Task.map (List.ofArray >> List.map (string >> TrackId))
 

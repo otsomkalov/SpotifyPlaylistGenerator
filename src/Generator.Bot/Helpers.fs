@@ -10,10 +10,12 @@ let (|StartsWith|_|) (substring: string) (str: string) =
     None
 
 let (|Equals|_|) (toCompare: string) (source: string) =
-  if source = toCompare then
-    Some()
-  else
-    None
+  if source = toCompare then Some() else None
+
+let (|CommandWithData|_|) (command: string) (input: string) =
+  match input.Split(" ") with
+  | [| inputCommand; data |] -> if inputCommand = command then Some(data) else None
+  | _ -> None
 
 let (|CommandData|_|) (command: string) =
   let commandParts = command.Split(" ")
