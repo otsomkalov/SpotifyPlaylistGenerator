@@ -100,9 +100,9 @@ module Playlist =
     | MissingFromSpotify of MissingFromSpotifyError
     | AccessError of AccessError
 
-  type IncludePlaylist = PresetId -> RawPlaylistId -> Async<Result<IncludedPlaylist, IncludePlaylistError>>
-  type ExcludePlaylist = PresetId -> RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
-  type TargetPlaylist = PresetId -> RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
+  type IncludePlaylist = PresetId -> RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
   type GenerateError =
     | NoIncludedTracks
@@ -124,7 +124,9 @@ module Preset =
 
   type Validate = Preset -> ValidationResult
 
-  type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+  type IncludeLikedTracks = PresetId -> Task<unit>
+  type ExcludeLikedTracks = PresetId -> Task<unit>
+  type IgnoreLikedTracks = PresetId -> Task<unit>
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<Preset>
@@ -140,6 +142,7 @@ module User =
 module IncludedPlaylist =
   type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Remove = PresetId -> ReadablePlaylistId -> Task<unit>
 
   let fromSpotifyPlaylist =
     function
@@ -154,6 +157,10 @@ module IncludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Remove = PresetId -> ReadablePlaylistId -> Task<unit>
+
   let fromSpotifyPlaylist =
     function
     | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
@@ -167,6 +174,8 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
   type AppendTracks = PresetId -> TargetedPlaylistId -> Task<unit>
   type OverwriteTracks = PresetId -> TargetedPlaylistId -> Task<unit>

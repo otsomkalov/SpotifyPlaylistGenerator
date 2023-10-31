@@ -41,7 +41,7 @@ type SetTargetPlaylistCommandHandler
       let targetPlaylist =
         Playlist.targetPlaylist parsePlaylistId checkPlaylistExistsInSpotify loadPreset updatePreset
 
-      let! targetPlaylistResult = targetPlaylist currentPresetId (Playlist.RawPlaylistId data) |> Async.StartAsTask
+      let! targetPlaylistResult = targetPlaylist currentPresetId (Playlist.RawPlaylistId data)
 
       return!
         match targetPlaylistResult with

@@ -2,6 +2,7 @@
 
 open System.Threading.Tasks
 open Domain.Core
+open Microsoft.FSharp.Core
 
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
@@ -13,25 +14,13 @@ type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 type SendSettingsMessage = UserId -> Task<unit>
 
 type SendPresetInfo = PresetId -> Task<unit>
-type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
 type ShowIncludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-type EnableIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-type DisableIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-type RemoveIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-
 type ShowExcludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
-type RemoveExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
 type ShowTargetedPlaylists = PresetId -> Page -> Task<unit>
 type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type AppendToTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type OverwriteTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-type RemoveTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
-
-type EnableRecommendations = PresetId -> Task<unit>
-type DisableRecommendations = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module CallbackQuery =
@@ -48,6 +37,8 @@ type Action =
 
   | ShowExcludedPlaylists of presetId: PresetId * page: Page
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | EnableExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
+  | DisableExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
   | ShowTargetedPlaylists of presetId: PresetId * page: Page

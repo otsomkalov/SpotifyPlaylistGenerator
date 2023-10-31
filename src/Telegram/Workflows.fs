@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
+open Microsoft.FSharp.Core
 open Resources
 open Telegram.Constants
 open Telegram.Core
@@ -26,47 +27,45 @@ type EditMessage = string -> MessageButton seq seq -> Task<unit>
 type AskForReply = string -> Task<unit>
 
 let parseAction (str: string) =
-  match str with
-  | _ ->
-    match str.Split("|") with
-    | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
-    | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
-    | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
+  match str.Split("|") with
+  | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
+  | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
+  | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
 
-    | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
-    | [| "p"; presetId; "ip"; playlistId; "i" |] ->
-      Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; presetId; "ip"; playlistId; "e" |] ->
-      Action.EnableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; presetId; "ip"; playlistId; "d" |] ->
-      Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
-      Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+  | [| "p"; presetId; "ip"; playlistId; "i" |] ->
+    Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; presetId; "ip"; playlistId; "e" |] ->
+    Action.EnableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; presetId; "ip"; playlistId; "d" |] ->
+    Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
+    Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; presetId; "ep"; playlistId; "i" |] ->
-      Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
-    | [| "p"; id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
-    | [| "p"; presetId; "ep"; playlistId; "rm" |] ->
-      Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; presetId; "ep"; playlistId; "i" |] ->
+    Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+  | [| "p"; id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+  | [| "p"; presetId; "ep"; playlistId; "rm" |] ->
+    Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
-    | [| "p"; presetId; "tp"; playlistId; "i" |] ->
-      Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; presetId; "tp"; playlistId; "a" |] ->
-      Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; presetId; "tp"; playlistId; "o" |] ->
-      Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
-    | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
-      Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+  | [| "p"; id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
+  | [| "p"; presetId; "tp"; playlistId; "i" |] ->
+    Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+  | [| "p"; presetId; "tp"; playlistId; "a" |] ->
+    Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+  | [| "p"; presetId; "tp"; playlistId; "o" |] ->
+    Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+  | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
+    Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
 
-    | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
+  | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
+  | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
+  | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
 
-    | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
+  | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
+  | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
 
-    | [|"p"|] -> Action.ShowUserPresets
+  | [|"p"|] -> Action.ShowUserPresets
 
 let sendUserPresets (sendButtons: SendButtons) (loadUser: User.Load) : SendUserPresets =
   fun userId ->
@@ -209,25 +208,49 @@ let showIncludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       return! editMessage $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
     }
 
-let enableIncludedPlaylist (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : EnableIncludedPlaylist =
-  fun presetId playlistId ->
-    task {
-      do! enableIncludedPlaylist presetId playlistId
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  let enable (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : IncludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! enableIncludedPlaylist presetId playlistId
 
-      do! answerCallbackQuery "Disabled"
+        do! answerCallbackQuery "Disabled"
 
-      return! showIncludedPlaylist presetId playlistId
-    }
+        return! showIncludedPlaylist presetId playlistId
+      }
 
-let disableIncludedPlaylist (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : DisableIncludedPlaylist =
-  fun presetId playlistId ->
-    task {
-      do! disableIncludedPlaylist presetId playlistId
+  let disable (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable) (answerCallbackQuery: AnswerCallbackQuery) (showIncludedPlaylist: ShowIncludedPlaylist) : IncludedPlaylist.Disable =
+    fun presetId playlistId ->
+      task {
+        do! disableIncludedPlaylist presetId playlistId
 
-      do! answerCallbackQuery "Disabled"
+        do! answerCallbackQuery "Disabled"
 
-      return! showIncludedPlaylist presetId playlistId
-    }
+        return! showIncludedPlaylist presetId playlistId
+      }
+
+[<RequireQualifiedAccess>]
+module ExcludedPlaylist =
+  let enable (enableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Enable) (answerCallbackQuery: AnswerCallbackQuery) (showExcludedPlaylist: ShowExcludedPlaylist) : ExcludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! enableExcludedPlaylist presetId playlistId
+
+        do! answerCallbackQuery "Disabled"
+
+        return! showExcludedPlaylist presetId playlistId
+      }
+
+  let disable (disableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Disable) (answerCallbackQuery: AnswerCallbackQuery) (showExcludedPlaylist: ShowExcludedPlaylist) : ExcludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! disableExcludedPlaylist presetId playlistId
+
+        do! answerCallbackQuery "Disabled"
+
+        return! showExcludedPlaylist presetId playlistId
+      }
 
 let showExcludedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) : ShowExcludedPlaylists =
   let createButtonFromPlaylist presetId =
@@ -269,17 +292,26 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       return! editMessage $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
     }
 
-let setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (setLikedTracksHandling: Preset.SetLikedTracksHandling) (sendPresetInfo : SendPresetInfo) : SetLikedTracksHandling =
-  fun presetId likedTracksHandling ->
+let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (sendPresetInfo : SendPresetInfo) setLikedTracksHandling =
+  fun presetId ->
     task{
-      do! setLikedTracksHandling presetId likedTracksHandling
+      do! setLikedTracksHandling presetId
 
       do! answerCallbackQuery Messages.Updated
 
       return! sendPresetInfo presetId
     }
 
-let enableRecommendations (enableRecommendations: Preset.EnableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : EnableRecommendations =
+let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: Preset.IncludeLikedTracks) : Preset.IncludeLikedTracks =
+  setLikedTracksHandling answerCallbackQuery includeLikedTracks sendPresetInfo
+
+let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: Preset.ExcludeLikedTracks) : Preset.ExcludeLikedTracks =
+  setLikedTracksHandling answerCallbackQuery excludeLikedTracks sendPresetInfo
+
+let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: Preset.IgnoreLikedTracks) : Preset.IgnoreLikedTracks =
+  setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
+
+let enableRecommendations (enableRecommendations: Preset.EnableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : Preset.EnableRecommendations =
   fun presetId ->
     task{
       do! enableRecommendations presetId
@@ -289,7 +321,7 @@ let enableRecommendations (enableRecommendations: Preset.EnableRecommendations) 
       return! sendPresetInfo presetId
     }
 
-let disableRecommendations (disableRecommendations: Preset.DisableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : DisableRecommendations =
+let disableRecommendations (disableRecommendations: Preset.DisableRecommendations) (answerCallbackQuery : AnswerCallbackQuery) (sendPresetInfo: SendPresetInfo) : Preset.DisableRecommendations =
   fun presetId ->
     task{
       do! disableRecommendations presetId
@@ -354,6 +386,25 @@ let sendCurrentPresetInfo
 
           sendKeyboard "You did not select current preset" buttons
     }
+
+let private getPlaylistButtons presetId playlistId playlistType enabled =
+  let presetId = presetId |> PresetId.value
+  let buttonDataTemplate = sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+
+  let enableDisableButtonText, enableDisableButtonData =
+    match enabled with
+    | true -> "Disable", buttonDataTemplate "d"
+    | false -> "Enable", buttonDataTemplate "e"
+
+  seq {
+    seq {
+      MessageButton(enableDisableButtonText, enableDisableButtonData )
+      MessageButton("Remove", buttonDataTemplate "rm")
+    }
+
+    seq { MessageButton("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
+  }
+
 let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (countPlaylistTracks: Playlist.CountTracks) : ShowIncludedPlaylist =
   fun presetId playlistId ->
     task {
@@ -367,17 +418,7 @@ let showIncludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       let messageText =
         sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
 
-      let buttons =
-        seq {
-          seq {
-            MessageButton(
-              "Remove",
-              sprintf "p|%s|ip|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
-            )
-          }
-
-          seq { MessageButton("<< Back >>", sprintf "p|%s|ip|%i" (presetId |> PresetId.value) 0) }
-        }
+      let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
 
       return! editMessage messageText buttons
     }
@@ -395,19 +436,9 @@ let showExcludedPlaylist (editMessage: EditMessage) (loadPreset: Preset.Load) (c
       let messageText =
         sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
 
-      let replyMarkup =
-        seq {
-          seq {
-            MessageButton(
-              "Remove",
-              sprintf "p|%s|ep|%s|rm" (presetId |> PresetId.value) (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
-            )
-          }
+      let buttons = getPlaylistButtons presetId playlistId "ep" excludedPlaylist.Enabled
 
-          seq { MessageButton("<< Back >>", sprintf "p|%s|ep|%i" (presetId |> PresetId.value) 0) }
-        }
-
-      return! editMessage messageText replyMarkup
+      return! editMessage messageText buttons
     }
 
 let showTargetedPlaylist
@@ -449,11 +480,11 @@ let showTargetedPlaylist
       return! editMessage messageText buttons
     }
 
-let removeIncludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : RemoveIncludedPlaylist =
+let removeIncludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : IncludedPlaylist.Remove =
   fun presetId playlistId ->
     answerCallbackQuery "Not implemented yet"
 
-let removeExcludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : RemoveExcludedPlaylist =
+let removeExcludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : ExcludedPlaylist.Remove =
   fun presetId playlistId ->
     answerCallbackQuery "Not implemented yet"
 
@@ -461,7 +492,7 @@ let removeTargetedPlaylist
   (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
   (showTargetedPlaylists: ShowTargetedPlaylists)
-  : RemoveTargetedPlaylist =
+  : TargetedPlaylist.Remove =
   fun presetId playlistId ->
     task {
       do! removeTargetedPlaylist presetId playlistId
@@ -474,7 +505,7 @@ let appendToTargetedPlaylist
   (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
   (answerCallbackQuery: AnswerCallbackQuery)
   (showTargetedPlaylist: ShowTargetedPlaylist)
-  : AppendToTargetedPlaylist =
+  : TargetedPlaylist.AppendTracks =
     fun presetId playlistId ->
     task {
       do! appendToTargetedPlaylist presetId playlistId
@@ -486,7 +517,8 @@ let appendToTargetedPlaylist
 let overwriteTargetedPlaylist
   (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylist: ShowTargetedPlaylist) : OverwriteTargetedPlaylist=
+  (showTargetedPlaylist: ShowTargetedPlaylist)
+  : TargetedPlaylist.OverwriteTracks =
   fun presetId playlistId ->
     task {
       do! overwriteTargetedPlaylist presetId playlistId
