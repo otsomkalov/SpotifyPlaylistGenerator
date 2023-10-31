@@ -159,7 +159,8 @@ module Preset =
 
         let updatedUser =
           { user with
-              Presets = user.Presets |> List.except [ userPreset ] }
+              Presets = user.Presets |> List.except [ userPreset ]
+              CurrentPresetId = user.CurrentPresetId |> Option.filter (fun currentId -> currentId <> presetId) }
 
         do! updateUser updatedUser
 

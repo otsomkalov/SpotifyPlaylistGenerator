@@ -29,7 +29,7 @@ Preset settings:
         <value>Updated</value>
     </data>
     <data name="LoginToSpotify" xml:space="preserve">
-        <value>Login to Spotify to generate playlist</value>
+        <value>Seems like my access to your Spotify library has expired. Please, re-login using link below</value>
     </data>
     <data name="SendPlaylistSize" xml:space="preserve">
         <value>Send me new playlist size in reply to this message</value>
@@ -61,7 +61,7 @@ Preset settings:
     <data name="SendExcludedPlaylist" xml:space="preserve">
         <value>Send id/url of Spotify playlist to exclude it tracks from generation</value>
     </data>
-    <data name="SendTargetPlaylist" xml:space="preserve">
+    <data name="SendTargetedPlaylist" xml:space="preserve">
         <value>Send id/url of Spotify playlist to save generated tracks into</value>
     </data>
     <data name="PlaylistIdCannotBeParsed">

@@ -20,6 +20,10 @@ open Resources
 open Telegram.Bot.Types.Enums
 open Domain.Extensions
 
+type AuthState =
+  | Authorized
+  | Unauthorized
+
 type MessageService
   (
     _generateCommandHandler: GenerateCommandHandler,
@@ -66,6 +70,17 @@ type MessageService
           handleCommandFunction message
     }
 
+  let getAuthState (message: Message) =
+    task{
+      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
+
+      return
+        if spotifyClient = null then
+          AuthState.Unauthorized
+        else
+          AuthState.Authorized
+    }
+
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
@@ -92,54 +107,79 @@ type MessageService
       let getLoginLink = Domain.Workflows.Auth.getLoginLink initState getLoginLink
 
       getLoginLink userId
-      |> Task.bind (sendLink Messages.LoginToSpotify Messages.Login)
+      |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
-    match message.Type with
-    | MessageType.Text ->
-      match isNull message.ReplyToMessage with
-      | false ->
-        match message.ReplyToMessage.Text with
-        | Equals Messages.SendPlaylistSize -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
-        | Equals Messages.SendIncludedPlaylist -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
-        | Equals Messages.SendExcludedPlaylist -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
-        | Equals Messages.SendPresetName -> createPreset message.Text
-      | _ ->
-        match message.Text with
-        | Equals "/start" ->
-          sendLoginMessage()
-        | CommandWithData "/start" state ->
-          let tryGetAuth = Auth.tryGetCompletedAuth _connectionMultiplexer
-          let getToken = Auth.getToken _spotifyOptions
-          let saveCompletedAuth = Auth.saveCompletedAuth _connectionMultiplexer
-          let createUserIfNotExists = User.createIfNotExists _database
-          let sendErrorMessage =
-            function
-            | Auth.CompleteError.StateNotFound ->
-              replyToMessage "State not found. Try to login via fresh link."
-            | Auth.CompleteError.StateDoesntBelongToUser ->
-              replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
+    task{
+      let! authState = getAuthState message
 
-          let completeAuth = Domain.Workflows.Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
+      return!
+        match message.Type with
+        | MessageType.Text ->
+          match isNull message.ReplyToMessage with
+          | false ->
+            match (message.ReplyToMessage.Text, authState) with
+            | Equals Messages.SendPlaylistSize, _ -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
+            | Equals Messages.SendIncludedPlaylist, Authorized -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendIncludedPlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Messages.SendExcludedPlaylist, Authorized -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendExcludedPlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendTargetedPlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Messages.SendPresetName, _ -> createPreset message.Text
+          | _ ->
+            match (message.Text, authState) with
+            | Equals "/start", Unauthorized ->
+              let initState = Auth.initState _connectionMultiplexer
+              let getLoginLink = Auth.getLoginLink _spotifyOptions
 
-          completeAuth userId (state |> Auth.State.parse)
-          |> Task.bind (Result.either (fun () -> sendCurrentPresetInfo userId) sendErrorMessage)
-        | Equals "/help" ->
-          sendMessage Messages.Help
-        | Equals "/guide" -> sendMessage Messages.Guide
-        | Equals "/privacy" -> sendMessage Messages.Privacy
-        | Equals "/faq" -> sendMessage Messages.FAQ
-        | StartsWith "/generate" -> validateUserLogin sendLoginMessage (_generateCommandHandler.HandleAsync replyToMessage) message
-        | StartsWith "/include" -> validateUserLogin sendLoginMessage (includePlaylist replyToMessage) message
-        | StartsWith "/exclude" -> validateUserLogin sendLoginMessage (excludePlaylist replyToMessage) message
-        | StartsWith "/target" -> validateUserLogin sendLoginMessage (targetPlaylist replyToMessage) message
-        | Equals Buttons.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
-        | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
-        | Equals Buttons.GeneratePlaylist -> validateUserLogin sendLoginMessage (_generateCommandHandler.HandleAsync replyToMessage) message
-        | Equals Buttons.MyPresets -> sendUserPresets sendButtons message
-        | Equals Buttons.Settings -> sendSettingsMessage userId
-        | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
-        | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
-        | Equals Buttons.TargetPlaylist -> askForReply Messages.SendExcludedPlaylist
-        | Equals "Back" -> sendCurrentPresetInfo userId
-        | _ -> replyToMessage "Unknown command"
-    | _ -> Task.FromResult()
+              let getLoginLink = Domain.Workflows.Auth.getLoginLink initState getLoginLink
+
+              getLoginLink userId
+              |> Task.bind (sendLink Messages.Welcome Buttons.Login)
+            | Equals "/start", Authorized ->
+              sendCurrentPresetInfo userId
+            | CommandWithData "/start" state, _ ->
+              let tryGetAuth = Auth.tryGetCompletedAuth _connectionMultiplexer
+              let getToken = Auth.getToken _spotifyOptions
+              let saveCompletedAuth = Auth.saveCompletedAuth _connectionMultiplexer
+              let createUserIfNotExists = User.createIfNotExists _database
+              let sendErrorMessage =
+                function
+                | Auth.CompleteError.StateNotFound ->
+                  replyToMessage "State not found. Try to login via fresh link."
+                | Auth.CompleteError.StateDoesntBelongToUser ->
+                  replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
+
+              let completeAuth = Domain.Workflows.Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
+
+              completeAuth userId (state |> Auth.State.parse)
+              |> Task.bind (Result.either (fun () -> sendCurrentPresetInfo userId) sendErrorMessage)
+            | Equals "/help", _ ->
+              sendMessage Messages.Help
+            | Equals "/guide", _ -> sendMessage Messages.Guide
+            | Equals "/privacy", _ -> sendMessage Messages.Privacy
+            | Equals "/faq", _ -> sendMessage Messages.FAQ
+            | StartsWith "/generate", Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
+            | StartsWith "/generate", Unauthorized -> sendLoginMessage()
+            | StartsWith "/include", Authorized -> includePlaylist replyToMessage message
+            | StartsWith "/include", Unauthorized -> sendLoginMessage()
+            | StartsWith "/exclude", Authorized -> excludePlaylist replyToMessage message
+            | StartsWith "/exclude", Unauthorized -> sendLoginMessage()
+            | StartsWith "/target", Authorized -> targetPlaylist replyToMessage message
+            | StartsWith "/target", Unauthorized -> sendLoginMessage ()
+            | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
+            | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
+            | Equals Buttons.GeneratePlaylist, Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
+            | Equals Buttons.GeneratePlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message
+            | Equals Buttons.Settings, _ -> sendSettingsMessage userId
+            | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
+            | Equals Buttons.IncludePlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Buttons.ExcludePlaylist, Authorized -> askForReply Messages.SendExcludedPlaylist
+            | Equals Buttons.ExcludePlaylist, Unauthorized -> sendLoginMessage()
+            | Equals Buttons.TargetPlaylist, Authorized -> askForReply Messages.SendTargetedPlaylist
+            | Equals Buttons.TargetPlaylist, Unauthorized -> sendLoginMessage()
+            | Equals "Back", _ -> sendCurrentPresetInfo userId
+            | _ -> replyToMessage "Unknown command"
+        | _ -> Task.FromResult()
+    }

@@ -140,7 +140,7 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Login to Spotify to generate playlist.
+        ///   Looks up a localized string similar to Seems like my access to your Spotify library has expired. Please, re-login using link below.
         /// </summary>
         public static string LoginToSpotify {
             get {
@@ -284,9 +284,9 @@ namespace Resources {
         /// <summary>
         ///   Looks up a localized string similar to Send id/url of Spotify playlist to save generated tracks into.
         /// </summary>
-        public static string SendTargetPlaylist {
+        public static string SendTargetedPlaylist {
             get {
-                return ResourceManager.GetString("SendTargetPlaylist", resourceCulture);
+                return ResourceManager.GetString("SendTargetedPlaylist", resourceCulture);
             }
         }
         
