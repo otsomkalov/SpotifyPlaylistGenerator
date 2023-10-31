@@ -1,39 +1,44 @@
 ﻿namespace Generator
 
+open System.Threading.Tasks
+open Domain
+open Domain.Extensions
 open Infrastructure
-open System
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Extensions.Http
 open Microsoft.Extensions.Options
 open Shared.Settings
-open SpotifyAPI.Web
+open Generator.Extensions.IQueryCollection
+open StackExchange.Redis
 
-type SpotifyFunctions
-  (
-    _spotifyOptions: IOptions<SpotifySettings>,
-    _telegramOptions: IOptions<TelegramSettings>,
-    setState: State.SetState
-  ) =
-
-  let _spotifySettings = _spotifyOptions.Value
+type SpotifyFunctions(_telegramOptions: IOptions<TelegramSettings>, _connectionMultiplexer: IConnectionMultiplexer) =
 
   let _telegramSettings = _telegramOptions.Value
 
   [<FunctionName("HandleCallbackAsync")>]
   member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "spotify/callback")>] request: HttpRequest) =
-    task {
-      let code = request.Query["code"]
+    let onSuccess (auth: Domain.Core.Auth.Fulfilled) =
+      RedirectResult($"{_telegramSettings.BotUrl}?start={(auth.State |> Domain.Core.Auth.State.value)}", true) :> IActionResult
 
-      let! tokenResponse =
-        (_spotifySettings.ClientId, _spotifySettings.ClientSecret, code, _spotifySettings.CallbackUrl)
-        |> AuthorizationCodeTokenRequest
-        |> OAuthClient().RequestToken
+    let onError error =
+      match error with
+      | Core.Auth.StateNotFound -> BadRequestObjectResult("State not found in the cache") :> IActionResult
 
-      let state = State.StateKey.create
+    match request.Query["state"], request.Query["code"] with
+    | QueryParam state, QueryParam code ->
+      let tryGetAuth = Infrastructure.Workflows.Auth.tryGetInitedAuth _connectionMultiplexer
 
-      do! setState state tokenResponse.RefreshToken
+      let saveCompletedAuth =
+        Infrastructure.Workflows.Auth.saveFulfilledAuth _connectionMultiplexer
 
-      return RedirectResult($"{_telegramSettings.BotUrl}?start={(state |> State.StateKey.value)}", true)
-    }
+      let addCode = Domain.Workflows.Auth.fulfill tryGetAuth saveCompletedAuth
+
+      addCode (state |> Domain.Core.Auth.State.parse) code
+      |> TaskResult.either onSuccess onError
+    | QueryParam _, _ -> BadRequestObjectResult("Code is empty") :> IActionResult |> Task.FromResult
+    | _, QueryParam _ -> BadRequestObjectResult("State is empty") :> IActionResult |> Task.FromResult
+    | _, _ ->
+      BadRequestObjectResult("State and code are empty") :> IActionResult
+      |> Task.FromResult

@@ -37,7 +37,7 @@ type AddSourcePlaylistCommandHandler
 
       let rawPlaylistId = Playlist.RawPlaylistId data
 
-      let! includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId |> Async.StartAsTask
+      let! includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId
 
       return!
         match includePlaylistResult with

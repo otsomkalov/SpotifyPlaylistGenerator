@@ -1,6 +1,7 @@
 ﻿module Domain.Core
 
 open System.Threading.Tasks
+open shortid
 
 type UserId = UserId of int64
 type PlaylistId = PlaylistId of string
@@ -100,9 +101,9 @@ module Playlist =
     | MissingFromSpotify of MissingFromSpotifyError
     | AccessError of AccessError
 
-  type IncludePlaylist = PresetId -> RawPlaylistId -> Async<Result<IncludedPlaylist, IncludePlaylistError>>
-  type ExcludePlaylist = PresetId -> RawPlaylistId -> Async<Result<ExcludedPlaylist, ExcludePlaylistError>>
-  type TargetPlaylist = PresetId -> RawPlaylistId -> Async<Result<TargetedPlaylist, TargetPlaylistError>>
+  type IncludePlaylist = PresetId -> RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
   type GenerateError =
     | NoIncludedTracks
@@ -124,7 +125,9 @@ module Preset =
 
   type Validate = Preset -> ValidationResult
 
-  type SetLikedTracksHandling = PresetId -> PresetSettings.LikedTracksHandling -> Task<unit>
+  type IncludeLikedTracks = PresetId -> Task<unit>
+  type ExcludeLikedTracks = PresetId -> Task<unit>
+  type IgnoreLikedTracks = PresetId -> Task<unit>
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<Preset>
@@ -136,10 +139,16 @@ module Preset =
 module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
+  let create userId =
+    { Id = userId
+      CurrentPresetId = None
+      Presets = [] }
+
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Remove = PresetId -> ReadablePlaylistId -> Task<unit>
 
   let fromSpotifyPlaylist =
     function
@@ -154,6 +163,10 @@ module IncludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Remove = PresetId -> ReadablePlaylistId -> Task<unit>
+
   let fromSpotifyPlaylist =
     function
     | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
@@ -167,6 +180,8 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
+  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
   type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
   type AppendTracks = PresetId -> TargetedPlaylistId -> Task<unit>
   type OverwriteTracks = PresetId -> TargetedPlaylistId -> Task<unit>
@@ -180,3 +195,36 @@ module TargetedPlaylist =
         Enabled = true
         Overwrite = false }
       |> Some
+
+[<RequireQualifiedAccess>]
+module Auth =
+  type State = private State of string
+
+  [<RequireQualifiedAccess>]
+  module State =
+    let create () = ShortId.Generate() |> State
+
+    let parse str = State str
+
+    let value (State key) = key
+
+  type Inited = { State: State; UserId: UserId }
+
+  type GetLoginLink = UserId -> Task<string>
+
+  type Fulfilled =
+    { UserId: UserId
+      State: State
+      Code: string }
+
+  type FulfillmentError = | StateNotFound
+
+  type Fulfill = State -> string -> Task<Result<Fulfilled, FulfillmentError>>
+
+  type CompleteError =
+    | StateNotFound
+    | StateDoesntBelongToUser
+
+  type Completed = { UserId: UserId; Token: string }
+
+  type Complete = UserId -> State -> Task<Result<unit, CompleteError>>

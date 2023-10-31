@@ -98,6 +98,15 @@ let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallba
 
       return ()
     }
+let sendLink (bot: ITelegramBotClient) userId : SendLink =
+  fun text linkText link ->
+    bot.SendTextMessageAsync(
+      (userId |> UserId.value |> ChatId),
+      text |> escapeMarkdownString,
+      ParseMode.MarkdownV2,
+      replyMarkup = (InlineKeyboardButton(linkText, Url = link) |> Seq.singleton |> Seq.singleton |> InlineKeyboardMarkup)
+    )
+    |> Task.map ignore
 
 let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
   UserId.value
