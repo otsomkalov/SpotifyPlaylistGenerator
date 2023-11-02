@@ -293,7 +293,7 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       return! editMessage $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
     }
 
-let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (sendPresetInfo : SendPresetInfo) setLikedTracksHandling =
+let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo : SendPresetInfo) =
   fun presetId ->
     task{
       do! setLikedTracksHandling presetId
