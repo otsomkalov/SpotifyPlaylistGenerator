@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="GeneratePlaylist" xml:space="preserve">
+        <value>🎵 Generate playlist</value>
+    </data>
+    <data name="Login" xml:space="preserve">
+        <value>Login</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>⚙ Settings</value>
+    </data>
+    <data name="SetPlaylistSize" xml:space="preserve">
+        <value>#️⃣ Set playlist size</value>
+    </data>
+    <data name="IncludeLikedTracks" xml:space="preserve">
+        <value>➕ Include liked</value>
+    </data>
+    <data name="ExcludeLikedTracks" xml:space="preserve">
+        <value>➖ Exclude liked</value>
+    </data>
+    <data name="IgnoreLikedTracks" xml:space="preserve">
+        <value>❌ Ignore liked</value>
+    </data>
+    <data name="IncludePlaylist" xml:space="preserve">
+        <value>➕ Include playlist</value>
+    </data>
+    <data name="ExcludePlaylist" xml:space="preserve">
+        <value>➖ Exclude playlist</value>
+    </data>
+    <data name="TargetPlaylist" xml:space="preserve">
+        <value>📩 Target playlist</value>
+    </data>
+    <data name="MyPresets" xml:space="preserve">
+        <value>🗄️ My presets</value>
+    </data>
+    <data name="CreatePreset" xml:space="preserve">
+        <value>➕ Create preset</value>
+    </data>
+    <data name="EnableRecommendations" xml:space="preserve">
+        <value>➕ Enable recommendations</value>
+    </data>
+    <data name="DisableRecommendations" xml:space="preserve">
+        <value>➖ Disable recommendations</value>
+    </data>
+</root>

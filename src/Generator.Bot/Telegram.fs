@@ -12,7 +12,7 @@ open Telegram.Core
 open Telegram.Workflows
 open Domain.Extensions
 
-let escapeMarkdownString (str: string) = Regex.Replace(str, "([`\.#\-!])", "\$1")
+let escapeMarkdownString (str: string) = Regex.Replace(str, "([\(\)`\.#\-!])", "\$1")
 
 let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
   fun text ->
@@ -22,6 +22,7 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
       ParseMode.MarkdownV2
     )
     |> Task.map ignore
+
 let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
   fun text buttons ->
     let replyMarkup =

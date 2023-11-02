@@ -89,18 +89,18 @@ let private getPresetMessage =
       let likedTracksHandlingText, likedTracksButtonText, likedTracksButtonData =
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          Messages.LikedTracksIncluded, Messages.ExcludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.excludeLikedTracks}"
+          Messages.LikedTracksIncluded, Buttons.ExcludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.excludeLikedTracks}"
         | PresetSettings.LikedTracksHandling.Exclude ->
-          Messages.LikedTracksExcluded, Messages.IgnoreLikedTracks, $"p|{presetId}|{CallbackQueryConstants.ignoreLikedTracks}"
+          Messages.LikedTracksExcluded, Buttons.IgnoreLikedTracks, $"p|{presetId}|{CallbackQueryConstants.ignoreLikedTracks}"
         | PresetSettings.LikedTracksHandling.Ignore ->
-          Messages.LikedTracksIgnored, Messages.IncludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.includeLikedTracks}"
+          Messages.LikedTracksIgnored, Buttons.IncludeLikedTracks, $"p|{presetId}|{CallbackQueryConstants.includeLikedTracks}"
 
       let recommendationsText, recommendationsButtonText, recommendationsButtonData =
         match preset.Settings.RecommendationsEnabled with
         | true ->
-          Messages.RecommendationsEnabled, Messages.DisableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.disableRecommendations
+          Messages.RecommendationsEnabled, Buttons.DisableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.disableRecommendations
         | false ->
-          Messages.RecommendationsDisabled, Messages.EnableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
+          Messages.RecommendationsDisabled, Buttons.EnableRecommendations, sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
 
       let text =
         System.String.Format(
@@ -293,7 +293,7 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessage: EditMessage) :
       return! editMessage $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
     }
 
-let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) (sendPresetInfo : SendPresetInfo) setLikedTracksHandling =
+let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo : SendPresetInfo) =
   fun presetId ->
     task{
       do! setLikedTracksHandling presetId
@@ -341,7 +341,7 @@ let sendSettingsMessage (loadUser: User.Load) (loadPreset: Preset.Load) (sendKey
 
       let buttons =
         seq {
-          seq { KeyboardButton(Messages.SetPlaylistSize) }
+          seq { KeyboardButton(Buttons.SetPlaylistSize) }
           seq { KeyboardButton("Back") }
         }
 
@@ -366,14 +366,14 @@ let sendCurrentPresetInfo
 
             let buttons =
               seq {
-                seq { KeyboardButton(Messages.MyPresets) }
-                seq { KeyboardButton(Messages.CreatePreset) }
+                seq { KeyboardButton(Buttons.MyPresets) }
+                seq { KeyboardButton(Buttons.CreatePreset) }
                 seq {
-                  KeyboardButton(Messages.IncludePlaylist)
-                  KeyboardButton(Messages.ExcludePlaylist)
-                  KeyboardButton(Messages.TargetPlaylist)
+                  KeyboardButton(Buttons.IncludePlaylist)
+                  KeyboardButton(Buttons.ExcludePlaylist)
+                  KeyboardButton(Buttons.TargetPlaylist)
                 }
-                seq { KeyboardButton(Messages.Settings) }
+                seq { KeyboardButton(Buttons.Settings) }
               }
 
             return! sendKeyboard text buttons
@@ -381,8 +381,8 @@ let sendCurrentPresetInfo
         | None ->
           let buttons =
               seq {
-                seq { KeyboardButton(Messages.MyPresets) }
-                seq { KeyboardButton(Messages.CreatePreset) }
+                seq { KeyboardButton(Buttons.MyPresets) }
+                seq { KeyboardButton(Buttons.CreatePreset) }
               }
 
           sendKeyboard "You did not select current preset" buttons
