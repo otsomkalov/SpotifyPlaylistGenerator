@@ -3,11 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>exe</OutputType>
-    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <WarningLevel>5</WarningLevel>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <UserSecretsId>bed95743-1b23-49f6-bfc6-e955afd4ecc6</UserSecretsId>
-    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,14 +34,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Resources\Messages.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Messages.resx</DependentUpon>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>

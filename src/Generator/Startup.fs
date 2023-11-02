@@ -3,6 +3,7 @@ module Generator.Startup
 #nowarn "20"
 
 open System
+open System.Reflection
 open Azure.Storage.Queues
 open Domain.Core
 open Generator.Bot
@@ -10,6 +11,7 @@ open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Infrastructure
 open Infrastructure.Workflows
+open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Options
@@ -78,9 +80,16 @@ let configureServices (builderContext: HostBuilderContext) services : unit =
 
   ()
 
+let configureAppConfiguration _ (configBuilder: IConfigurationBuilder) =
+
+  configBuilder.AddUserSecrets(Assembly.GetExecutingAssembly())
+
+  ()
+
 let host =
   HostBuilder()
     .ConfigureFunctionsWebApplication()
+    .ConfigureAppConfiguration(configureAppConfiguration)
     .ConfigureServices(configureServices)
     .Build()
 
