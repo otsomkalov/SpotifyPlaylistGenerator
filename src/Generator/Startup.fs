@@ -82,6 +82,8 @@ let configureServices (builderContext: HostBuilderContext) (services: IServiceCo
 
   services.AddSingletonFunc<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
 
+  services.AddMvcCore().AddNewtonsoftJson()
+
   ()
 
 let configureAppConfiguration _ (configBuilder: IConfigurationBuilder) =

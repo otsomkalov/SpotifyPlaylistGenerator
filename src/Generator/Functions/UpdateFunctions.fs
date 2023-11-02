@@ -2,8 +2,10 @@
 
 open System.Threading.Tasks
 open Generator.Bot.Services
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Azure.Functions.Worker
+open Microsoft.Azure.Functions.Worker.Http
 open Microsoft.Extensions.Logging
 open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
@@ -12,7 +14,7 @@ type UpdateFunctions(_messageService: MessageService, _logger: ILogger<UpdateFun
   inherit ControllerBase()
 
   [<Function("HandleUpdateAsync")>]
-  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>]update: Update) =
+  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>] request: HttpRequest, [<FromBody>]update: Update) =
     task {
       try
         let handleUpdateTask =
