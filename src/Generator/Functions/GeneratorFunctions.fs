@@ -1,4 +1,4 @@
-﻿namespace Generator
+﻿namespace Generator.Functions
 
 open Domain
 open FSharp
@@ -6,7 +6,7 @@ open Generator.Bot
 open Infrastructure.Helpers
 open Infrastructure.Workflows
 open Infrastructure
-open Microsoft.Azure.WebJobs
+open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
 open Shared.QueueMessages
 open Shared.Services
@@ -23,7 +23,7 @@ type GeneratorFunctions
     connectionMultiplexer: IConnectionMultiplexer
   ) =
 
-  [<FunctionName("GenerateAsync")>]
+  [<Function("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, logger: ILogger) =
     let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
     let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase

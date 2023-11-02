@@ -1,4 +1,4 @@
-namespace Generator
+module Generator.Startup
 
 #nowarn "20"
 
@@ -10,9 +10,8 @@ open Generator.Bot.Services
 open Generator.Bot.Services.Playlist
 open Infrastructure
 open Infrastructure.Workflows
-open Microsoft.Azure.Functions.Extensions.DependencyInjection
-open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Options
 open MongoDB.Driver
 open Shared
@@ -22,72 +21,67 @@ open Generator.Extensions.ServiceCollection
 open Domain.Workflows
 open StackExchange.Redis
 
-type Startup() =
-  inherit FunctionsStartup()
+let configureRedisCache (serviceProvider: IServiceProvider) =
+  let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
 
-  let configureRedisCache (serviceProvider: IServiceProvider) =
-    let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
+  ConnectionMultiplexer.Connect(settings.ConnectionString) :> IConnectionMultiplexer
 
-    ConnectionMultiplexer.Connect(settings.ConnectionString) :> IConnectionMultiplexer
+let configureQueueClient (sp: IServiceProvider) =
+  let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
 
-  let configureQueueClient (sp: IServiceProvider) =
-    let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
+  QueueClient(settings.ConnectionString, settings.QueueName)
 
-    QueueClient(settings.ConnectionString, settings.QueueName)
+let configureMongoClient (options: IOptions<DatabaseSettings>) =
+  let settings = options.Value
 
-  let configureMongoClient (options: IOptions<DatabaseSettings>) =
-    let settings = options.Value
+  MongoClient(settings.ConnectionString) :> IMongoClient
 
-    MongoClient(settings.ConnectionString) :> IMongoClient
+let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: IMongoClient) =
+  let settings = options.Value
 
-  let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: IMongoClient) =
-    let settings = options.Value
+  mongoClient.GetDatabase(settings.Name)
 
-    mongoClient.GetDatabase(settings.Name)
+let configureServices (builderContext: HostBuilderContext) services : unit =
+  let configuration = builderContext.Configuration
 
-  override this.ConfigureAppConfiguration(builder: IFunctionsConfigurationBuilder) =
+  services |> Startup.addSettings configuration |> Startup.addServices
 
-    builder.ConfigurationBuilder.AddUserSecrets<Startup>(true)
+  services.AddSingleton<IConnectionMultiplexer>(configureRedisCache)
 
-    ()
+  services.AddSingleton<QueueClient>(configureQueueClient)
 
-  override this.Configure(builder: IFunctionsHostBuilder) : unit =
-    let configuration = builder.GetContext().Configuration
-    let services = builder.Services
+  services.AddSingletonFunc<IMongoClient, IOptions<DatabaseSettings>>(configureMongoClient)
+  services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
-    services |> Startup.addSettings configuration |> Startup.addServices
+  services
+    .AddScoped<GenerateCommandHandler>()
 
-    services.AddSingleton<IConnectionMultiplexer>(configureRedisCache)
+    .AddScoped<AddSourcePlaylistCommandHandler>()
+    .AddScoped<SetTargetPlaylistCommandHandler>()
+    .AddScoped<AddHistoryPlaylistCommandHandler>()
 
-    services.AddSingleton<QueueClient>(configureQueueClient)
+    .AddScoped<SetPlaylistSizeCommandHandler>()
 
-    services.AddSingletonFunc<IMongoClient, IOptions<DatabaseSettings>>(configureMongoClient)
-    services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
+    .AddScoped<MessageService>()
+    .AddScoped<CallbackQueryService>()
 
-    services
-      .AddScoped<GenerateCommandHandler>()
+  services.AddLocalization()
 
-      .AddScoped<AddSourcePlaylistCommandHandler>()
-      .AddScoped<SetTargetPlaylistCommandHandler>()
-      .AddScoped<AddHistoryPlaylistCommandHandler>()
+  services.AddScopedFunc<Preset.Load, IMongoDatabase>(Preset.load)
+  services.AddScopedFunc<Preset.Update, IMongoDatabase>(Preset.update)
+  services.AddScopedFunc<User.Load, IMongoDatabase>(User.load)
+  services.AddScopedFunc<User.Exists, IMongoDatabase>(User.exists)
 
-      .AddScoped<SetPlaylistSizeCommandHandler>()
+  services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
 
-      .AddScoped<MessageService>()
-      .AddScoped<CallbackQueryService>()
+  services.AddSingletonFunc<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
 
-    services.AddLocalization()
+  ()
 
-    services.AddScopedFunc<Preset.Load, IMongoDatabase>(Preset.load)
-    services.AddScopedFunc<Preset.Update, IMongoDatabase>(Preset.update)
-    services.AddScopedFunc<User.Load, IMongoDatabase>(User.load)
-    services.AddScopedFunc<User.Exists, IMongoDatabase>(User.exists)
+let host =
+  HostBuilder()
+    .ConfigureFunctionsWebApplication()
+    .ConfigureServices(configureServices)
+    .Build()
 
-    services.AddScopedFunc<Telegram.Core.CheckAuth, SpotifyClientProvider>(Telegram.checkAuth)
-
-    services.AddSingletonFunc<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
-
-    ()
-
-[<assembly: FunctionsStartup(typeof<Startup>)>]
-do ()
+host.Run()

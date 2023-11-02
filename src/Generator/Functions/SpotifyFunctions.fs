@@ -1,4 +1,4 @@
-﻿namespace Generator
+﻿namespace Generator.Functions
 
 open System.Threading.Tasks
 open Domain
@@ -6,8 +6,7 @@ open Domain.Extensions
 open Infrastructure
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
-open Microsoft.Azure.WebJobs
-open Microsoft.Azure.WebJobs.Extensions.Http
+open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Options
 open Shared.Settings
 open Generator.Extensions.IQueryCollection
@@ -17,7 +16,7 @@ type SpotifyFunctions(_telegramOptions: IOptions<TelegramSettings>, _connectionM
 
   let _telegramSettings = _telegramOptions.Value
 
-  [<FunctionName("HandleCallbackAsync")>]
+  [<Function("HandleCallbackAsync")>]
   member this.HandleCallbackAsync([<HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "spotify/callback")>] request: HttpRequest) =
     let onSuccess (auth: Domain.Core.Auth.Fulfilled) =
       RedirectResult($"{_telegramSettings.BotUrl}?start={(auth.State |> Domain.Core.Auth.State.value)}", true) :> IActionResult
