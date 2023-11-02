@@ -2,13 +2,17 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">=3.75.0"
+      version = ">=3.78.0"
     }
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 locals {
@@ -77,6 +81,12 @@ resource "azurerm_linux_function_app" "func-spotify-playlist-generator" {
 
   site_config {
     application_insights_key = azurerm_application_insights.appi-spotify-playlist-generator.instrumentation_key
+    app_scale_limit = 10
+
+    application_stack {
+      dotnet_version = "6.0"
+      use_dotnet_isolated_runtime = false
+    }
   }
 
   app_settings = {
