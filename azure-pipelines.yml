@@ -15,6 +15,9 @@ variables:
   Runtime: 'linux-x64'
 
 steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '6.x'
   - task: DotNetCoreCLI@2
     name: Restore
     inputs:
