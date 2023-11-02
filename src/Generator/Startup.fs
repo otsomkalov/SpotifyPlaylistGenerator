@@ -3,6 +3,7 @@ module Generator.Startup
 #nowarn "20"
 
 open System
+open Generator.Extensions.ServiceCollection
 open System.Reflection
 open Azure.Storage.Queues
 open Domain.Core
@@ -19,8 +20,8 @@ open MongoDB.Driver
 open Shared
 open Shared.Services
 open Shared.Settings
-open Generator.Extensions.ServiceCollection
 open Domain.Workflows
+open Microsoft.Azure.Functions.Worker
 open StackExchange.Redis
 
 let configureRedisCache (serviceProvider: IServiceProvider) =
@@ -43,8 +44,11 @@ let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: I
 
   mongoClient.GetDatabase(settings.Name)
 
-let configureServices (builderContext: HostBuilderContext) services : unit =
+let configureServices (builderContext: HostBuilderContext) (services: IServiceCollection) : unit =
   let configuration = builderContext.Configuration
+
+  services.AddApplicationInsightsTelemetryWorkerService()
+  services.ConfigureFunctionsApplicationInsights();
 
   services |> Startup.addSettings configuration |> Startup.addServices
 
