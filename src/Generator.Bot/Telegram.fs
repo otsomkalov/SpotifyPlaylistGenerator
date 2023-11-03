@@ -19,7 +19,7 @@ let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2
+      parseMode = ParseMode.MarkdownV2
     )
     |> Task.map ignore
 
@@ -33,7 +33,7 @@ let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
+      parseMode = ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
     )
     |> Task.map ignore
@@ -43,7 +43,7 @@ let replyToMessage (bot: ITelegramBotClient) userId (messageId: int) : ReplyToMe
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
+      parseMode = ParseMode.MarkdownV2,
       replyToMessageId = messageId
     )
     |> Task.map ignore
@@ -59,7 +59,7 @@ let sendKeyboard (bot: ITelegramBotClient) userId : SendKeyboard =
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
+      parseMode = ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
     )
     |> Task.map ignore
@@ -85,7 +85,7 @@ let askForReply (bot: ITelegramBotClient) userId messageId : AskForReply =
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
+      parseMode = ParseMode.MarkdownV2,
       replyToMessageId = messageId,
       replyMarkup = ForceReplyMarkup()
     )
@@ -103,7 +103,7 @@ let sendLink (bot: ITelegramBotClient) userId : SendLink =
     bot.SendTextMessageAsync(
       (userId |> UserId.value |> ChatId),
       text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
+      parseMode = ParseMode.MarkdownV2,
       replyMarkup = (InlineKeyboardButton(linkText, Url = link) |> Seq.singleton |> Seq.singleton |> InlineKeyboardMarkup)
     )
     |> Task.map ignore
