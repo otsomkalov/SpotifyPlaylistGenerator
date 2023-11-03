@@ -129,7 +129,7 @@ module Playlist =
         | true, uri -> Some uri
         | _ -> None
 
-      let (|PlaylistId|_|) text =
+      let (|PlaylistId|_|) (text: string) =
         if Regex.IsMatch(text, "[A-z0-9]{22}") then
           Some text
         else
