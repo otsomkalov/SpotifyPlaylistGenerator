@@ -1,5 +1,6 @@
 ﻿module Domain.Core
 
+open System
 open System.Threading.Tasks
 open shortid
 
@@ -50,16 +51,32 @@ module PresetSettings =
     | Exclude
     | Ignore
 
-  type PlaylistSize = PlaylistSize of int
+  type PlaylistSize = private PlaylistSize of int
 
   type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
       PlaylistSize: PlaylistSize
       RecommendationsEnabled: bool }
 
-[<RequireQualifiedAccess>]
-module PlaylistSize =
-  let value (PresetSettings.PlaylistSize size) = size
+  [<RequireQualifiedAccess>]
+  module PlaylistSize =
+    type TryCreateError =
+      | TooSmall
+      | TooBig
+
+    let tryCreate size =
+      match size with
+      | s when s <= 0 -> Error(TooSmall)
+      | s when s >= 10000 -> Error(TooBig)
+      | _ -> Ok(PlaylistSize(size))
+
+    let create size =
+      match tryCreate size with
+      | Ok size -> size
+      | Error e ->
+        ArgumentException(e |> string, nameof size) |> raise
+
+    let value (PlaylistSize size) = size
 
 type PresetId = PresetId of string
 

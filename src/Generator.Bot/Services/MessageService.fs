@@ -19,6 +19,7 @@ open Generator.Bot.Helpers
 open Resources
 open Telegram.Bot.Types.Enums
 open Domain.Extensions
+open Telegram.Helpers
 
 type AuthState =
   | Authorized
@@ -31,10 +32,10 @@ type MessageService
     _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
     _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
-    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _bot: ITelegramBotClient,
     loadUser: User.Load,
     loadPreset: Preset.Load,
+    updatePreset: Preset.Update,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
     _spotifyOptions: IOptions<SpotifySettings>
@@ -118,16 +119,32 @@ type MessageService
           match isNull message.ReplyToMessage with
           | false ->
             match (message.ReplyToMessage.Text, authState) with
-            | Equals Messages.SendPlaylistSize, _ -> _setPlaylistSizeCommandHandler.HandleAsync sendKeyboard replyToMessage message
-            | Equals Messages.SendIncludedPlaylist, Authorized -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
-            | Equals Messages.SendIncludedPlaylist, Unauthorized -> sendLoginMessage()
-            | Equals Messages.SendExcludedPlaylist, Authorized -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
-            | Equals Messages.SendExcludedPlaylist, Unauthorized -> sendLoginMessage()
-            | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendIncludedPlaylist, Unauthorized
+            | Equals Messages.SendExcludedPlaylist, Unauthorized
             | Equals Messages.SendTargetedPlaylist, Unauthorized -> sendLoginMessage()
+
+            | Equals Messages.SendPlaylistSize, _ ->
+              match message.Text with
+              | Int size ->
+                let setPlaylistSize = Preset.setPlaylistSize loadPreset updatePreset
+                let setPlaylistSize = Telegram.setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize
+
+                setPlaylistSize userId size
+              | _ ->
+                replyToMessage Messages.WrongPlaylistSize
+            | Equals Messages.SendIncludedPlaylist, Authorized -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendExcludedPlaylist, Authorized -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
             | Equals Messages.SendPresetName, _ -> createPreset message.Text
+
+            | _ -> replyToMessage "Unknown command"
           | _ ->
             match (message.Text, authState) with
+            | StartsWith "/include", Unauthorized | StartsWith "/exclude", Unauthorized | StartsWith "/target", Unauthorized
+            | Equals Buttons.IncludePlaylist, Unauthorized | Equals Buttons.ExcludePlaylist, Unauthorized | Equals Buttons.TargetPlaylist, Unauthorized
+            | Equals Buttons.GeneratePlaylist, Unauthorized | StartsWith "/generate", Unauthorized
+             -> sendLoginMessage()
+
             | Equals "/start", Unauthorized ->
               let initState = Auth.initState _connectionMultiplexer
               let getLoginLink = Auth.getLoginLink _spotifyOptions
@@ -160,26 +177,19 @@ type MessageService
             | Equals "/privacy", _ -> sendMessage Messages.Privacy
             | Equals "/faq", _ -> sendMessage Messages.FAQ
             | StartsWith "/generate", Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
-            | StartsWith "/generate", Unauthorized -> sendLoginMessage()
             | StartsWith "/include", Authorized -> includePlaylist replyToMessage message
-            | StartsWith "/include", Unauthorized -> sendLoginMessage()
             | StartsWith "/exclude", Authorized -> excludePlaylist replyToMessage message
-            | StartsWith "/exclude", Unauthorized -> sendLoginMessage()
             | StartsWith "/target", Authorized -> targetPlaylist replyToMessage message
-            | StartsWith "/target", Unauthorized -> sendLoginMessage ()
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
             | Equals Buttons.GeneratePlaylist, Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
-            | Equals Buttons.GeneratePlaylist, Unauthorized -> sendLoginMessage()
             | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message
             | Equals Buttons.Settings, _ -> sendSettingsMessage userId
             | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
-            | Equals Buttons.IncludePlaylist, Unauthorized -> sendLoginMessage()
             | Equals Buttons.ExcludePlaylist, Authorized -> askForReply Messages.SendExcludedPlaylist
-            | Equals Buttons.ExcludePlaylist, Unauthorized -> sendLoginMessage()
             | Equals Buttons.TargetPlaylist, Authorized -> askForReply Messages.SendTargetedPlaylist
-            | Equals Buttons.TargetPlaylist, Unauthorized -> sendLoginMessage()
             | Equals "Back", _ -> sendCurrentPresetInfo userId
+
             | _ -> replyToMessage "Unknown command"
         | _ -> Task.FromResult()
     }

@@ -17,7 +17,6 @@ open Telegram.Bot.Types
 
 type CallbackQueryService
   (
-    _setPlaylistSizeCommandHandler: SetPlaylistSizeCommandHandler,
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
     _connectionMultiplexer: IConnectionMultiplexer,

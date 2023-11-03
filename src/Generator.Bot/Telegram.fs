@@ -2,7 +2,9 @@
 module Generator.Bot.Telegram
 
 open System.Text.RegularExpressions
+open Domain.Core
 open Domain.Workflows
+open Resources
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -114,3 +116,27 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
   >> Task.map (function
     | null -> Unauthorized
     | _ -> Authorized)
+
+let private savePlaylistSize loadUser setPlaylistSize =
+  fun userId playlistSize ->
+    task{
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+      do! setPlaylistSize currentPresetId playlistSize
+    }
+
+let setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize =
+  fun userId size ->
+    let savePlaylistSize = savePlaylistSize loadUser setPlaylistSize userId
+
+    let onSuccess () =
+      sendSettingsMessage userId
+
+    let onError error =
+      match error with
+      | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
+      | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
+
+    PresetSettings.PlaylistSize.tryCreate size
+    |> Result.taskMap(savePlaylistSize)
+    |> Task.bind (Result.either onSuccess onError)
