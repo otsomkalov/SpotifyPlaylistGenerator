@@ -1,10 +1,11 @@
-﻿namespace Generator
+﻿namespace Generator.Functions
 
 open System.Threading.Tasks
 open Generator.Bot.Services
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
-open Microsoft.Azure.WebJobs
-open Microsoft.Azure.WebJobs.Extensions.Http
+open Microsoft.Azure.Functions.Worker
+open Microsoft.Azure.Functions.Worker.Http
 open Microsoft.Extensions.Logging
 open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
@@ -12,8 +13,8 @@ open Telegram.Bot.Types.Enums
 type UpdateFunctions(_messageService: MessageService, _logger: ILogger<UpdateFunctions>, _callbackQueryService: CallbackQueryService) =
   inherit ControllerBase()
 
-  [<FunctionName("HandleUpdateAsync")>]
-  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>]update: Update) =
+  [<Function("HandleUpdateAsync")>]
+  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>] request: HttpRequest, [<FromBody>]update: Update) =
     task {
       try
         let handleUpdateTask =
