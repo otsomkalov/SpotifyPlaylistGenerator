@@ -13,6 +13,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
 open Domain.Extensions
+open Generator.Bot.Helpers
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "([\(\)`\.#\-!])", "\$1")
 
@@ -139,4 +140,4 @@ let setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize =
 
     PresetSettings.PlaylistSize.tryCreate size
     |> Result.taskMap(savePlaylistSize)
-    |> Task.bind (Result.either onSuccess onError)
+    |> TaskResult.taskEither onSuccess onError

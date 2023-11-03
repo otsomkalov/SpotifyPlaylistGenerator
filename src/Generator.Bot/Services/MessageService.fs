@@ -170,7 +170,7 @@ type MessageService
               let completeAuth = Domain.Workflows.Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
 
               completeAuth userId (state |> Auth.State.parse)
-              |> Task.bind (Result.either (fun () -> sendCurrentPresetInfo userId) sendErrorMessage)
+              |> TaskResult.taskEither (fun () -> sendCurrentPresetInfo userId) sendErrorMessage
             | Equals "/help", _ ->
               sendMessage Messages.Help
             | Equals "/guide", _ -> sendMessage Messages.Guide

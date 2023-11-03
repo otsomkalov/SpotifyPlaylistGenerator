@@ -34,3 +34,14 @@ let (|Bool|_|) (str: string) =
   match bool.TryParse(str) with
   | true, value -> Some(value)
   | _ -> None
+
+[<RequireQualifiedAccess>]
+module TaskResult =
+  open Domain.Extensions
+  open System.Threading.Tasks
+
+  let inline taskEither
+    ([<InlineIfLambda>] onOk: 'okInput -> Task<'output>)
+    ([<InlineIfLambda>] onError: 'errorInput -> Task<'output>)
+    =
+    Task.bind (Result.either onOk onError)
