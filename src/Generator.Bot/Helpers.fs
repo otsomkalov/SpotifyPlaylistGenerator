@@ -1,7 +1,8 @@
 ﻿module Generator.Bot.Helpers
 
 open System
-open Domain.Core
+open System.Text.Json
+open System.Text.Json.Serialization
 
 let (|StartsWith|_|) (substring: string) (str: string) =
   if str.StartsWith(substring, StringComparison.InvariantCultureIgnoreCase) then
@@ -45,3 +46,11 @@ module TaskResult =
     ([<InlineIfLambda>] onError: 'errorInput -> Task<'output>)
     =
     Task.bind (Result.either onOk onError)
+
+module JSON =
+  let options =
+    JsonFSharpOptions.Default()
+        .ToJsonSerializerOptions()
+
+  let serialize obj =
+    JsonSerializer.Serialize(obj, options)

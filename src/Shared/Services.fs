@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open System.Threading.Tasks
+open Domain.Workflows
 open Infrastructure
 open SpotifyAPI.Web
 open StackExchange.Redis
@@ -11,14 +12,16 @@ type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, create
   let _clientsByTelegramId =
     Dictionary<int64, ISpotifyClient>()
 
-  member this.GetAsync telegramId : Task<ISpotifyClient> =
-    if _clientsByTelegramId.ContainsKey(telegramId) then
-      _clientsByTelegramId[telegramId] |> Task.FromResult
+  member this.GetAsync userId : Task<ISpotifyClient> =
+    let userId = userId |> UserId.value
+
+    if _clientsByTelegramId.ContainsKey(userId) then
+      _clientsByTelegramId[userId] |> Task.FromResult
     else
       let cache = connectionMultiplexer.GetDatabase Cache.tokensDatabase
 
       task {
-        let! tokenValue = telegramId |> string |> cache.StringGetAsync
+        let! tokenValue = userId |> string |> cache.StringGetAsync
 
         return!
           match tokenValue.IsNullOrEmpty with
@@ -28,7 +31,7 @@ type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, create
               AuthorizationCodeTokenResponse(RefreshToken = tokenValue)
               |> createClientFromTokenResponse
 
-            this.SetClient(telegramId, client)
+            this.SetClient(userId, client)
 
             client |> Task.FromResult
       }

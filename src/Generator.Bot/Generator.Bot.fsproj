@@ -7,12 +7,12 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Queues" Version="12.16.0"/>
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.2.42" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Telegram.fs"/>
-    <Compile Include="Services\GenerateCommandHandler.fs"/>
     <Compile Include="Services\MessageService.fs"/>
     <Compile Include="Services\CallbackQueryService.fs"/>
   </ItemGroup>

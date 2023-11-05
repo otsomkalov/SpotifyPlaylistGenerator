@@ -1,5 +1,6 @@
 ﻿namespace Generator.Bot.Services
 
+open Azure.Storage.Queues
 open Resources
 open System
 open System.Threading.Tasks
@@ -7,7 +8,6 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Workflows
 open Generator.Bot
-open Generator.Bot.Services
 open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
 open MongoDB.Driver
@@ -27,7 +27,6 @@ type AuthState =
 
 type MessageService
   (
-    _generateCommandHandler: GenerateCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
     loadUser: User.Load,
@@ -35,7 +34,8 @@ type MessageService
     updatePreset: Preset.Update,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
-    _spotifyOptions: IOptions<SpotifySettings>
+    _spotifyOptions: IOptions<SpotifySettings>,
+    _queueClient: QueueClient
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -71,7 +71,7 @@ type MessageService
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task{
-      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
+      let! spotifyClient = _spotifyClientProvider.GetAsync userId
 
       let authState =
         if spotifyClient = null then
@@ -86,13 +86,15 @@ type MessageService
         match message.Type with
         | MessageType.Text ->
           let includePlaylist = Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let includePlaylist = Telegram.includePlaylist replyToMessage loadUser includePlaylist
+          let includePlaylist = Telegram.Playlist.includePlaylist replyToMessage loadUser includePlaylist
 
           let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let excludePlaylist = Telegram.excludePlaylist replyToMessage loadUser excludePlaylist
+          let excludePlaylist = Telegram.Playlist.excludePlaylist replyToMessage loadUser excludePlaylist
 
           let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let targetPlaylist = Telegram.targetPlaylist replyToMessage loadUser targetPlaylist
+          let targetPlaylist = Telegram.Playlist.targetPlaylist replyToMessage loadUser targetPlaylist
+
+          let queueGeneration = Telegram.Playlist.queueGeneration _queueClient replyToMessage loadUser loadPreset Preset.validate
 
           match isNull message.ReplyToMessage with
           | false ->
@@ -157,7 +159,7 @@ type MessageService
             | Equals "/guide", _ -> sendMessage Messages.Guide
             | Equals "/privacy", _ -> sendMessage Messages.Privacy
             | Equals "/faq", _ -> sendMessage Messages.FAQ
-            | StartsWith "/generate", Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
+            | Equals "/generate", Authorized -> queueGeneration userId
             | CommandWithData "/include" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"
@@ -175,7 +177,7 @@ type MessageService
                 targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
-            | Equals Buttons.GeneratePlaylist, Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
+            | Equals Buttons.GeneratePlaylist, Authorized -> queueGeneration userId
             | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message
             | Equals Buttons.Settings, _ -> sendSettingsMessage userId
             | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
