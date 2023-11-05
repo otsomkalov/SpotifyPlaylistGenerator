@@ -29,7 +29,6 @@ type AuthState =
 type MessageService
   (
     _generateCommandHandler: GenerateCommandHandler,
-    _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
     _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
@@ -44,11 +43,6 @@ type MessageService
   let sendUserPresets sendMessage (message: Message) =
     let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage loadUser
     sendUserPresets (message.From.Id |> UserId)
-
-  let excludePlaylist replyToMessage (message: Message) =
-    match message.Text with
-    | CommandData data -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage data message
-    | _ -> replyToMessage "You have entered empty playlist url"
 
   let targetPlaylist replyToMessage (message: Message) =
     match message.Text with
@@ -98,10 +92,11 @@ type MessageService
       return!
         match message.Type with
         | MessageType.Text ->
-          let includePlaylist =
-            Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let includePlaylist =
-            Telegram.includePlaylist replyToMessage loadUser includePlaylist
+          let includePlaylist = Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let includePlaylist = Telegram.includePlaylist replyToMessage loadUser includePlaylist
+
+          let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let excludePlaylist = Telegram.excludePlaylist replyToMessage loadUser excludePlaylist
 
           match isNull message.ReplyToMessage with
           | false ->
@@ -121,7 +116,8 @@ type MessageService
                 replyToMessage Messages.WrongPlaylistSize
             | Equals Messages.SendIncludedPlaylist, Authorized ->
               includePlaylist userId (Playlist.RawPlaylistId message.Text)
-            | Equals Messages.SendExcludedPlaylist, Authorized -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendExcludedPlaylist, Authorized ->
+              excludePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
             | Equals Messages.SendPresetName, _ -> createPreset message.Text
 
@@ -170,7 +166,11 @@ type MessageService
                 replyToMessage "You have entered empty playlist url"
               else
                 includePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-            | StartsWith "/exclude", Authorized -> excludePlaylist replyToMessage message
+            | CommandWithData "/exclude" rawPlaylistId, Authorized ->
+              if String.IsNullOrEmpty rawPlaylistId then
+                replyToMessage "You have entered empty playlist url"
+              else
+                excludePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | StartsWith "/target", Authorized -> targetPlaylist replyToMessage message
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName

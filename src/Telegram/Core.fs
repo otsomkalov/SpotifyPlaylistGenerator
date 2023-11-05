@@ -25,6 +25,7 @@ type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
+  type Exclude = UserId -> Playlist.RawPlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module CallbackQuery =

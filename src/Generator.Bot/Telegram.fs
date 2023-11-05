@@ -150,14 +150,34 @@ let includePlaylist replyToMessage loadUser (includePlaylist: Playlist.IncludePl
       let includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId
 
       let onSuccess (playlist: IncludedPlaylist) =
-        replyToMessage $"*{playlist.Name}* successfully included!"
+        replyToMessage $"*{playlist.Name}* successfully included into current preset!"
 
       let onError =
         function
-        | Playlist.IdParsing _ ->
+        | Playlist.IncludePlaylistError.IdParsing _ ->
           replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-        | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+        | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
           replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
 
       return! includePlaylistResult |> TaskResult.taskEither onSuccess onError
+    }
+
+let excludePlaylist replyToMessage loadUser (excludePlaylist: Playlist.ExcludePlaylist) : Playlist.Exclude =
+  fun userId rawPlaylistId ->
+    task{
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+      let excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId
+
+      let onSuccess (playlist: ExcludedPlaylist) =
+        replyToMessage $"*{playlist.Name}* successfully excluded from current preset!"
+
+      let onError =
+        function
+        | Playlist.ExcludePlaylistError.IdParsing _ ->
+          replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+        | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+          replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+
+      return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError
     }
