@@ -179,7 +179,7 @@ module Preset =
 
   let enableRecommendations load update : Preset.EnableRecommendations = setRecommendations load update true
 
-  let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update true
+  let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update false
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
