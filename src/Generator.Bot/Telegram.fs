@@ -4,6 +4,7 @@ module Generator.Bot.Telegram
 open System.Text.RegularExpressions
 open Domain.Core
 open Domain.Workflows
+open Infrastructure.Core
 open Resources
 open Shared.Services
 open Telegram.Bot
@@ -133,11 +134,30 @@ let setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize =
     let onSuccess () =
       sendSettingsMessage userId
 
-    let onError error =
-      match error with
+    let onError =
+      function
       | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
       | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
 
     PresetSettings.PlaylistSize.tryCreate size
     |> Result.taskMap(savePlaylistSize)
     |> TaskResult.taskEither onSuccess onError
+
+let includePlaylist replyToMessage loadUser (includePlaylist: Playlist.IncludePlaylist) : Playlist.Include =
+  fun userId rawPlaylistId ->
+    task{
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      let includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId
+
+      let onSuccess (playlist: IncludedPlaylist) =
+        replyToMessage $"*{playlist.Name}* successfully included!"
+
+      let onError =
+        function
+        | Playlist.IdParsing _ ->
+          replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+        | Playlist.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+          replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+
+      return! includePlaylistResult |> TaskResult.taskEither onSuccess onError
+    }

@@ -23,6 +23,10 @@ type ShowTargetedPlaylists = PresetId -> Page -> Task<unit>
 type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
+module Playlist =
+  type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
+
+[<RequireQualifiedAccess>]
 module CallbackQuery =
   type RemovePreset = PresetId -> Task<unit>
 

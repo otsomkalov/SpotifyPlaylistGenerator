@@ -1,5 +1,7 @@
 ﻿namespace Generator.Bot.Services
 
+open Resources
+open System
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
@@ -16,7 +18,6 @@ open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
 open Generator.Bot.Helpers
-open Resources
 open Telegram.Bot.Types.Enums
 open Domain.Extensions
 open Telegram.Helpers
@@ -28,7 +29,6 @@ type AuthState =
 type MessageService
   (
     _generateCommandHandler: GenerateCommandHandler,
-    _addSourcePlaylistCommandHandler: AddSourcePlaylistCommandHandler,
     _addHistoryPlaylistCommandHandler: AddHistoryPlaylistCommandHandler,
     _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
@@ -45,11 +45,6 @@ type MessageService
     let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage loadUser
     sendUserPresets (message.From.Id |> UserId)
 
-  let includePlaylist replyToMessage (message: Message) =
-    match message.Text with
-    | CommandData data -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage data message
-    | _ -> replyToMessage "You have entered empty playlist url"
-
   let excludePlaylist replyToMessage (message: Message) =
     match message.Text with
     | CommandData data -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage data message
@@ -59,28 +54,6 @@ type MessageService
     match message.Text with
     | CommandData data -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage data message
     | _ -> replyToMessage "You have entered empty playlist url"
-
-  let validateUserLogin sendLoginMessage handleCommandFunction (message: Message) =
-    task{
-      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
-
-      return!
-        if spotifyClient = null then
-          sendLoginMessage()
-        else
-          handleCommandFunction message
-    }
-
-  let getAuthState (message: Message) =
-    task{
-      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
-
-      return
-        if spotifyClient = null then
-          AuthState.Unauthorized
-        else
-          AuthState.Authorized
-    }
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
@@ -111,11 +84,25 @@ type MessageService
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task{
-      let! authState = getAuthState message
+      let! spotifyClient = _spotifyClientProvider.GetAsync message.From.Id
+
+      let authState =
+        if spotifyClient = null then
+          AuthState.Unauthorized
+        else
+          AuthState.Authorized
+
+      let parsePlaylistId = Playlist.parseId
+      let loadFromSpotify = Playlist.loadFromSpotify spotifyClient
 
       return!
         match message.Type with
         | MessageType.Text ->
+          let includePlaylist =
+            Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let includePlaylist =
+            Telegram.includePlaylist replyToMessage loadUser includePlaylist
+
           match isNull message.ReplyToMessage with
           | false ->
             match (message.ReplyToMessage.Text, authState) with
@@ -132,7 +119,8 @@ type MessageService
                 setPlaylistSize userId size
               | _ ->
                 replyToMessage Messages.WrongPlaylistSize
-            | Equals Messages.SendIncludedPlaylist, Authorized -> _addSourcePlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendIncludedPlaylist, Authorized ->
+              includePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendExcludedPlaylist, Authorized -> _addHistoryPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
             | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
             | Equals Messages.SendPresetName, _ -> createPreset message.Text
@@ -177,7 +165,11 @@ type MessageService
             | Equals "/privacy", _ -> sendMessage Messages.Privacy
             | Equals "/faq", _ -> sendMessage Messages.FAQ
             | StartsWith "/generate", Authorized -> _generateCommandHandler.HandleAsync replyToMessage message
-            | StartsWith "/include", Authorized -> includePlaylist replyToMessage message
+            | CommandWithData "/include" rawPlaylistId, Authorized ->
+              if String.IsNullOrEmpty rawPlaylistId then
+                replyToMessage "You have entered empty playlist url"
+              else
+                includePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | StartsWith "/exclude", Authorized -> excludePlaylist replyToMessage message
             | StartsWith "/target", Authorized -> targetPlaylist replyToMessage message
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
