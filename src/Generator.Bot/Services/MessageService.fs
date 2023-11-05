@@ -8,7 +8,6 @@ open Domain.Workflows
 open Infrastructure.Workflows
 open Generator.Bot
 open Generator.Bot.Services
-open Generator.Bot.Services.Playlist
 open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
 open MongoDB.Driver
@@ -29,7 +28,6 @@ type AuthState =
 type MessageService
   (
     _generateCommandHandler: GenerateCommandHandler,
-    _setTargetedPlaylistCommandHandler: SetTargetPlaylistCommandHandler,
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
     loadUser: User.Load,
@@ -43,11 +41,6 @@ type MessageService
   let sendUserPresets sendMessage (message: Message) =
     let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage loadUser
     sendUserPresets (message.From.Id |> UserId)
-
-  let targetPlaylist replyToMessage (message: Message) =
-    match message.Text with
-    | CommandData data -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage data message
-    | _ -> replyToMessage "You have entered empty playlist url"
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
@@ -98,6 +91,9 @@ type MessageService
           let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
           let excludePlaylist = Telegram.excludePlaylist replyToMessage loadUser excludePlaylist
 
+          let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let targetPlaylist = Telegram.targetPlaylist replyToMessage loadUser targetPlaylist
+
           match isNull message.ReplyToMessage with
           | false ->
             match (message.ReplyToMessage.Text, authState) with
@@ -118,7 +114,8 @@ type MessageService
               includePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendExcludedPlaylist, Authorized ->
               excludePlaylist userId (Playlist.RawPlaylistId message.Text)
-            | Equals Messages.SendTargetedPlaylist, Authorized -> _setTargetedPlaylistCommandHandler.HandleAsync replyToMessage message.Text message
+            | Equals Messages.SendTargetedPlaylist, Authorized ->
+              targetPlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendPresetName, _ -> createPreset message.Text
 
             | _ -> replyToMessage "Unknown command"
@@ -171,7 +168,11 @@ type MessageService
                 replyToMessage "You have entered empty playlist url"
               else
                 excludePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-            | StartsWith "/target", Authorized -> targetPlaylist replyToMessage message
+            | CommandWithData "/target" rawPlaylistId, Authorized ->
+              if String.IsNullOrEmpty rawPlaylistId then
+                replyToMessage "You have entered empty playlist url"
+              else
+                targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
             | Equals Buttons.GeneratePlaylist, Authorized -> _generateCommandHandler.HandleAsync replyToMessage message

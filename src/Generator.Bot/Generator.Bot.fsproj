@@ -12,7 +12,6 @@
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Telegram.fs"/>
-    <Compile Include="Services\Playlist\SetTargetPlaylistCommandHandler.fs"/>
     <Compile Include="Services\GenerateCommandHandler.fs"/>
     <Compile Include="Services\MessageService.fs"/>
     <Compile Include="Services\CallbackQueryService.fs"/>

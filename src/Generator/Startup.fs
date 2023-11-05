@@ -9,7 +9,6 @@ open Azure.Storage.Queues
 open Domain.Core
 open Generator.Bot
 open Generator.Bot.Services
-open Generator.Bot.Services.Playlist
 open Infrastructure
 open Infrastructure.Workflows
 open Microsoft.Extensions.Configuration
@@ -61,8 +60,6 @@ let configureServices (builderContext: HostBuilderContext) (services: IServiceCo
 
   services
     .AddScoped<GenerateCommandHandler>()
-
-    .AddScoped<SetTargetPlaylistCommandHandler>()
 
     .AddScoped<MessageService>()
     .AddScoped<CallbackQueryService>()
