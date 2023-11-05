@@ -63,7 +63,6 @@ let configureServices (builderContext: HostBuilderContext) (services: IServiceCo
     .AddScoped<GenerateCommandHandler>()
 
     .AddScoped<SetTargetPlaylistCommandHandler>()
-    .AddScoped<AddHistoryPlaylistCommandHandler>()
 
     .AddScoped<MessageService>()
     .AddScoped<CallbackQueryService>()
