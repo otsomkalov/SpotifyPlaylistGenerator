@@ -2,7 +2,9 @@
 module Generator.Bot.Telegram
 
 open System.Text.RegularExpressions
+open Domain.Core
 open Domain.Workflows
+open Resources
 open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
@@ -11,6 +13,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
 open Domain.Extensions
+open Generator.Bot.Helpers
 
 let escapeMarkdownString (str: string) = Regex.Replace(str, "([\(\)`\.#\-!])", "\$1")
 
@@ -114,3 +117,27 @@ let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
   >> Task.map (function
     | null -> Unauthorized
     | _ -> Authorized)
+
+let private savePlaylistSize loadUser setPlaylistSize =
+  fun userId playlistSize ->
+    task{
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+      do! setPlaylistSize currentPresetId playlistSize
+    }
+
+let setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize =
+  fun userId size ->
+    let savePlaylistSize = savePlaylistSize loadUser setPlaylistSize userId
+
+    let onSuccess () =
+      sendSettingsMessage userId
+
+    let onError error =
+      match error with
+      | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
+      | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
+
+    PresetSettings.PlaylistSize.tryCreate size
+    |> Result.taskMap(savePlaylistSize)
+    |> TaskResult.taskEither onSuccess onError

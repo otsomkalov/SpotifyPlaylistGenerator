@@ -129,7 +129,7 @@ module Preset =
             ExcludedPlaylist = []
             TargetedPlaylists = []
             Settings =
-              { PlaylistSize = (PresetSettings.PlaylistSize 20)
+              { PlaylistSize = (PresetSettings.PlaylistSize.create 20)
                 RecommendationsEnabled = false
                 LikedTracksHandling = PresetSettings.LikedTracksHandling.Include }
             UserId = userId }
@@ -376,7 +376,7 @@ module Playlist =
         | tracks ->
           task {
             let tracksIdsToImport =
-              tracks |> List.take (preset.Settings.PlaylistSize |> PlaylistSize.value)
+              tracks |> List.take (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
             for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
               do! io.UpdateTargetedPlaylists playlist tracksIdsToImport

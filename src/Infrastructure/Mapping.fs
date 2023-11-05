@@ -97,7 +97,7 @@ module PresetSettings =
          | Some true -> PresetSettings.LikedTracksHandling.Include
          | Some false -> PresetSettings.LikedTracksHandling.Exclude
          | None -> PresetSettings.LikedTracksHandling.Ignore)
-      PlaylistSize = settings.PlaylistSize |> PlaylistSize.create
+      PlaylistSize = settings.PlaylistSize |> PresetSettings.PlaylistSize.create
       RecommendationsEnabled = settings.RecommendationsEnabled }
 
   let toDb (settings: PresetSettings.PresetSettings) : Settings =
@@ -107,7 +107,7 @@ module PresetSettings =
          | PresetSettings.LikedTracksHandling.Include -> Nullable true
          | PresetSettings.LikedTracksHandling.Exclude -> Nullable false
          | PresetSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
-      PlaylistSize = (settings.PlaylistSize |> PlaylistSize.value),
+      PlaylistSize = (settings.PlaylistSize |> PresetSettings.PlaylistSize.value),
       RecommendationsEnabled = settings.RecommendationsEnabled
     )
 

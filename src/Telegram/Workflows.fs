@@ -108,7 +108,7 @@ let private getPresetMessage =
           preset.Name,
           likedTracksHandlingText,
           recommendationsText,
-          (preset.Settings.PlaylistSize |> PlaylistSize.value)
+          (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
         )
 
       let keyboard = seq {MessageButton(likedTracksButtonText, likedTracksButtonData); MessageButton(recommendationsButtonText, recommendationsButtonData)}
