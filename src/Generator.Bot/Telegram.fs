@@ -181,3 +181,25 @@ let excludePlaylist replyToMessage loadUser (excludePlaylist: Playlist.ExcludePl
 
       return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError
     }
+
+let targetPlaylist replyToMessage loadUser (targetPlaylist: Playlist.TargetPlaylist) : Playlist.Target =
+  fun userId rawPlaylistId ->
+    task {
+      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+      let targetPlaylistResult = rawPlaylistId |> targetPlaylist currentPresetId
+
+      let onSuccess (playlist: TargetedPlaylist) =
+        replyToMessage $"*{playlist.Name}* successfully targeted for current preset!"
+
+      let onError =
+        function
+        | Playlist.TargetPlaylistError.IdParsing _ ->
+          replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+        | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+          replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+        | Playlist.TargetPlaylistError.AccessError _ ->
+          replyToMessage Messages.PlaylistIsReadonly
+
+      return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError
+    }
