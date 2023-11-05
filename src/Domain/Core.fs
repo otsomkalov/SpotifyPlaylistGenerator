@@ -135,12 +135,7 @@ module Preset =
     | NoIncludedPlaylists
     | NoTargetedPlaylists
 
-  [<RequireQualifiedAccess>]
-  type ValidationResult =
-    | Ok
-    | Errors of ValidationError list
-
-  type Validate = Preset -> ValidationResult
+  type Validate = Preset -> Result<Preset, ValidationError list>
 
   type IncludeLikedTracks = PresetId -> Task<unit>
   type ExcludeLikedTracks = PresetId -> Task<unit>

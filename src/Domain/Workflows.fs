@@ -71,24 +71,24 @@ module Preset =
     fun preset ->
       match preset.IncludedPlaylists, preset.Settings.LikedTracksHandling, preset.TargetedPlaylists with
       | [], PresetSettings.LikedTracksHandling.Include, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Error
       | [], PresetSettings.LikedTracksHandling.Exclude, [] ->
         [ Preset.ValidationError.NoIncludedPlaylists
           Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        |> Error
       | [], PresetSettings.LikedTracksHandling.Ignore, [] ->
         [ Preset.ValidationError.NoIncludedPlaylists
           Preset.ValidationError.NoTargetedPlaylists ]
-        |> Preset.ValidationResult.Errors
+        |> Error
       | _, PresetSettings.LikedTracksHandling.Include, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Error
       | _, PresetSettings.LikedTracksHandling.Exclude, [] ->
-        [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
-      | _, PresetSettings.LikedTracksHandling.Ignore, [] -> [ Preset.ValidationError.NoTargetedPlaylists ] |> Preset.ValidationResult.Errors
+        [ Preset.ValidationError.NoTargetedPlaylists ] |> Error
+      | _, PresetSettings.LikedTracksHandling.Ignore, [] -> [ Preset.ValidationError.NoTargetedPlaylists ] |> Error
       | [], PresetSettings.LikedTracksHandling.Exclude, _ ->
-        [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
-      | [], PresetSettings.LikedTracksHandling.Ignore, _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Preset.ValidationResult.Errors
-      | _ -> Preset.ValidationResult.Ok
+        [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
+      | [], PresetSettings.LikedTracksHandling.Ignore, _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
+      | _ -> Ok preset
 
   let private setLikedTracksHandling (load: Load) (update: Update) =
     fun handling presetId ->

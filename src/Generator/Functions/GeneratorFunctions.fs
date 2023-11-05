@@ -3,12 +3,12 @@
 open Domain
 open FSharp
 open Generator.Bot
+open Generator.Bot.Helpers
 open Infrastructure.Helpers
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
-open Shared.QueueMessages
 open Shared.Services
 open StackExchange.Redis
 open Domain.Workflows
@@ -25,39 +25,39 @@ type GeneratorFunctions
   ) =
 
   [<Function("GenerateAsync")>]
-  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] message: GeneratePlaylistMessage, _: FunctionContext) =
+  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {|PresetId: PresetId|}, _: FunctionContext) =
     let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
     let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase
 
     task {
-      let! client = _spotifyClientProvider.GetAsync message.TelegramId
+      let! preset = loadPreset command.PresetId
 
-      let userId = message.TelegramId |> UserId
+      let! client = _spotifyClientProvider.GetAsync preset.UserId
 
       let logIncludedTracks =
         Logf.logfi _logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{IncludedTracksCount} included tracks"
-          message.PresetId message.TelegramId
+          (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logExcludedTracks =
         Logf.logfi _logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{ExcludedTracksCount} excluded tracks"
-          message.PresetId message.TelegramId
+          (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logLikedTracks =
         Logf.logfi _logger
           "User %i{TelegramId} has %i{LikedTracksCount} liked tracks"
-          message.TelegramId
+          (preset.UserId |> UserId.value)
 
       let logRecommendedTracks =
         Logf.logfi _logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{RecommendedTracksCount} recommended tracks"
-          message.PresetId message.TelegramId
+          (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logPotentialTracks =
         Logf.logfi _logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{PotentialTracksCount} potential tracks"
-          message.PresetId message.TelegramId
+          (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let listTracks = Spotify.Playlist.listTracks _logger client
       let listTracks = Cache.Playlist.listTracks playlistsCache listTracks
@@ -70,16 +70,14 @@ type GeneratorFunctions
         Workflows.Preset.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
-        Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks userId
+        Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks preset.UserId
 
-      let sendMessage = Telegram.sendMessage _bot userId
+      let sendMessage = Telegram.sendMessage _bot preset.UserId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
 
       let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
 
-      do Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" message.TelegramId
-
-      do! sendMessage "Generating playlist..."
+      do Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (preset.UserId |> UserId.value)
 
       let io: Domain.Workflows.Playlist.GenerateIO =
         { LogPotentialTracks = logPotentialTracks
@@ -91,11 +89,7 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations }
 
       let generatePlaylist = Domain.Workflows.Playlist.generate io
+      let generatePlaylist = Telegram.Playlist.generate sendMessage generatePlaylist
 
-      let! generatePlaylistResult = generatePlaylist (message.PresetId |> PresetId)
-
-      return!
-        match generatePlaylistResult with
-        | Ok _ -> sendMessage "Playlist generated!"
-        | Error(Playlist.GenerateError.NoPotentialTracks) -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
+      return! generatePlaylist command.PresetId
     }

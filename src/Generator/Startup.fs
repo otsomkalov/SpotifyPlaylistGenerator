@@ -3,6 +3,8 @@ module Generator.Startup
 #nowarn "20"
 
 open System
+open System.Text.Json
+open System.Text.Json.Serialization
 open Generator.Extensions.ServiceCollection
 open System.Reflection
 open Azure.Storage.Queues
@@ -44,10 +46,11 @@ let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: I
   mongoClient.GetDatabase(settings.Name)
 
 let configureServices (builderContext: HostBuilderContext) (services: IServiceCollection) : unit =
-  let configuration = builderContext.Configuration
 
   services.AddApplicationInsightsTelemetryWorkerService()
-  services.ConfigureFunctionsApplicationInsights();
+  services.ConfigureFunctionsApplicationInsights()
+
+  let configuration = builderContext.Configuration
 
   services |> Startup.addSettings configuration |> Startup.addServices
 
@@ -58,11 +61,7 @@ let configureServices (builderContext: HostBuilderContext) (services: IServiceCo
   services.AddSingletonFunc<IMongoClient, IOptions<DatabaseSettings>>(configureMongoClient)
   services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
-  services
-    .AddScoped<GenerateCommandHandler>()
-
-    .AddScoped<MessageService>()
-    .AddScoped<CallbackQueryService>()
+  services.AddScoped<MessageService>().AddScoped<CallbackQueryService>()
 
   services.AddLocalization()
 
@@ -85,9 +84,15 @@ let configureAppConfiguration _ (configBuilder: IConfigurationBuilder) =
 
   ()
 
+let configureWebApp (builder: IFunctionsWorkerApplicationBuilder) =
+  builder.Services.Configure<JsonSerializerOptions>(fun opts ->
+    JsonFSharpOptions.Default().AddToJsonSerializerOptions(opts))
+
+  ()
+
 let host =
   HostBuilder()
-    .ConfigureFunctionsWebApplication()
+    .ConfigureFunctionsWebApplication(configureWebApp)
     .ConfigureAppConfiguration(configureAppConfiguration)
     .ConfigureServices(configureServices)
     .Build()

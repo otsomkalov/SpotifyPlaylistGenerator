@@ -27,6 +27,7 @@ module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
   type Exclude = UserId -> Playlist.RawPlaylistId -> Task<unit>
   type Target = UserId -> Playlist.RawPlaylistId -> Task<unit>
+  type QueueGeneration = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module CallbackQuery =
