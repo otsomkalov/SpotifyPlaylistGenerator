@@ -3,16 +3,12 @@
 open Generator.Bot
 open Resources
 open System
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
-open Generator.Bot.Services
-open Infrastructure.Core
-open Shared.Services
+ open Shared.Services
 open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
-open Generator.Bot.Helpers
 open Infrastructure.Workflows
 open Domain.Extensions
 
@@ -32,7 +28,7 @@ type SetTargetPlaylistCommandHandler
     task {
       let! client = _spotifyClientProvider.GetAsync message.From.Id
 
-      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+      let checkPlaylistExistsInSpotify = Playlist.loadFromSpotify client
 
       let parsePlaylistId = Playlist.parseId
 

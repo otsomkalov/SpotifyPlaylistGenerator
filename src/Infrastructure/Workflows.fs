@@ -146,7 +146,7 @@ module Playlist =
       | PlaylistId id -> id |> Playlist.ParsedPlaylistId |> Ok
       | _ -> Playlist.IdParsingError() |> Error
 
-  let checkPlaylistExistsInSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
+  let loadFromSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
     fun playlistId ->
       let rawPlaylistId = playlistId |> ParsedPlaylistId.value
 
@@ -164,11 +164,11 @@ module Playlist =
               )
               |> SpotifyPlaylist.Writable
             else
-              WriteableSpotifyPlaylist(
+              ReadableSpotifyPlaylist(
                 { Id = playlist.Id |> PlaylistId
                   Name = playlist.Name }
               )
-              |> SpotifyPlaylist.Writable
+              |> SpotifyPlaylist.Readable
 
           return playlist |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->

@@ -31,7 +31,7 @@ type AddHistoryPlaylistCommandHandler
     task {
       let! client = _spotifyClientProvider.GetAsync message.From.Id
 
-      let checkPlaylistExistsInSpotify = Playlist.checkPlaylistExistsInSpotify client
+      let checkPlaylistExistsInSpotify = Playlist.loadFromSpotify client
 
       let parsePlaylistId = Playlist.parseId
 
