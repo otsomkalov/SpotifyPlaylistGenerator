@@ -17,6 +17,7 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Options
+open MongoDB.ApplicationInsights
 open MongoDB.Driver
 open Shared
 open Shared.Services
@@ -24,6 +25,7 @@ open Shared.Settings
 open Domain.Workflows
 open Microsoft.Azure.Functions.Worker
 open StackExchange.Redis
+open MongoDB.ApplicationInsights.DependencyInjection
 
 let configureRedisCache (serviceProvider: IServiceProvider) =
   let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
@@ -35,10 +37,10 @@ let configureQueueClient (sp: IServiceProvider) =
 
   QueueClient(settings.ConnectionString, settings.QueueName)
 
-let configureMongoClient (options: IOptions<DatabaseSettings>) =
+let configureMongoClient (factory: IMongoClientFactory) (options: IOptions<DatabaseSettings>) =
   let settings = options.Value
 
-  MongoClient(settings.ConnectionString) :> IMongoClient
+  factory.GetClient(settings.ConnectionString)
 
 let configureMongoDatabase (options: IOptions<DatabaseSettings>) (mongoClient: IMongoClient) =
   let settings = options.Value
@@ -58,7 +60,8 @@ let configureServices (builderContext: HostBuilderContext) (services: IServiceCo
 
   services.AddSingleton<QueueClient>(configureQueueClient)
 
-  services.AddSingletonFunc<IMongoClient, IOptions<DatabaseSettings>>(configureMongoClient)
+  services.AddMongoClientFactory()
+  services.AddSingletonFunc<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)
   services.AddSingletonFunc<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
   services.AddScoped<MessageService>().AddScoped<CallbackQueryService>()
