@@ -20,12 +20,11 @@ type GeneratorFunctions
     _spotifyClientProvider: SpotifyClientProvider,
     loadPreset: Preset.Load,
     _bot: ITelegramBotClient,
-    _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer
   ) =
 
   [<Function("GenerateAsync")>]
-  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {|PresetId: PresetId|}, _: FunctionContext) =
+  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {|PresetId: PresetId|}, ctx: FunctionContext) =
     let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
     let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase
 
@@ -34,32 +33,34 @@ type GeneratorFunctions
 
       let! client = _spotifyClientProvider.GetAsync preset.UserId
 
+      let logger = ctx.GetLogger<GeneratorFunctions>()
+
       let logIncludedTracks =
-        Logf.logfi _logger
+        Logf.logfi logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{IncludedTracksCount} included tracks"
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logExcludedTracks =
-        Logf.logfi _logger
+        Logf.logfi logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{ExcludedTracksCount} excluded tracks"
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logLikedTracks =
-        Logf.logfi _logger
+        Logf.logfi logger
           "User %i{TelegramId} has %i{LikedTracksCount} liked tracks"
           (preset.UserId |> UserId.value)
 
       let logRecommendedTracks =
-        Logf.logfi _logger
+        Logf.logfi logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{RecommendedTracksCount} recommended tracks"
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let logPotentialTracks =
-        Logf.logfi _logger
+        Logf.logfi logger
           "Preset %s{PresetId} of user %i{TelegramId} has %i{PotentialTracksCount} potential tracks"
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
-      let listTracks = Spotify.Playlist.listTracks _logger client
+      let listTracks = Spotify.Playlist.listTracks logger client
       let listTracks = Cache.Playlist.listTracks playlistsCache listTracks
       let listLikedTracks = Spotify.User.listLikedTracks client
 
@@ -77,7 +78,7 @@ type GeneratorFunctions
 
       let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
 
-      do Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (preset.UserId |> UserId.value)
+      do Logf.logfi logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (preset.UserId |> UserId.value)
 
       let io: Domain.Workflows.Playlist.GenerateIO =
         { LogPotentialTracks = logPotentialTracks
