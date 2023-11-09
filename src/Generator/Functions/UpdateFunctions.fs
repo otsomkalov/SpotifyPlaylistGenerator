@@ -10,13 +10,11 @@ open Microsoft.Extensions.Logging
 open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
 
-type UpdateFunctions(_messageService: MessageService, _callbackQueryService: CallbackQueryService) =
+type UpdateFunctions(_messageService: MessageService, _logger: ILogger<UpdateFunctions>, _callbackQueryService: CallbackQueryService) =
   inherit ControllerBase()
 
   [<Function("HandleUpdateAsync")>]
-  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>] request: HttpRequest, [<FromBody>]update: Update, ctx: FunctionContext) =
-    let logger = ctx.GetLogger<UpdateFunctions>()
-
+  member this.HandleUpdateAsync([<HttpTrigger(AuthorizationLevel.Function, "POST", Route = "telegram/update")>] request: HttpRequest, [<FromBody>]update: Update) =
     task {
       try
         let handleUpdateTask =
@@ -27,5 +25,5 @@ type UpdateFunctions(_messageService: MessageService, _callbackQueryService: Cal
 
         do! handleUpdateTask
       with
-      | e -> logger.LogError(e, "Error during processing update:")
+      | e -> _logger.LogError(e, "Error during processing update:")
     }
