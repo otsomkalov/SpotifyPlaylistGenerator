@@ -16,6 +16,8 @@ open Infrastructure.Workflows
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Logging.ApplicationInsights
 open Microsoft.Extensions.Options
 open MongoDB.ApplicationInsights
 open MongoDB.Driver
@@ -93,10 +95,16 @@ let configureWebApp (builder: IFunctionsWorkerApplicationBuilder) =
 
   ()
 
+let configureLogging (builder: ILoggingBuilder) =
+  builder.AddFilter<ApplicationInsightsLoggerProvider>(String.Empty, LogLevel.Information)
+
+  ()
+
 let host =
   HostBuilder()
     .ConfigureFunctionsWebApplication(configureWebApp)
     .ConfigureAppConfiguration(configureAppConfiguration)
+    .ConfigureLogging(configureLogging)
     .ConfigureServices(configureServices)
     .Build()
 
