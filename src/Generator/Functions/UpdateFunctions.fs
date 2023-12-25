@@ -1,7 +1,7 @@
 ﻿namespace Generator.Functions
 
 open System.Threading.Tasks
-open Generator.Bot.Services
+open Infrastructure.Telegram.Services
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Azure.Functions.Worker

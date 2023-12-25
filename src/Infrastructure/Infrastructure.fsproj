@@ -6,20 +6,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Storage.Queues" Version="12.17.0" />
     <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
     <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="SpotifyAPI.Web" Version="7.0.2"/>
     <PackageReference Include="StackExchange.Redis" Version="2.7.4"/>
+    <PackageReference Include="MongoDB.ApplicationInsights.DependencyInjection" Version="1.0.34"/>
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.2.42"/>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
+    <Compile Include="Extensions.fs" />
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
     <Compile Include="Cache.fs"/>
     <Compile Include="Settings.fs"/>
     <Compile Include="Spotify.fs"/>
     <Compile Include="Workflows.fs"/>
+    <Compile Include="Startup.fs"/>
   </ItemGroup>
 
   <ItemGroup>

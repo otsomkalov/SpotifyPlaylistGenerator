@@ -6,8 +6,8 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open StackExchange.Redis
-open Domain.Extensions
 open Infrastructure.Helpers
+open otsom.FSharp.Extensions
 
 [<Literal>]
 let playlistsDatabase = 0
@@ -46,8 +46,8 @@ module User =
 
       key
       |> (listCachedTracks cache)
-      |> Task.taskMap (function
-        | [] -> listLikedTracks () |> Task.taskMap cacheTracks
+      |> Task.bind (function
+        | [] -> listLikedTracks () |> Task.bind cacheTracks
         | v -> v |> Task.FromResult)
       |> Task.tee (fun t -> logLikedTracks t.Length)
 
@@ -60,6 +60,6 @@ module Playlist =
 
       key
       |> (listCachedTracks cache)
-      |> Task.taskMap (function
-        | [] -> (listTracks id) |> Task.taskMap cacheTracks
+      |> Task.bind (function
+        | [] -> (listTracks id) |> Task.bind cacheTracks
         | v -> v |> Task.FromResult)

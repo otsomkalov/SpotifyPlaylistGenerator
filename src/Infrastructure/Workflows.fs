@@ -4,9 +4,9 @@ open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Infrastructure
+open Infrastructure.Settings
 open Microsoft.Extensions.Options
 open MongoDB.Driver
-open Shared.Settings
 open SpotifyAPI.Web
 open System.Net
 open System.Text.RegularExpressions
@@ -15,10 +15,9 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Infrastructure.Mapping
-open Infrastructure.Helpers
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
-open Domain.Extensions
+open otsom.FSharp.Extensions
 
 [<RequireQualifiedAccess>]
 module User =

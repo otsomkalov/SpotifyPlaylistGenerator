@@ -2,29 +2,7 @@
 
 open System
 open System.Threading.Tasks
-
-[<RequireQualifiedAccess>]
-module Task =
-  let map mapping task' =
-    task {
-      let! value = task'
-
-      return mapping value
-    }
-
-  let bind mapping task' =
-    task {
-      let! value = task'
-
-      return! mapping value
-    }
-
-  let taskMap (mapping: 'a -> Task<'b>) task' =
-    task {
-      let! value = task'
-
-      return! mapping value
-    }
+open otsom.FSharp.Extensions
 
 [<RequireQualifiedAccess>]
 module Option =

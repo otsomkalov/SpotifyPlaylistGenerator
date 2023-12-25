@@ -1,15 +1,11 @@
 ﻿namespace Generator.Functions
 
-open Domain
 open FSharp
-open Generator.Bot
-open Generator.Bot.Helpers
-open Infrastructure.Helpers
+open Infrastructure.Telegram.Services
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
-open Shared.Services
 open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
@@ -72,7 +68,7 @@ type GeneratorFunctions
       let listLikedTracks =
         Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks preset.UserId
 
-      let sendMessage = Telegram.sendMessage _bot preset.UserId
+      let sendMessage = Telegram.Workflows.sendMessage _bot preset.UserId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
 
       let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
@@ -89,7 +85,7 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations }
 
       let generatePlaylist = Domain.Workflows.Playlist.generate io
-      let generatePlaylist = Telegram.Playlist.generate sendMessage generatePlaylist
+      let generatePlaylist = Telegram.Workflows.Playlist.generate sendMessage generatePlaylist
 
       return! generatePlaylist command.PresetId
     }

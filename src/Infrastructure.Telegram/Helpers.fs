@@ -1,8 +1,9 @@
-﻿module Generator.Bot.Helpers
+﻿module Infrastructure.Telegram.Helpers
 
 open System
 open System.Text.Json
 open System.Text.Json.Serialization
+open otsom.FSharp.Extensions
 
 let (|StartsWith|_|) (substring: string) (str: string) =
   if str.StartsWith(substring, StringComparison.InvariantCultureIgnoreCase) then
@@ -29,6 +30,11 @@ let (|CommandData|_|) (command: string) =
 let (|Uri|_|) (str: string) =
   match Uri.TryCreate(str, UriKind.Absolute) with
   | true, uri -> Some(uri)
+  | _ -> None
+
+let (|Int|_|) (str: string) =
+  match Int32.TryParse(str) with
+  | true, value -> Some(value)
   | _ -> None
 
 let (|Bool|_|) (str: string) =
