@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
-    <Compile Include="Extensions.fs" />
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
     <Compile Include="Cache.fs"/>

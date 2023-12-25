@@ -2,8 +2,8 @@
 
 #nowarn "20"
 
+open otsom.FSharp.Extensions.ServiceCollection
 open Domain.Workflows
-open Infrastructure.Extensions.ServiceCollection
 open System
 open Azure.Storage.Queues
 open Infrastructure.Settings
