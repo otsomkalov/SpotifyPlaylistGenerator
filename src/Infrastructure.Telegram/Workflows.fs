@@ -1,23 +1,23 @@
 ﻿[<RequireQualifiedAccess>]
-module Generator.Bot.Telegram
+module Infrastructure.Telegram.Workflows
 
 open Resources
 open System
-open System.Text.Json
 open System.Text.RegularExpressions
 open Azure.Storage.Queues
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
-open Shared.Services
 open Telegram.Bot
 open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
 open Telegram.Bot.Types.ReplyMarkups
+open Telegram.Constants
 open Telegram.Core
 open Telegram.Workflows
 open Domain.Extensions
-open Generator.Bot.Helpers
+open Infrastructure.Telegram.Helpers
+open otsom.FSharp.Extensions
 
 let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!])", "\$1")
@@ -113,12 +113,6 @@ let sendLink (bot: ITelegramBotClient) userId : SendLink =
          |> InlineKeyboardMarkup)
     )
     |> Task.map ignore
-
-let checkAuth (spotifyClientProvider: SpotifyClientProvider) : CheckAuth =
-  spotifyClientProvider.GetAsync
-  >> Task.map (function
-    | null -> Unauthorized
-    | _ -> Authorized)
 
 let private savePlaylistSize loadUser setPlaylistSize =
   fun userId playlistSize ->
@@ -263,3 +257,45 @@ module Playlist =
 
         return! generatePlaylist presetId |> TaskResult.taskEither onSuccess onError
       }
+
+let parseAction: ParseAction =
+  fun (str: string) ->
+    match str.Split("|") with
+    | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
+    | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
+    | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
+
+    | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "ip"; playlistId; "i" |] ->
+      Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; presetId; "ip"; playlistId; "e" |] ->
+      Action.EnableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; presetId; "ip"; playlistId; "d" |] ->
+      Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
+      Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+
+    | [| "p"; presetId; "ep"; playlistId; "i" |] ->
+      Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+    | [| "p"; id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "ep"; playlistId; "rm" |] ->
+      Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+
+    | [| "p"; id; "tp"; Int page |] -> Action.ShowTargetedPlaylists(PresetId id, (Page page))
+    | [| "p"; presetId; "tp"; playlistId; "i" |] ->
+      Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; presetId; "tp"; playlistId; "a" |] ->
+      Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; presetId; "tp"; playlistId; "o" |] ->
+      Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+    | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
+      Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+
+    | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
+
+    | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
+
+    | [| "p" |] -> Action.ShowUserPresets

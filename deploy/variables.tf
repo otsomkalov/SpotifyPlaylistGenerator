@@ -41,5 +41,5 @@ variable "storage-queue-name" {
 
 variable "env" {
   type    = string
-  default = "prod"
+  default = "prd"
 }

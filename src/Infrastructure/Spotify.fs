@@ -5,12 +5,12 @@ open System.Net
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
+open Infrastructure.Settings
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
-open Shared.Settings
 open SpotifyAPI.Web
-open Domain.Extensions
 open Infrastructure.Helpers
+open otsom.FSharp.Extensions
 
 let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.GetRecommendations =
   fun count tracks ->

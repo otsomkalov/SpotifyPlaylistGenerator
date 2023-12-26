@@ -8,6 +8,7 @@ open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
 open shortid
 open shortid.Configuration
+open otsom.FSharp.Extensions
 
 [<RequireQualifiedAccess>]
 module UserId =
@@ -49,7 +50,7 @@ module User =
       |> Task.map (fun u ->
         { u with
             CurrentPresetId = Some presetId })
-      |> Task.taskMap update
+      |> Task.bind update
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
@@ -99,7 +100,7 @@ module Preset =
             Settings =
               { p.Settings with
                   LikedTracksHandling = handling } })
-      |> Task.taskMap update
+      |> Task.bind update
 
   let includeLikedTracks load update : Preset.IncludeLikedTracks =
     setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Include
@@ -117,7 +118,7 @@ module Preset =
       |> Task.map (fun p ->
         { p with
             Settings = { p.Settings with PlaylistSize = size } })
-      |> Task.taskMap update
+      |> Task.bind update
 
   let create (savePreset: Save) (loadUser: User.Load) (updateUser: User.Update) userId : Preset.Create =
     fun name ->

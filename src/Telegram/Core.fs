@@ -69,11 +69,11 @@ type Action =
 
   | ShowUserPresets
 
+type ParseAction = string -> Action
+
 type AuthState =
   | Authorized
   | Unauthorized
-
-type CheckAuth = UserId -> Task<AuthState>
 
 [<RequireQualifiedAccess>]
 module Message =

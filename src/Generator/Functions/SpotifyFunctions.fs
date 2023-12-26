@@ -3,12 +3,12 @@
 open System.Threading.Tasks
 open Domain
 open Domain.Extensions
+open Generator.Settings
 open Infrastructure
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Options
-open Shared.Settings
 open Generator.Extensions.IQueryCollection
 open StackExchange.Redis
 
