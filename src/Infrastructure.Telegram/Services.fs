@@ -277,7 +277,9 @@ type CallbackQueryService
 
       disableIncludedPlaylist presetId playlistId
     | Action.RemoveIncludedPlaylist(presetId, playlistId) ->
-      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist answerCallbackQuery
+
+      let removeIncludedPlaylist = IncludedPlaylist.remove loadPreset updatePreset
+      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery showIncludedPlaylists
 
       removeIncludedPlaylist presetId playlistId
     | Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page

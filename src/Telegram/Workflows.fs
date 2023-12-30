@@ -441,9 +441,18 @@ let showTargetedPlaylist
       return! editMessage messageText buttons
     }
 
-let removeIncludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : IncludedPlaylist.Remove =
+let removeIncludedPlaylist
+  (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (showIncludedPlaylists: ShowIncludedPlaylists)
+  : IncludedPlaylist.Remove =
   fun presetId playlistId ->
-    answerCallbackQuery "Not implemented yet"
+    task {
+      do! removeIncludedPlaylist presetId playlistId
+      do! answerCallbackQuery "Included playlist successfully removed"
+
+      return! showIncludedPlaylists presetId (Page 0)
+    }
 
 let removeExcludedPlaylist (answerCallbackQuery: AnswerCallbackQuery) : ExcludedPlaylist.Remove =
   fun presetId playlistId ->
@@ -457,7 +466,7 @@ let removeTargetedPlaylist
   fun presetId playlistId ->
     task {
       do! removeTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist successfully deleted"
+      do! answerCallbackQuery "Target playlist successfully removed"
 
       return! showTargetedPlaylists presetId (Page 0)
     }

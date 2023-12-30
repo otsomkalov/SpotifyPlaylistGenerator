@@ -208,6 +208,21 @@ module IncludedPlaylist =
   let disable loadPreset updatePreset : IncludedPlaylist.Disable =
     updatePresetPlaylist loadPreset updatePreset true
 
+  let remove (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Remove =
+    fun presetId includedPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let includedPlaylists =
+          preset.IncludedPlaylists |> List.filter (fun p -> p.Id <> includedPlaylistId)
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists = includedPlaylists }
+
+        return! updatePreset updatedPreset
+      }
+
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
   let private updatePresetPlaylist (loadPreset: Preset.Load) (updatePreset: Preset.Update) enable =
