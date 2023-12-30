@@ -87,7 +87,7 @@ type Preset =
     Name: string
     Settings: PresetSettings.PresetSettings
     IncludedPlaylists: IncludedPlaylist list
-    ExcludedPlaylist: ExcludedPlaylist list
+    ExcludedPlaylists: ExcludedPlaylist list
     TargetedPlaylists: TargetedPlaylist list
     UserId: UserId }
 
