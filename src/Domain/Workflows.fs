@@ -127,7 +127,7 @@ module Preset =
           { Id = PresetId.create ()
             Name = name
             IncludedPlaylists = []
-            ExcludedPlaylist = []
+            ExcludedPlaylists = []
             TargetedPlaylists = []
             Settings =
               { PlaylistSize = (PresetSettings.PlaylistSize.create 20)
@@ -230,13 +230,13 @@ module ExcludedPlaylist =
       task {
         let! preset = loadPreset presetId
 
-        let playlist = preset.ExcludedPlaylist |> List.find (fun p -> p.Id = playlistId)
+        let playlist = preset.ExcludedPlaylists |> List.find (fun p -> p.Id = playlistId)
         let updatedPlaylist = { playlist with Enabled = enable }
 
         let updatedPreset =
           { preset with
-              ExcludedPlaylist =
-                preset.ExcludedPlaylist
+              ExcludedPlaylists =
+                preset.ExcludedPlaylists
                 |> List.except [ playlist ]
                 |> List.append [ updatedPlaylist ] }
 
@@ -248,6 +248,21 @@ module ExcludedPlaylist =
 
   let disable loadPreset updatePreset : ExcludedPlaylist.Disable =
     updatePresetPlaylist loadPreset updatePreset false
+
+  let remove (loadPreset: Preset.Load) (updatePreset: Preset.Update) : ExcludedPlaylist.Remove =
+    fun presetId excludedPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let excludedPlaylists =
+          preset.ExcludedPlaylists |> List.filter (fun p -> p.Id <> excludedPlaylistId)
+
+        let updatedPreset =
+          { preset with
+              ExcludedPlaylists = excludedPlaylists }
+
+        return! updatePreset updatedPreset
+      }
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -318,11 +333,11 @@ module Playlist =
         task {
           let! preset = loadPreset presetId
 
-          let updatedExcludedPlaylists = preset.ExcludedPlaylist |> List.append [ playlist ]
+          let updatedExcludedPlaylists = preset.ExcludedPlaylists |> List.append [ playlist ]
 
           let updatedPreset =
             { preset with
-                ExcludedPlaylist = updatedExcludedPlaylists }
+                ExcludedPlaylists = updatedExcludedPlaylists }
 
           do! updatePreset updatedPreset
 
@@ -429,7 +444,7 @@ module Playlist =
 
         let! includedTracks = preset.IncludedPlaylists |> io.ListIncludedTracks |> Task.map List.shuffle
 
-        let! excludedTracks = preset.ExcludedPlaylist |> io.ListExcludedTracks
+        let! excludedTracks = preset.ExcludedPlaylists |> io.ListExcludedTracks
 
         let excludedTracks, includedTracks =
           match preset.Settings.LikedTracksHandling with
