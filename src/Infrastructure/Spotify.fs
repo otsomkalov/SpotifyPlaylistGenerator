@@ -76,7 +76,7 @@ module Playlist =
           logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
 
           return []
-        }
+      }
 
 
 [<RequireQualifiedAccess>]
