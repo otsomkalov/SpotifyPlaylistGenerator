@@ -56,7 +56,7 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let listTracks = Spotify.Playlist.listTracks _logger client
-      let listTracks = Cache.Playlist.listTracks playlistsCache listTracks
+      let listTracks = Cache.Playlist.listTracks _logger playlistsCache listTracks
       let listLikedTracks = Spotify.User.listLikedTracks client
 
       let listIncludedTracks =

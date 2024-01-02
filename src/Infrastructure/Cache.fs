@@ -5,6 +5,7 @@ open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
+open Microsoft.Extensions.Logging
 open StackExchange.Redis
 open Infrastructure.Helpers
 open otsom.FSharp.Extensions
@@ -53,9 +54,12 @@ module User =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  let listTracks (cache: IDatabase) (listTracks: Playlist.ListTracks) : Playlist.ListTracks =
+  let listTracks (logger: ILogger) (cache: IDatabase) (listTracks: Playlist.ListTracks) : Playlist.ListTracks =
     fun id ->
       let key = id |> ReadablePlaylistId.value |> PlaylistId.value
+
+      logger.LogInformation("Redis key is: {RedisKey}", key.ToString())
+
       let cacheTracks = cacheTracks cache key
 
       key
