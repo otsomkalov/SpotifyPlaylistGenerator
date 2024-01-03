@@ -34,8 +34,9 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
-  |> Seq.filter (fun t -> isNull t |> not)
+  |> Seq.filter (isNull >> not)
   |> Seq.map (_.Id)
+  |> Seq.filter (isNull >> not)
   |> Seq.map TrackId
   |> Seq.toList
 
@@ -68,12 +69,16 @@ module Playlist =
       let listPlaylistTracks = listTracks' client playlistId
       let loadTracks' = loadTracks' 100
 
-      try
-        task { return! loadTracks' listPlaylistTracks }
-      with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-        logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
+      task {
+        try
+          return! loadTracks' listPlaylistTracks
 
-        [] |> Task.FromResult
+        with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+          logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
+
+          return []
+      }
+
 
 [<RequireQualifiedAccess>]
 module User =

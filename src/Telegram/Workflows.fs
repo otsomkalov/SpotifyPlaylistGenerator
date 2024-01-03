@@ -110,7 +110,7 @@ let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPrese
     task {
       do! setCurrentPreset userId presetId
 
-      return! answerCallbackQuery "Current playlist id successfully set!"
+      return! answerCallbackQuery "Current preset is successfully set!"
     }
 
 let internal createPlaylistsPage page (playlists: 'a list) playlistToButton presetId =
@@ -176,7 +176,7 @@ module IncludedPlaylist =
       task {
         do! enableIncludedPlaylist presetId playlistId
 
-        do! answerCallbackQuery "Disabled"
+        do! answerCallbackQuery "Enabled"
 
         return! showIncludedPlaylist presetId playlistId
       }
@@ -198,7 +198,7 @@ module ExcludedPlaylist =
       task {
         do! enableExcludedPlaylist presetId playlistId
 
-        do! answerCallbackQuery "Disabled"
+        do! answerCallbackQuery "Enabled"
 
         return! showExcludedPlaylist presetId playlistId
       }
@@ -326,6 +326,7 @@ let sendCurrentPresetInfo
 
             let buttons =
               seq {
+                seq { KeyboardButton(Buttons.GeneratePlaylist) }
                 seq { KeyboardButton(Buttons.MyPresets) }
                 seq { KeyboardButton(Buttons.CreatePreset) }
                 seq {
