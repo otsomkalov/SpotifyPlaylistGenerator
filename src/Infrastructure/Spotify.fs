@@ -34,8 +34,9 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
-  |> Seq.filter (fun t -> isNull t |> not)
+  |> Seq.filter (isNull >> not)
   |> Seq.map (_.Id)
+  |> Seq.filter (isNull >> not)
   |> Seq.map TrackId
   |> Seq.toList
 
