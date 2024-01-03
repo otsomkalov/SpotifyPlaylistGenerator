@@ -89,13 +89,9 @@ type MessageService
     let askForReply = Workflows.askForReply _bot userId message.MessageId
     let savePreset = Preset.save _database
     let updateUser = User.update _database
-    let createPreset = Preset.create savePreset loadUser updateUser userId
 
     let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo loadUser loadPreset sendKeyboard
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
-    let sendPresetInfo =
-      Telegram.Workflows.sendPresetInfo loadPreset sendButtons
-    let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
     let sendLoginMessage () =
       let initState = Auth.initState _connectionMultiplexer
@@ -106,7 +102,7 @@ type MessageService
       getLoginLink userId
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
-    task{
+    task {
       let! spotifyClient = _spotifyClientProvider.GetAsync userId
 
       let authState =
@@ -154,7 +150,12 @@ type MessageService
               excludePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendTargetedPlaylist, Authorized ->
               targetPlaylist userId (Playlist.RawPlaylistId message.Text)
-            | Equals Messages.SendPresetName, _ -> createPreset message.Text
+            | Equals Messages.SendPresetName, _ ->
+              let createPreset = Preset.create savePreset loadUser updateUser userId
+              let sendPresetInfo = Telegram.Workflows.sendPresetInfo loadPreset sendButtons
+              let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
+
+              createPreset message.Text
 
             | _ -> replyToMessage "Unknown command"
           | _ ->
@@ -178,7 +179,7 @@ type MessageService
                 | Auth.CompleteError.StateDoesntBelongToUser ->
                   replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
 
-              let completeAuth = Domain.Workflows.Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
+              let completeAuth = Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
 
               completeAuth userId (state |> Auth.State.parse)
               |> TaskResult.taskEither (fun () -> sendCurrentPresetInfo userId) sendErrorMessage
@@ -237,7 +238,6 @@ type CallbackQueryService
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
 
-    let removePreset = Workflows.Preset.remove _database
 
     let showUserPresets = Workflows.sendUserPresets editMessage loadUser
 
@@ -259,11 +259,11 @@ type CallbackQueryService
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->
+      let removePreset = Workflows.Preset.remove _database
       let removePreset = Preset.remove loadUser removePreset updateUser
       let removePreset = Workflows.CallbackQuery.removePreset removePreset showUserPresets
 
       removePreset presetId
-
     | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
     | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->
@@ -277,7 +277,8 @@ type CallbackQueryService
 
       disableIncludedPlaylist presetId playlistId
     | Action.RemoveIncludedPlaylist(presetId, playlistId) ->
-      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist answerCallbackQuery
+      let removeIncludedPlaylist = IncludedPlaylist.remove loadPreset updatePreset
+      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery showIncludedPlaylists
 
       removeIncludedPlaylist presetId playlistId
     | Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page
@@ -293,7 +294,8 @@ type CallbackQueryService
 
       disableExcludedPlaylist presetId playlistId
     | Action.RemoveExcludedPlaylist(presetId, playlistId) ->
-      let removeExcludedPlaylist = Workflows.removeExcludedPlaylist answerCallbackQuery
+      let removeExcludedPlaylist = ExcludedPlaylist.remove loadPreset updatePreset
+      let removeExcludedPlaylist = Workflows.removeExcludedPlaylist removeExcludedPlaylist answerCallbackQuery showExcludedPlaylists
 
       removeExcludedPlaylist presetId playlistId
     | Action.ShowTargetedPlaylists(presetId, page) -> showTargetedPlaylists presetId page
@@ -340,5 +342,4 @@ type CallbackQueryService
         Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
-
     | Action.ShowUserPresets -> showUserPresets userId

@@ -26,14 +26,33 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
 
       logRecommendedTracks recommendationsResponse.Tracks.Count
 
-      return recommendationsResponse.Tracks |> Seq.map ((fun t -> t.Id) >> TrackId) |> Seq.toList
+      return
+        recommendationsResponse.Tracks
+        |> Seq.map (_.Id >> TrackId)
+        |> Seq.toList
     }
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
-  |> Seq.filter (fun t -> isNull t |> not)
-  |> Seq.map (fun t -> t.Id)
+  |> Seq.filter (isNull >> not)
+  |> Seq.map (_.Id)
+  |> Seq.filter (isNull >> not)
+  |> Seq.map TrackId
   |> Seq.toList
+
+let private loadTracks' limit loadBatch =
+  task {
+    let! initialBatch, totalCount = loadBatch 0
+
+    return!
+      match totalCount |> Option.ofNullable with
+      | Some count ->
+        [ limit..limit..count ]
+        |> List.map (loadBatch >> Task.map fst)
+        |> Task.WhenAll
+        |> Task.map (List.concat >> (List.append initialBatch))
+      | None -> initialBatch |> Task.FromResult
+  }
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -41,53 +60,40 @@ module Playlist =
     task {
       let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
 
-      let! nextTracksIds =
-        if isNull tracks.Next then
-          [] |> Task.FromResult
-        else
-          listTracks' client playlistId (offset + 100)
-
-      let currentTracksIds =
-        tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds
-
-      return List.append nextTracksIds currentTracksIds
+      return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
     }
 
   let listTracks (logger: ILogger) client : Playlist.ListTracks =
     fun playlistId ->
-      task {
-        let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
+      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
+      let listPlaylistTracks = listTracks' client playlistId
+      let loadTracks' = loadTracks' 100
 
+      task {
         try
-          return! listTracks' client playlistId 0 |> Task.map (List.map TrackId)
+          return! loadTracks' listPlaylistTracks
+
         with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
 
           return []
       }
 
+
 [<RequireQualifiedAccess>]
 module User =
   let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
     task {
-      let! tracks =
-        client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
 
-      let! nextTracksIds =
-        if isNull tracks.Next then
-          [] |> Task.FromResult
-        else
-          listLikedTracks' client (offset + 50)
-
-      let currentTracksIds =
-        tracks.Items |> Seq.map (fun x -> x.Track) |> getTracksIds
-
-      return List.append nextTracksIds currentTracksIds
+      return (tracks.Items |> Seq.map (_.Track) |> getTracksIds, tracks.Total)
     }
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks =
-    fun () ->
-      listLikedTracks' client 0 |> Task.map (List.map TrackId)
+    let listLikedTracks' = listLikedTracks' client
+    let loadTracks' = loadTracks' 50
+
+    fun () -> loadTracks' listLikedTracks'
 
 type CreateClientFromTokenResponse = AuthorizationCodeTokenResponse -> ISpotifyClient
 
