@@ -442,7 +442,7 @@ module Playlist =
 
         let! likedTracks = io.ListLikedTracks
 
-        let! includedTracks = preset.IncludedPlaylists |> io.ListIncludedTracks |> Task.map List.shuffle
+        let! includedTracks = preset.IncludedPlaylists |> io.ListIncludedTracks
 
         let! excludedTracks = preset.ExcludedPlaylists |> io.ListExcludedTracks
 
@@ -452,7 +452,7 @@ module Playlist =
           | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
           | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
 
-        return! generateAndSaveTracks preset includedTracks excludedTracks
+        return! generateAndSaveTracks preset (includedTracks |> List.shuffle) excludedTracks
       }
 
 [<RequireQualifiedAccess>]
