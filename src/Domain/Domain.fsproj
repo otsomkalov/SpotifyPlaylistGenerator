@@ -9,7 +9,7 @@
     <PackageReference Include="IcedTasks" Version="0.10.0"/>
     <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0"/>
-    <PackageReference Include="otsom.FSharp.Extensions" Version="0.0.3"/>
+    <PackageReference Include="otsom.FSharp.Extensions" Version="0.0.4"/>
   </ItemGroup>
 
   <ItemGroup>
