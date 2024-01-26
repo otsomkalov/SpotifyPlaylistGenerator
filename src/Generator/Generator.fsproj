@@ -6,6 +6,7 @@
     <WarningLevel>5</WarningLevel>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <UserSecretsId>bed95743-1b23-49f6-bfc6-e955afd4ecc6</UserSecretsId>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
