@@ -192,10 +192,7 @@ type MessageService
             | Equals "/faq", _ -> sendMessage Messages.FAQ
             | Equals "/generate", Authorized -> queueGeneration userId
             | Equals "/version", Authorized ->
-              let version =
-                Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion
-
-              sendMessage version
+              sendMessage (Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion)
             | CommandWithData "/include" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"
