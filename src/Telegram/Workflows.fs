@@ -7,8 +7,6 @@ open Microsoft.FSharp.Core
 open Resources
 open Telegram.Constants
 open Telegram.Core
-open Telegram.Helpers
-open Domain.Extensions
 open otsom.FSharp.Extensions
 
 [<Literal>]

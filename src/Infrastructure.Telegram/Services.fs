@@ -1,5 +1,6 @@
 ﻿module Infrastructure.Telegram.Services
 
+open System.Reflection
 open Resources
 open Telegram
 open Infrastructure
@@ -22,6 +23,7 @@ open Telegram.Bot.Types.Enums
 open Telegram.Core
 open System
 open otsom.FSharp.Extensions
+open otsom.FSharp.Extensions.String
 
 type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, createClientFromTokenResponse: CreateClientFromTokenResponse) =
   let _clientsByTelegramId =
@@ -189,6 +191,8 @@ type MessageService
             | Equals "/privacy", _ -> sendMessage Messages.Privacy
             | Equals "/faq", _ -> sendMessage Messages.FAQ
             | Equals "/generate", Authorized -> queueGeneration userId
+            | Equals "/version", Authorized ->
+              sendMessage (Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion)
             | CommandWithData "/include" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"

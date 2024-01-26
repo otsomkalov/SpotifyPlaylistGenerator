@@ -12,15 +12,22 @@ open SpotifyAPI.Web
 open Infrastructure.Helpers
 open otsom.FSharp.Extensions
 
+[<Literal>]
+let private recommendationsLimit = 100
+[<Literal>]
+let private playlistTracksLimit = 100
+[<Literal>]
+let private likedTacksLimit = 50
+
 let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.GetRecommendations =
-  fun count tracks ->
+  fun tracks ->
     task {
       let request = RecommendationsRequest()
 
       for track in tracks do
         request.SeedTracks.Add(track |> TrackId.value)
 
-      request.Limit <- count
+      request.Limit <- recommendationsLimit
 
       let! recommendationsResponse = client.Browse.GetRecommendations(request)
 
@@ -67,7 +74,7 @@ module Playlist =
     fun playlistId ->
       let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
       let listPlaylistTracks = listTracks' client playlistId
-      let loadTracks' = loadTracks' 100
+      let loadTracks' = loadTracks' playlistTracksLimit
 
       task {
         try
@@ -91,7 +98,7 @@ module User =
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks =
     let listLikedTracks' = listLikedTracks' client
-    let loadTracks' = loadTracks' 50
+    let loadTracks' = loadTracks' likedTacksLimit
 
     fun () -> loadTracks' listLikedTracks'
 

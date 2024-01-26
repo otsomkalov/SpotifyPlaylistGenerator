@@ -62,7 +62,7 @@ module Preset =
   type Save = Preset -> Task<unit>
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
-  type GetRecommendations = int -> TrackId list -> Task<TrackId list>
+  type GetRecommendations = TrackId list -> Task<TrackId list>
   type Remove = PresetId -> Task<Preset>
 
   type ListIncludedTracks = IncludedPlaylist list -> Task<TrackId list>
@@ -423,7 +423,7 @@ module Playlist =
           task {
             let! recommendedTracks =
               if preset.Settings.RecommendationsEnabled then
-                includedTracks |> List.take 5 |> (io.GetRecommendations 100)
+                includedTracks |> io.GetRecommendations
               else
                 [] |> Task.FromResult
 

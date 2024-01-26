@@ -27,7 +27,7 @@ let private cacheTracks (cache: IDatabase) =
       let values = tracks |> List.map (TrackId.value >> RedisValue) |> Array.ofSeq
 
       let! _ = cache.ListLeftPushAsync(key, values)
-      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(7))
+      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(1))
 
       return tracks
     }
