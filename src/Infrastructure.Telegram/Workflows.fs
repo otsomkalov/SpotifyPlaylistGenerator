@@ -20,7 +20,7 @@ open Infrastructure.Telegram.Helpers
 open otsom.FSharp.Extensions
 
 let escapeMarkdownString (str: string) =
-  Regex.Replace(str, "([\(\)`\.#\-!])", "\$1")
+  Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
 
 let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
   fun text ->
