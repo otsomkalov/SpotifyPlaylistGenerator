@@ -38,7 +38,7 @@ steps:
       command: 'publish'
       configuration: 'Release'
       projects: 'src/**/Generator.fsproj'
-      arguments: '-r $(Runtime) -c Release -o $(Build.ArtifactStagingDirectory) /p:InformationalVersion=$(Build.Version)'
+      arguments: '-r $(Runtime) -c Release -o $(Build.ArtifactStagingDirectory) /p:InformationalVersion=$(Build.BuildNumber)'
       publishWebProjects: false
   - task: PublishBuildArtifacts@1
     name: Pack
