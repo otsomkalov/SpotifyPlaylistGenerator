@@ -193,7 +193,7 @@ type MessageService
             | Equals "/generate", Authorized -> queueGeneration userId
             | Equals "/version", Authorized ->
               let version =
-                Assembly.GetExecutingAssembly().GetName().Version.ToString()
+                Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion
 
               sendMessage version
             | CommandWithData "/include" rawPlaylistId, Authorized ->
