@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Helpers.fs"/>
     <Compile Include="Constants.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Workflows.fs"/>

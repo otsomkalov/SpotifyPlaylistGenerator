@@ -5,15 +5,6 @@ open System.Text.Json
 open System.Text.Json.Serialization
 open otsom.FSharp.Extensions
 
-let (|StartsWith|_|) (substring: string) (str: string) =
-  if str.StartsWith(substring, StringComparison.InvariantCultureIgnoreCase) then
-    Some()
-  else
-    None
-
-let (|Equals|_|) (toCompare: string) (source: string) =
-  if source = toCompare then Some() else None
-
 let (|CommandWithData|_|) (command: string) (input: string) =
   match input.Split(" ") with
   | [| inputCommand; data |] -> if inputCommand = command then Some(data) else None
