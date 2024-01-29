@@ -407,9 +407,9 @@ module Playlist =
         | tracks ->
           task {
             let tracksIdsToImport =
-              tracks |> List.take (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+              tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
-            for playlist in preset.TargetedPlaylists |> Seq.filter (fun p -> p.Enabled) do
+            for playlist in preset.TargetedPlaylists |> Seq.filter (_.Enabled) do
               do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
 
             return Ok()
