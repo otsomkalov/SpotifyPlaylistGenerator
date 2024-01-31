@@ -4,7 +4,6 @@
 
 open otsom.FSharp.Extensions.ServiceCollection
 open Domain.Workflows
-open System
 open Azure.Storage.Queues
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
@@ -16,13 +15,13 @@ open StackExchange.Redis
 open MongoDB.ApplicationInsights.DependencyInjection
 open Infrastructure.Workflows
 
-let private configureRedisCache (serviceProvider: IServiceProvider) =
-  let settings = serviceProvider.GetRequiredService<IOptions<RedisSettings>>().Value
+let private configureRedisCache (options: IOptions<RedisSettings>) =
+  let settings = options.Value
 
   ConnectionMultiplexer.Connect(settings.ConnectionString) :> IConnectionMultiplexer
 
-let private configureQueueClient (sp: IServiceProvider) =
-  let settings = sp.GetRequiredService<IOptions<StorageSettings>>().Value
+let private configureQueueClient (options: IOptions<StorageSettings>) =
+  let settings = options.Value
 
   QueueClient(settings.ConnectionString, settings.QueueName)
 
@@ -42,9 +41,9 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.Configure<StorageSettings>(configuration.GetSection(StorageSettings.SectionName))
   services.Configure<RedisSettings>(configuration.GetSection(RedisSettings.SectionName))
 
-  services.AddSingleton<IConnectionMultiplexer>(configureRedisCache)
+  services.AddSingletonFunc<IConnectionMultiplexer, IOptions<RedisSettings>>(configureRedisCache)
 
-  services.AddSingleton<QueueClient>(configureQueueClient)
+  services.AddSingletonFunc<QueueClient, IOptions<StorageSettings>>(configureQueueClient)
 
   services.AddMongoClientFactory()
   services.AddSingletonFunc<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)

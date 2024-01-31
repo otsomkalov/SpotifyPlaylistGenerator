@@ -42,7 +42,7 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
   |> Seq.filter (isNull >> not)
-  |> Seq.map (_.Id)
+  |> Seq.map _.Id
   |> Seq.filter (isNull >> not)
   |> Seq.map TrackId
   |> Seq.toList
@@ -93,7 +93,7 @@ module User =
     task {
       let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
 
-      return (tracks.Items |> Seq.map (_.Track) |> getTracksIds, tracks.Total)
+      return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
     }
 
   let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks =

@@ -1,8 +1,6 @@
 ﻿module Infrastructure.Core
 
 open Domain.Workflows
-open Resources
-open System
 open Domain.Core
 
 [<RequireQualifiedAccess>]
