@@ -24,7 +24,7 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
     task {
       let request = RecommendationsRequest()
 
-      for track in tracks do
+      for track in tracks |> List.takeSafe 5 do
         request.SeedTracks.Add(track |> TrackId.value)
 
       request.Limit <- recommendationsLimit
