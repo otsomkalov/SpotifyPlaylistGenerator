@@ -2,35 +2,30 @@
 
 open System
 
-module SpotifySettings =
-  [<Literal>]
-  let SectionName = "Spotify"
+[<CLIMutable>]
+type SpotifySettings =
+  { ClientId: string
+    ClientSecret: string
+    CallbackUrl: Uri }
 
-type SpotifySettings() =
-  member val ClientId = "" with get, set
-  member val ClientSecret = "" with get, set
-  member val CallbackUrl: Uri = null with get, set
+  static member SectionName = "Spotify"
 
-module DatabaseSettings =
-  [<Literal>]
-  let SectionName = "Database"
+[<CLIMutable>]
+type DatabaseSettings =
+  { ConnectionString: string
+    Name: string }
 
-type DatabaseSettings() =
-  member val ConnectionString = "" with get, set
-  member val Name = "" with get, set
+  static member SectionName = "Database"
 
-module StorageSettings =
-  [<Literal>]
-  let SectionName = "Storage"
+[<CLIMutable>]
+type StorageSettings =
+  { ConnectionString: string
+    QueueName: string }
 
-type StorageSettings() =
-  member val ConnectionString = "" with get, set
+  static member SectionName = "Storage"
 
-  member val QueueName = "" with get, set
+[<CLIMutable>]
+type RedisSettings =
+  { ConnectionString: string }
 
-module RedisSettings =
-  [<Literal>]
-  let SectionName = "Redis"
-
-type RedisSettings() =
-  member val ConnectionString  = "" with get, set
+  static member SectionName = "Redis"

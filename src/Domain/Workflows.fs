@@ -409,7 +409,7 @@ module Playlist =
             let tracksIdsToImport =
               tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
-            for playlist in preset.TargetedPlaylists |> Seq.filter (_.Enabled) do
+            for playlist in preset.TargetedPlaylists |> Seq.filter _.Enabled do
               do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
 
             return Ok()

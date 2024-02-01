@@ -1,33 +1,32 @@
 ﻿module Infrastructure.Mapping
 
 open System
-open Database.Entities
-open Infrastructure.Core
+open Database
 open Domain.Core
 open Domain.Workflows
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
-  let fromDb (preset: Database.Entities.SimplePreset) : SimplePreset =
+  let fromDb (preset: Entities.SimplePreset) : SimplePreset =
     { Id = preset.Id |> PresetId
       Name = preset.Name }
 
-  let toDb (preset: SimplePreset) : Database.Entities.SimplePreset =
-    Database.Entities.SimplePreset(Id = (preset.Id |> PresetId.value), Name = preset.Name)
+  let toDb (preset: SimplePreset) : Entities.SimplePreset =
+    Entities.SimplePreset(Id = (preset.Id |> PresetId.value), Name = preset.Name)
 
-  let toFullDb (userId: UserId) (preset: SimplePreset) : Database.Entities.Preset =
-    Database.Entities.Preset(
+  let toFullDb (userId: UserId) (preset: SimplePreset) : Entities.Preset =
+    Entities.Preset(
       Id = (preset.Id |> PresetId.value),
       Name = preset.Name,
       UserId = (userId |> UserId.value),
-      Settings = Database.Entities.Settings(
+      Settings = Entities.Settings(
         PlaylistSize = 10,
         IncludeLikedTracks = Nullable true,
         RecommendationsEnabled = false))
 
 [<RequireQualifiedAccess>]
 module User =
-  let fromDb (user: Database.Entities.User) : User =
+  let fromDb (user: Entities.User) : User =
     { Id = user.Id |> UserId
       CurrentPresetId =
         if isNull user.CurrentPresetId then
@@ -36,8 +35,8 @@ module User =
           Some(user.CurrentPresetId |> PresetId)
       Presets = user.Presets |> Seq.map SimplePreset.fromDb |> Seq.toList }
 
-  let toDb (user: User) : Database.Entities.User =
-    Database.Entities.User(
+  let toDb (user: User) : Entities.User =
+    Entities.User(
       Id = (user.Id |> UserId.value),
       CurrentPresetId = (user.CurrentPresetId |> Option.map PresetId.value |> Option.toObj),
       Presets = (user.Presets |> Seq.map SimplePreset.toDb)
@@ -45,13 +44,13 @@ module User =
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
-  let fromDb (playlist: Database.Entities.IncludedPlaylist) : IncludedPlaylist =
+  let fromDb (playlist: Entities.IncludedPlaylist) : IncludedPlaylist =
     { Id = playlist.Id |> PlaylistId |> ReadablePlaylistId
       Name = playlist.Name
       Enabled = not playlist.Disabled }
 
-  let toDb (playlist: IncludedPlaylist) : Database.Entities.IncludedPlaylist =
-    Database.Entities.IncludedPlaylist(
+  let toDb (playlist: IncludedPlaylist) : Entities.IncludedPlaylist =
+    Entities.IncludedPlaylist(
       Id = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
       Name = playlist.Name,
       Disabled = not playlist.Enabled
@@ -59,13 +58,13 @@ module IncludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
-  let fromDb (playlist: Database.Entities.ExcludedPlaylist) : ExcludedPlaylist =
+  let fromDb (playlist: Entities.ExcludedPlaylist) : ExcludedPlaylist =
     { Id = playlist.Id |> PlaylistId |> ReadablePlaylistId
       Name = playlist.Name
       Enabled = not playlist.Disabled }
 
-  let toDb (playlist: ExcludedPlaylist) : Database.Entities.ExcludedPlaylist =
-    Database.Entities.ExcludedPlaylist(
+  let toDb (playlist: ExcludedPlaylist) : Entities.ExcludedPlaylist =
+    Entities.ExcludedPlaylist(
       Id = (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value),
       Name = playlist.Name,
       Disabled = not playlist.Enabled
@@ -73,25 +72,25 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-  let private fromDb (playlist: Database.Entities.TargetedPlaylist) : TargetedPlaylist =
+  let private fromDb (playlist: Entities.TargetedPlaylist) : TargetedPlaylist =
     { Id = playlist.Id |> PlaylistId |> WritablePlaylistId
       Name = playlist.Name
       Overwrite = playlist.Overwrite
       Enabled = not playlist.Disabled }
 
-  let toDb (playlist: TargetedPlaylist) : Database.Entities.TargetedPlaylist =
-    Database.Entities.TargetedPlaylist(
+  let toDb (playlist: TargetedPlaylist) : Entities.TargetedPlaylist =
+    Entities.TargetedPlaylist(
       Id = (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value),
       Name = playlist.Name,
       Overwrite = playlist.Overwrite,
       Disabled = not playlist.Enabled
     )
 
-  let mapPlaylists (playlists: Database.Entities.TargetedPlaylist seq) =
+  let mapPlaylists (playlists: Entities.TargetedPlaylist seq) =
     playlists |> Seq.map fromDb |> Seq.toList
 
 module PresetSettings =
-  let fromDb (settings: Settings) : PresetSettings.PresetSettings =
+  let fromDb (settings: Entities.Settings) : PresetSettings.PresetSettings =
     { LikedTracksHandling =
         (match settings.IncludeLikedTracks |> Option.ofNullable with
          | Some true -> PresetSettings.LikedTracksHandling.Include
@@ -100,8 +99,8 @@ module PresetSettings =
       PlaylistSize = settings.PlaylistSize |> PresetSettings.PlaylistSize.create
       RecommendationsEnabled = settings.RecommendationsEnabled }
 
-  let toDb (settings: PresetSettings.PresetSettings) : Settings =
-    Settings(
+  let toDb (settings: PresetSettings.PresetSettings) : Entities.Settings =
+    Entities.Settings(
       IncludeLikedTracks =
         (match settings.LikedTracksHandling with
          | PresetSettings.LikedTracksHandling.Include -> Nullable true
@@ -113,7 +112,7 @@ module PresetSettings =
 
 [<RequireQualifiedAccess>]
 module Preset =
-  let fromDb (preset: Database.Entities.Preset) : Preset =
+  let fromDb (preset: Entities.Preset) : Preset =
     let mapIncludedPlaylist playlists =
       playlists |> Seq.map IncludedPlaylist.fromDb |> Seq.toList
 
@@ -128,8 +127,8 @@ module Preset =
       Settings = PresetSettings.fromDb preset.Settings
       UserId = preset.UserId |> UserId }
 
-  let toDb (preset: Domain.Core.Preset) : Database.Entities.Preset =
-    Database.Entities.Preset(
+  let toDb (preset: Domain.Core.Preset) : Entities.Preset =
+    Entities.Preset(
       Id = (preset.Id |> PresetId.value),
       Name = preset.Name,
       UserId = (preset.UserId |> UserId.value),

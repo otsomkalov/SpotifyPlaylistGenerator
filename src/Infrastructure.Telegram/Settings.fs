@@ -1,9 +1,8 @@
 ﻿module Generator.Settings
 
-module TelegramSettings =
-  [<Literal>]
-  let SectionName = "Telegram"
+[<CLIMutable>]
+type TelegramSettings =
+  { Token: string
+    BotUrl: string }
 
-type TelegramSettings() =
-  member val Token = "" with get, set
-  member val BotUrl = "" with get, set
+  static member SectionName = "Telegram"

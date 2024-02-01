@@ -31,7 +31,7 @@ let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map (Seq.map (InlineKeyboardButton.WithCallbackData))
+      |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData)
       |> InlineKeyboardMarkup
 
     bot.SendTextMessageAsync(
@@ -69,7 +69,7 @@ let editMessage (bot: ITelegramBotClient) messageId userId : EditMessage =
   fun text buttons ->
     let replyMarkup =
       buttons
-      |> Seq.map (Seq.map (InlineKeyboardButton.WithCallbackData))
+      |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData)
       |> InlineKeyboardMarkup
 
     bot.EditMessageTextAsync(
@@ -139,7 +139,7 @@ let setPlaylistSize
       | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
 
     PresetSettings.PlaylistSize.tryCreate size
-    |> Result.taskMap (savePlaylistSize)
+    |> Result.taskMap savePlaylistSize
     |> TaskResult.taskEither onSuccess onError
 
 [<RequireQualifiedAccess>]
@@ -161,9 +161,9 @@ module Playlist =
         let onError =
           function
           | Playlist.IncludePlaylistError.IdParsing _ ->
-            replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
           | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
 
         return! includePlaylistResult |> TaskResult.taskEither onSuccess onError
       }
@@ -185,9 +185,9 @@ module Playlist =
         let onError =
           function
           | Playlist.ExcludePlaylistError.IdParsing _ ->
-            replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
           | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
 
         return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError
       }
@@ -205,9 +205,9 @@ module Playlist =
         let onError =
           function
           | Playlist.TargetPlaylistError.IdParsing _ ->
-            replyToMessage (System.String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
           | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (System.String.Format(Messages.PlaylistNotFoundInSpotify, id))
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
           | Playlist.TargetPlaylistError.AccessError _ -> replyToMessage Messages.PlaylistIsReadonly
 
         return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError

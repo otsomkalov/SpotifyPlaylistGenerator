@@ -243,8 +243,8 @@ module Preset =
       task{
         let! playlistsTracks =
           playlists
-          |> List.filter (fun p -> p.Enabled)
-          |> List.map (fun p -> p.Id)
+          |> List.filter _.Enabled
+          |> List.map _.Id
           |> listTracks
 
         logIncludedTracks playlistsTracks.Length
@@ -259,8 +259,8 @@ module Preset =
       task{
         let! playlistsTracks =
           playlists
-          |> List.filter (fun p -> p.Enabled)
-          |> List.map (fun p -> p.Id)
+          |> List.filter _.Enabled
+          |> List.map _.Id
           |> listTracks
 
         logExcludedTracks playlistsTracks.Length
@@ -356,7 +356,7 @@ module Auth =
       (spotifySettings.ClientId, spotifySettings.ClientSecret, code, spotifySettings.CallbackUrl)
       |> AuthorizationCodeTokenRequest
       |> OAuthClient().RequestToken
-      |> Task.map (fun r -> r.RefreshToken)
+      |> Task.map _.RefreshToken
 
   let saveCompletedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.SaveCompletedAuth =
     let database = connectionMultiplexer.GetDatabase Cache.tokensDatabase

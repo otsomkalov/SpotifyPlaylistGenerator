@@ -103,7 +103,7 @@ let sendPresetInfo (loadPreset: Preset.Load) (editMessage: EditMessage) : SendPr
       do! editMessage text keyboardMarkup
     }
 
-let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: User.SetCurrentPreset) : Core.SetCurrentPreset =
+let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: User.SetCurrentPreset) : SetCurrentPreset =
   fun userId presetId ->
     task {
       do! setCurrentPreset userId presetId
@@ -313,7 +313,7 @@ let sendCurrentPresetInfo
   : SendCurrentPresetInfo =
   fun userId ->
     task {
-      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId)
+      let! currentPresetId = loadUser userId |> Task.map _.CurrentPresetId
 
       return!
         match currentPresetId with
