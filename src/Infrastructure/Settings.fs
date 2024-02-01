@@ -8,7 +8,7 @@ type SpotifySettings =
     ClientSecret: string
     CallbackUrl: Uri }
 
-  static member SectionName = "Telegram"
+  static member SectionName = "Spotify"
 
 [<CLIMutable>]
 type DatabaseSettings =
