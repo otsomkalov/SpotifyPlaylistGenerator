@@ -3,7 +3,7 @@
 open System
 open System.Text.Json
 open System.Text.Json.Serialization
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
 
 let (|CommandWithData|_|) (command: string) (input: string) =
   match input.Split(" ") with
@@ -35,7 +35,6 @@ let (|Bool|_|) (str: string) =
 
 [<RequireQualifiedAccess>]
 module TaskResult =
-  open Domain.Extensions
   open System.Threading.Tasks
 
   let inline taskEither

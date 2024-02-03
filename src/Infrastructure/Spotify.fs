@@ -5,12 +5,12 @@ open System.Net
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
-open Infrastructure.Settings
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open SpotifyAPI.Web
 open Infrastructure.Helpers
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 
 [<Literal>]
 let private recommendationsLimit = 100

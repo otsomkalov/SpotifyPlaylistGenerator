@@ -2,9 +2,8 @@
 
 open System
 open System.Threading.Tasks
-open shortid
+open otsom.fs.Telegram.Bot.Core
 
-type UserId = UserId of int64
 type PlaylistId = PlaylistId of string
 type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
@@ -207,36 +206,3 @@ module TargetedPlaylist =
         Enabled = true
         Overwrite = false }
       |> Some
-
-[<RequireQualifiedAccess>]
-module Auth =
-  type State = private State of string
-
-  [<RequireQualifiedAccess>]
-  module State =
-    let create () = ShortId.Generate() |> State
-
-    let parse str = State str
-
-    let value (State key) = key
-
-  type Inited = { State: State; UserId: UserId }
-
-  type GetLoginLink = UserId -> Task<string>
-
-  type Fulfilled =
-    { UserId: UserId
-      State: State
-      Code: string }
-
-  type FulfillmentError = | StateNotFound
-
-  type Fulfill = State -> string -> Task<Result<Fulfilled, FulfillmentError>>
-
-  type CompleteError =
-    | StateNotFound
-    | StateDoesntBelongToUser
-
-  type Completed = { UserId: UserId; Token: string }
-
-  type Complete = UserId -> State -> Task<Result<unit, CompleteError>>

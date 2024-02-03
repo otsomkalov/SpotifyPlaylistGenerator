@@ -7,7 +7,8 @@ open Domain.Workflows
 open Infrastructure.Core
 open StackExchange.Redis
 open Infrastructure.Helpers
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
 
 [<Literal>]
 let playlistsDatabase = 0
@@ -15,8 +16,6 @@ let playlistsDatabase = 0
 let likedTracksDatabase = 1
 [<Literal>]
 let tokensDatabase = 2
-[<Literal>]
-let authDatabase = 3
 
 let private listCachedTracks (cache: IDatabase) =
   fun key -> key |> RedisKey |> cache.ListRangeAsync |> Task.map (List.ofArray >> List.map (string >> TrackId))

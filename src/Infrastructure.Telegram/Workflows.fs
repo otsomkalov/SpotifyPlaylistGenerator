@@ -17,7 +17,8 @@ open Telegram.Core
 open Telegram.Workflows
 open Domain.Extensions
 open Infrastructure.Telegram.Helpers
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
 
 let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
