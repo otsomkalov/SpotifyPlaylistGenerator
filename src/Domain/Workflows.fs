@@ -6,13 +6,10 @@ open Domain.Extensions
 open IcedTasks.ColdTasks
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
+open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
 open shortid
 open shortid.Configuration
-open otsom.FSharp.Extensions
-
-[<RequireQualifiedAccess>]
-module UserId =
-  let value (UserId id) = id
 
 [<RequireQualifiedAccess>]
 module PresetId =
@@ -558,68 +555,3 @@ module TargetedPlaylist =
 
         return! updatePreset updatedPreset
       }
-
-[<RequireQualifiedAccess>]
-module Auth =
-  type InitState = UserId -> Task<Auth.State>
-  type GetLoginLink = Auth.State -> string
-
-  let getLoginLink (initState: InitState) (getLoginLink: GetLoginLink) : Auth.GetLoginLink =
-    fun userId ->
-      task {
-        let! state = initState userId
-
-        return getLoginLink state
-      }
-
-  type TryGetInitedAuth = Auth.State -> Task<Auth.Inited option>
-  type SaveFulfilledAuth = Auth.Fulfilled -> Task<unit>
-
-  let fulfill (tryGetAuth: TryGetInitedAuth) (saveFulfilledAuth: SaveFulfilledAuth) : Auth.Fulfill =
-    let addCodeToAuth code =
-      fun (initedAuth: Auth.Inited option) ->
-        match initedAuth with
-        | Some auth ->
-          task {
-            let fulfilledAuth: Auth.Fulfilled =
-              { State = auth.State
-                UserId = auth.UserId
-                Code = code }
-
-            do! saveFulfilledAuth fulfilledAuth
-
-            return Ok fulfilledAuth
-          }
-        | None -> Auth.StateNotFound |> Error |> Task.FromResult
-
-    fun state code ->
-      state |> tryGetAuth |> Task.bind (addCodeToAuth code)
-
-  type TryGetCompletedAuth = Auth.State -> Task<Auth.Fulfilled option>
-  type SaveCompletedAuth = Auth.Completed -> Task<unit>
-  type GetToken = string -> Task<string>
-
-  let complete (tryGetAuth: TryGetCompletedAuth) (getToken: GetToken) (saveCompletedAuth: SaveCompletedAuth) (createUserIfNotExists: User.CreateIfNotExists) : Auth.Complete =
-    let createCompletedAuth (auth: Auth.Fulfilled) =
-      task{
-        let! token = getToken auth.Code
-
-        let completed : Auth.Completed ={
-          UserId = auth.UserId
-          Token = token
-        }
-
-        do! saveCompletedAuth completed
-        do! createUserIfNotExists auth.UserId
-      }
-
-    let validateAuth userId =
-      fun (auth: Auth.Fulfilled) ->
-        if userId = auth.UserId then Ok(auth) else Error(Auth.StateDoesntBelongToUser)
-
-    fun userId state ->
-      state
-      |> tryGetAuth
-      |> Task.map (Result.ofOption Auth.CompleteError.StateNotFound)
-      |> Task.map (Result.bind (validateAuth userId))
-      |> Task.bind (Result.taskMap createCompletedAuth)

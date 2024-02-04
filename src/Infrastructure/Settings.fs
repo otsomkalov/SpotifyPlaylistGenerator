@@ -1,14 +1,5 @@
 ﻿namespace Infrastructure.Settings
 
-open System
-
-[<CLIMutable>]
-type SpotifySettings =
-  { ClientId: string
-    ClientSecret: string
-    CallbackUrl: Uri }
-
-  static member SectionName = "Spotify"
 
 [<CLIMutable>]
 type DatabaseSettings =

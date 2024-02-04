@@ -11,7 +11,6 @@ open System.Threading.Tasks
 open Azure.Storage.Queues
 open Domain.Core
 open Domain.Workflows
-open Infrastructure.Settings
 open Infrastructure.Spotify
 open Microsoft.Extensions.Options
 open MongoDB.Driver
@@ -22,8 +21,11 @@ open Telegram.Bot.Types
 open Telegram.Bot.Types.Enums
 open Telegram.Core
 open System
-open otsom.FSharp.Extensions
-open otsom.FSharp.Extensions.String
+open otsom.fs.Extensions
+open otsom.fs.Extensions.String
+open otsom.fs.Telegram.Bot.Auth.Spotify
+open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
+open otsom.fs.Telegram.Bot.Core
 
 type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, createClientFromTokenResponse: CreateClientFromTokenResponse) =
   let _clientsByTelegramId =
@@ -73,7 +75,9 @@ type MessageService
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
     _spotifyOptions: IOptions<SpotifySettings>,
-    _queueClient: QueueClient
+    _queueClient: QueueClient,
+    initAuth: Auth.Init,
+    completeAuth: Auth.Complete
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -96,12 +100,7 @@ type MessageService
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
 
     let sendLoginMessage () =
-      let initState = Auth.initState _connectionMultiplexer
-      let getLoginLink = Workflows.Auth.getLoginLink _spotifyOptions
-
-      let getLoginLink = Auth.getLoginLink initState getLoginLink
-
-      getLoginLink userId
+      initAuth userId
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task {
@@ -170,10 +169,14 @@ type MessageService
             | Equals "/start", Authorized ->
               sendCurrentPresetInfo userId
             | CommandWithData "/start" state, _ ->
-              let tryGetAuth = Auth.tryGetCompletedAuth _connectionMultiplexer
-              let getToken = Auth.getToken _spotifyOptions
-              let saveCompletedAuth = Auth.saveCompletedAuth _connectionMultiplexer
-              let createUserIfNotExists = User.createIfNotExists _database
+              let processSuccessfulLogin =
+                let createUserIfNotExists = User.createIfNotExists _database
+                fun () ->
+                  task{
+                    do! createUserIfNotExists userId
+                    do! sendCurrentPresetInfo userId
+                  }
+
               let sendErrorMessage =
                 function
                 | Auth.CompleteError.StateNotFound ->
@@ -181,10 +184,8 @@ type MessageService
                 | Auth.CompleteError.StateDoesntBelongToUser ->
                   replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
 
-              let completeAuth = Auth.complete tryGetAuth getToken saveCompletedAuth createUserIfNotExists
-
-              completeAuth userId (state |> Auth.State.parse)
-              |> TaskResult.taskEither (fun () -> sendCurrentPresetInfo userId) sendErrorMessage
+              completeAuth userId state
+              |> TaskResult.taskEither processSuccessfulLogin sendErrorMessage
             | Equals "/help", _ ->
               sendMessage Messages.Help
             | Equals "/guide", _ -> sendMessage Messages.Guide

@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Microsoft.FSharp.Core
+open otsom.fs.Telegram.Bot.Core
 
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int

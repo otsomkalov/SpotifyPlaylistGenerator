@@ -8,7 +8,7 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
 open Telegram.Bot
-open otsom.FSharp.Extensions.ServiceCollection
+open otsom.fs.Extensions.DependencyInjection
 
 let private configureTelegramBotClient (options: IOptions<TelegramSettings>) =
   let settings = options.Value
@@ -18,7 +18,7 @@ let private configureTelegramBotClient (options: IOptions<TelegramSettings>) =
 let addTelegram (configuration: IConfiguration) (services: IServiceCollection) =
   services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.SectionName))
 
-  services.AddSingletonFunc<ITelegramBotClient, IOptions<TelegramSettings>>(configureTelegramBotClient)
+  services.BuildSingleton<ITelegramBotClient, IOptions<TelegramSettings>>(configureTelegramBotClient)
 
   services.AddScoped<MessageService>().AddScoped<CallbackQueryService>()
 

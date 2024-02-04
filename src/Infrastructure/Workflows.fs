@@ -4,8 +4,6 @@ open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Infrastructure
-open Infrastructure.Settings
-open Microsoft.Extensions.Options
 open MongoDB.Driver
 open SpotifyAPI.Web
 open System.Net
@@ -17,7 +15,8 @@ open Infrastructure.Core
 open Infrastructure.Mapping
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
 
 [<RequireQualifiedAccess>]
 module User =
@@ -266,103 +265,4 @@ module Preset =
         logExcludedTracks playlistsTracks.Length
 
         return playlistsTracks
-      }
-
-[<RequireQualifiedAccess>]
-module Auth =
-  let initState (connectionMultiplexer: IConnectionMultiplexer) : Auth.InitState =
-    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
-
-    fun userId ->
-      task {
-        let userId = userId |> UserId.value |> string
-        let state = Auth.State.create()
-        let stateValue = state |> Auth.State.value
-
-        do! database.HashSetAsync(stateValue, [| HashEntry("UserId", userId) |])
-        do! database.KeyExpireAsync(stateValue, TimeSpan.FromMinutes(5)) |> Task.map ignore
-
-        return state
-      }
-
-  let tryGetInitedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.TryGetInitedAuth =
-    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
-
-    fun state ->
-      state
-      |> Auth.State.value
-      |> Task.FromResult
-      |> Task.bind (fun s -> database.HashGetAsync(s, "UserId"))
-      |> Task.map (fun s ->
-        if s.IsNullOrEmpty then
-          None
-        else
-          Some(
-            { State = state
-              UserId = (s |> int64 |> UserId) }
-          ))
-
-  let saveFulfilledAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.SaveFulfilledAuth =
-    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
-
-    fun auth ->
-      task {
-        let state = auth.State |> Auth.State.value
-
-        let hashEntries =
-          [| HashEntry("UserId", (auth.UserId |> UserId.value |> string |> RedisValue))
-             HashEntry("Code", auth.Code) |]
-
-        do! database.HashSetAsync(state, hashEntries)
-      }
-
-  let getLoginLink (spotifyOptions: IOptions<SpotifySettings>): Auth.GetLoginLink =
-    fun state ->
-      let spotifySettings = spotifyOptions.Value
-
-      let scopes =
-        [ Scopes.PlaylistModifyPrivate
-          Scopes.PlaylistModifyPublic
-          Scopes.UserLibraryRead ]
-        |> List<string>
-
-      let loginRequest =
-        LoginRequest(spotifySettings.CallbackUrl, spotifySettings.ClientId, LoginRequest.ResponseType.Code, Scope = scopes, State = (state |> Auth.State.value))
-
-      loginRequest.ToUri().ToString()
-
-  let tryGetCompletedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.TryGetCompletedAuth =
-    let database = connectionMultiplexer.GetDatabase Cache.authDatabase
-
-    fun state ->
-      state
-      |> Auth.State.value
-      |> Task.FromResult
-      |> Task.bind (fun s -> database.HashGetAllAsync(s))
-      |> Task.map (fun entries ->
-        match entries with
-        | [|codeEntry; userIdEntry|] when codeEntry.Name = "Code" && userIdEntry.Name = "UserId" ->
-          Some(
-            { UserId = (userIdEntry.Value |> int64 |> UserId)
-              State = state
-              Code = codeEntry.Value }
-          )
-        | _ -> None)
-
-  let getToken (spotifyOptions: IOptions<SpotifySettings>) : Auth.GetToken =
-    let spotifySettings = spotifyOptions.Value
-
-    fun code ->
-      (spotifySettings.ClientId, spotifySettings.ClientSecret, code, spotifySettings.CallbackUrl)
-      |> AuthorizationCodeTokenRequest
-      |> OAuthClient().RequestToken
-      |> Task.map _.RefreshToken
-
-  let saveCompletedAuth (connectionMultiplexer: IConnectionMultiplexer) : Auth.SaveCompletedAuth =
-    let database = connectionMultiplexer.GetDatabase Cache.tokensDatabase
-
-    fun auth ->
-      task {
-        do! database.StringSetAsync((auth.UserId |> UserId.value |> string), auth.Token, (TimeSpan.FromDays 7))
-          |> Task.map ignore
       }

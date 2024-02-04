@@ -10,6 +10,7 @@ open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
 open Telegram.Bot
+open otsom.fs.Telegram.Bot.Core
 
 type GeneratorFunctions
   (

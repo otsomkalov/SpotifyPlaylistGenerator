@@ -7,7 +7,7 @@ open Microsoft.FSharp.Core
 open Resources
 open Telegram.Constants
 open Telegram.Core
-open otsom.FSharp.Extensions
+open otsom.fs.Extensions
 
 [<Literal>]
 let keyboardColumns = 4

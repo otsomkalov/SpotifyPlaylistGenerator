@@ -12,6 +12,7 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
+open otsom.fs.Telegram.Bot
 
 let private configureServices (builderContext: HostBuilderContext) (services: IServiceCollection) : unit =
 
@@ -21,6 +22,8 @@ let private configureServices (builderContext: HostBuilderContext) (services: IS
   let configuration = builderContext.Configuration
 
   services
+  |> Auth.Spotify.Startup.addSpotifyAuth configuration
+  |> Auth.Spotify.Redis.Startup.addRedisSpotifyAuth
   |> Infrastructure.Startup.addInfrastructure configuration
   |> Infrastructure.Telegram.Startup.addTelegram configuration
 
