@@ -10,7 +10,7 @@
     <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0"/>
     <PackageReference Include="shortid" Version="4.0.0"/>
-    <PackageReference Include="SpotifyAPI.Web" Version="7.0.2"/>
+    <PackageReference Include="SpotifyAPI.Web" Version="7.1.1"/>
     <PackageReference Include="StackExchange.Redis" Version="2.7.17"/>
     <PackageReference Include="MongoDB.ApplicationInsights.DependencyInjection" Version="1.0.34"/>
     <PackageReference Include="FSharp.SystemTextJson" Version="1.2.42"/>
