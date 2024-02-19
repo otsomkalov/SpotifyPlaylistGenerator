@@ -23,7 +23,7 @@ let private configureServices (builderContext: HostBuilderContext) (services: IS
 
   services
   |> Auth.Spotify.Startup.addSpotifyAuth configuration
-  |> Auth.Spotify.Redis.Startup.addRedisSpotifyAuth
+  |> Auth.Spotify.Mongo.Startup.addMongoSpotifyAuth
   |> Infrastructure.Startup.addInfrastructure configuration
   |> Infrastructure.Telegram.Startup.addTelegram configuration
 
