@@ -9,6 +9,7 @@ open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Options
 open Generator.Extensions.IQueryCollection
 open StackExchange.Redis
+open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify
 
 type SpotifyFunctions
