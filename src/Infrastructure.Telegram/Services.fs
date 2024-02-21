@@ -99,7 +99,7 @@ type MessageService
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
 
     let sendLoginMessage () =
-      initAuth userId
+      initAuth userId [ Scopes.PlaylistModifyPrivate; Scopes.PlaylistModifyPublic; Scopes.UserLibraryRead ]
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task {
