@@ -18,9 +18,7 @@ let buttonsPerPage = 20
 type MessageButton = string * string
 type KeyboardButton = string
 
-type SendMessage = string -> Task<unit>
 type SendButtons = string -> MessageButton seq seq -> Task<unit>
-type ReplyToMessage = string -> Task<unit>
 type SendKeyboard = string -> KeyboardButton seq seq -> Task<unit>
 type EditMessage = string -> MessageButton seq seq -> Task<unit>
 type AskForReply = string -> Task<unit>

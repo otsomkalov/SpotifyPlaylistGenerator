@@ -22,7 +22,7 @@ let private configureServices (builderContext: HostBuilderContext) (services: IS
   let configuration = builderContext.Configuration
 
   services
-  |> Auth.Spotify.Startup.addSpotifyAuth configuration
+  |> Auth.Spotify.Startup.addTelegramBotSpotifyAuthCore configuration
   |> Auth.Spotify.Mongo.Startup.addMongoSpotifyAuth
   |> Infrastructure.Startup.addInfrastructure configuration
   |> Infrastructure.Telegram.Startup.addTelegram configuration

@@ -76,7 +76,9 @@ type MessageService
     _spotifyOptions: IOptions<SpotifySettings>,
     _queueClient: QueueClient,
     initAuth: Auth.Init,
-    completeAuth: Auth.Complete
+    completeAuth: Auth.Complete,
+    sendUserMessage: SendUserMessage,
+    replyToUserMessage: ReplyToUserMessage
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -86,10 +88,10 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
-    let sendMessage = Workflows.sendMessage _bot userId
+    let sendMessage = sendUserMessage userId
     let sendLink = Workflows.sendLink _bot userId
     let sendKeyboard = Workflows.sendKeyboard _bot userId
-    let replyToMessage = Workflows.replyToMessage _bot userId message.MessageId
+    let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = Workflows.sendButtons _bot userId
     let askForReply = Workflows.askForReply _bot userId message.MessageId
     let savePreset = Preset.save _database

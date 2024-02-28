@@ -15,18 +15,12 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
 open Telegram.Workflows
-open Domain.Extensions
 open Infrastructure.Telegram.Helpers
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 
 let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
-
-let sendMessage (bot: ITelegramBotClient) userId : SendMessage =
-  fun text ->
-    bot.SendTextMessageAsync((userId |> UserId.value |> ChatId), text |> escapeMarkdownString, parseMode = ParseMode.MarkdownV2)
-    |> Task.map ignore
 
 let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
   fun text buttons ->
@@ -40,16 +34,6 @@ let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
       text |> escapeMarkdownString,
       parseMode = ParseMode.MarkdownV2,
       replyMarkup = replyMarkup
-    )
-    |> Task.map ignore
-
-let replyToMessage (bot: ITelegramBotClient) userId (messageId: int) : ReplyToMessage =
-  fun text ->
-    bot.SendTextMessageAsync(
-      (userId |> UserId.value |> ChatId),
-      text |> escapeMarkdownString,
-      parseMode = ParseMode.MarkdownV2,
-      replyToMessageId = messageId
     )
     |> Task.map ignore
 

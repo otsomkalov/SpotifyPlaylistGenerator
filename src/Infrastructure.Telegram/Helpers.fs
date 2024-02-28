@@ -33,16 +33,6 @@ let (|Bool|_|) (str: string) =
   | true, value -> Some(value)
   | _ -> None
 
-[<RequireQualifiedAccess>]
-module TaskResult =
-  open System.Threading.Tasks
-
-  let inline taskEither
-    ([<InlineIfLambda>] onOk: 'okInput -> Task<'output>)
-    ([<InlineIfLambda>] onError: 'errorInput -> Task<'output>)
-    =
-    Task.bind (Result.either onOk onError)
-
 module JSON =
   let options =
     JsonFSharpOptions.Default()
