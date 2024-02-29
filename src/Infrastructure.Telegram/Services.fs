@@ -25,32 +25,31 @@ open otsom.fs.Extensions
 open otsom.fs.Extensions.String
 open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
+open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 open otsom.fs.Telegram.Bot.Core
 
-type SpotifyClientProvider(connectionMultiplexer: IConnectionMultiplexer, createClientFromTokenResponse: CreateClientFromTokenResponse) =
+type SpotifyClientProvider(createClientFromTokenResponse: CreateClientFromTokenResponse, loadCompletedAuth: Completed.Load) =
   let _clientsByTelegramId =
     Dictionary<int64, ISpotifyClient>()
 
   member this.GetAsync userId : Task<ISpotifyClient> =
-    let userId = userId |> UserId.value
+    let userId' = userId |> UserId.value
 
-    if _clientsByTelegramId.ContainsKey(userId) then
-      _clientsByTelegramId[userId] |> Task.FromResult
+    if _clientsByTelegramId.ContainsKey(userId') then
+      _clientsByTelegramId[userId'] |> Task.FromResult
     else
-      let cache = connectionMultiplexer.GetDatabase Cache.tokensDatabase
-
       task {
-        let! tokenValue = userId |> string |> cache.StringGetAsync
+        let! auth = loadCompletedAuth userId
 
         return!
-          match tokenValue.IsNullOrEmpty with
-          | true -> Task.FromResult null
-          | false ->
+          match auth with
+          | None -> Task.FromResult null
+          | Some auth ->
             let client =
-              AuthorizationCodeTokenResponse(RefreshToken = tokenValue)
+              AuthorizationCodeTokenResponse(RefreshToken = auth.Token)
               |> createClientFromTokenResponse
 
-            this.SetClient(userId, client)
+            this.SetClient(userId', client)
 
             client |> Task.FromResult
       }
@@ -77,7 +76,9 @@ type MessageService
     _spotifyOptions: IOptions<SpotifySettings>,
     _queueClient: QueueClient,
     initAuth: Auth.Init,
-    completeAuth: Auth.Complete
+    completeAuth: Auth.Complete,
+    sendUserMessage: SendUserMessage,
+    replyToUserMessage: ReplyToUserMessage
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -87,10 +88,10 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
-    let sendMessage = Workflows.sendMessage _bot userId
+    let sendMessage = sendUserMessage userId
     let sendLink = Workflows.sendLink _bot userId
     let sendKeyboard = Workflows.sendKeyboard _bot userId
-    let replyToMessage = Workflows.replyToMessage _bot userId message.MessageId
+    let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = Workflows.sendButtons _bot userId
     let askForReply = Workflows.askForReply _bot userId message.MessageId
     let savePreset = Preset.save _database
@@ -100,7 +101,7 @@ type MessageService
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
 
     let sendLoginMessage () =
-      initAuth userId
+      initAuth userId [ Scopes.PlaylistModifyPrivate; Scopes.PlaylistModifyPublic; Scopes.UserLibraryRead ]
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task {

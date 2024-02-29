@@ -14,8 +14,6 @@ open otsom.fs.Telegram.Bot.Core
 let playlistsDatabase = 0
 [<Literal>]
 let likedTracksDatabase = 1
-[<Literal>]
-let tokensDatabase = 2
 
 let private listCachedTracks (cache: IDatabase) =
   fun key -> key |> RedisKey |> cache.ListRangeAsync |> Task.map (List.ofArray >> List.map (string >> TrackId))

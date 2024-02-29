@@ -18,7 +18,8 @@ type GeneratorFunctions
     loadPreset: Preset.Load,
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
-    connectionMultiplexer: IConnectionMultiplexer
+    connectionMultiplexer: IConnectionMultiplexer,
+    sendUserMessage: SendUserMessage
   ) =
 
   [<Function("GenerateAsync")>]
@@ -69,7 +70,7 @@ type GeneratorFunctions
       let listLikedTracks =
         Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks preset.UserId
 
-      let sendMessage = Telegram.Workflows.sendMessage _bot preset.UserId
+      let sendMessage = sendUserMessage preset.UserId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
 
       let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
