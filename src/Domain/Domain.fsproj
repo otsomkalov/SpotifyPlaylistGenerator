@@ -9,13 +9,16 @@
     <PackageReference Include="IcedTasks" Version="0.11.3"/>
     <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0"/>
-    <PackageReference Include="otsom.fs.Telegram.Bot" Version="0.0.9"/>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Extensions.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Workflows.fs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\otsom.fs\src\otsom.fs.Telegram.Bot\otsom.fs.Telegram.Bot.fsproj" />
   </ItemGroup>
 
 </Project>

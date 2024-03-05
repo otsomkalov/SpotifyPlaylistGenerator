@@ -203,7 +203,7 @@ module IncludedPlaylist =
     updatePresetPlaylist loadPreset updatePreset true
 
   let disable loadPreset updatePreset : IncludedPlaylist.Disable =
-    updatePresetPlaylist loadPreset updatePreset true
+    updatePresetPlaylist loadPreset updatePreset false
 
   let remove (loadPreset: Preset.Load) (updatePreset: Preset.Update) : IncludedPlaylist.Remove =
     fun presetId includedPlaylistId ->
