@@ -78,7 +78,10 @@ type MessageService
     initAuth: Auth.Init,
     completeAuth: Auth.Complete,
     sendUserMessage: SendUserMessage,
-    replyToUserMessage: ReplyToUserMessage
+    replyToUserMessage: ReplyToUserMessage,
+    sendUserKeyboard: SendUserKeyboard,
+    sendUserMessageButtons: SendUserMessageButtons,
+    askUserForReply: AskUserForReply
   ) =
 
   let sendUserPresets sendMessage (message: Message) =
@@ -90,10 +93,10 @@ type MessageService
 
     let sendMessage = sendUserMessage userId
     let sendLink = Workflows.sendLink _bot userId
-    let sendKeyboard = Workflows.sendKeyboard _bot userId
+    let sendKeyboard = sendUserKeyboard userId
     let replyToMessage = replyToUserMessage userId message.MessageId
-    let sendButtons = Workflows.sendButtons _bot userId
-    let askForReply = Workflows.askForReply _bot userId message.MessageId
+    let sendButtons = sendUserMessageButtons userId
+    let askForReply = askUserForReply userId message.MessageId
     let savePreset = Preset.save _database
     let updateUser = User.update _database
 
@@ -146,6 +149,7 @@ type MessageService
                 setPlaylistSize userId size
               | _ ->
                 replyToMessage Messages.WrongPlaylistSize
+                |> Task.ignore
             | Equals Messages.SendIncludedPlaylist, Authorized ->
               includePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendExcludedPlaylist, Authorized ->
@@ -159,7 +163,9 @@ type MessageService
 
               createPreset message.Text
 
-            | _ -> replyToMessage "Unknown command"
+            | _ ->
+              replyToMessage "Unknown command"
+              |> Task.ignore
           | _ ->
             match (message.Text, authState) with
             | StartsWith "/include", Unauthorized | StartsWith "/exclude", Unauthorized | StartsWith "/target", Unauthorized
@@ -186,7 +192,7 @@ type MessageService
                   replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
 
               completeAuth userId state
-              |> TaskResult.taskEither processSuccessfulLogin sendErrorMessage
+              |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
             | Equals "/help", _ ->
               sendMessage Messages.Help
             | Equals "/guide", _ -> sendMessage Messages.Guide
@@ -198,16 +204,20 @@ type MessageService
             | CommandWithData "/include" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"
+                |> Task.ignore
               else
                 includePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
+                |> Task.ignore
             | CommandWithData "/exclude" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"
+                |> Task.ignore
               else
                 excludePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | CommandWithData "/target" rawPlaylistId, Authorized ->
               if String.IsNullOrEmpty rawPlaylistId then
                 replyToMessage "You have entered empty playlist url"
+                |> Task.ignore
               else
                 targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
@@ -220,7 +230,9 @@ type MessageService
             | Equals Buttons.TargetPlaylist, Authorized -> askForReply Messages.SendTargetedPlaylist
             | Equals "Back", _ -> sendCurrentPresetInfo userId
 
-            | _ -> replyToMessage "Unknown command"
+            | _ ->
+              replyToMessage "Unknown command"
+              |> Task.ignore
         | _ -> Task.FromResult()
     }
 
@@ -232,30 +244,30 @@ type CallbackQueryService
     loadPreset: Preset.Load,
     updatePreset: Preset.Update,
     loadUser: User.Load,
-    _database: IMongoDatabase
+    _database: IMongoDatabase,
+    editBotMessageButtons: EditBotMessageButtons
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
+    let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
 
     let updateUser = User.update _database
-    let askForReply = Workflows.askForReply _bot userId callbackQuery.Message.MessageId
-    let editMessage = Workflows.editMessage _bot callbackQuery.Message.MessageId userId
+    let editMessageButtons = editBotMessageButtons userId botMessageId
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
 
+    let showUserPresets = Workflows.sendUserPresets editMessageButtons loadUser
 
-    let showUserPresets = Workflows.sendUserPresets editMessage loadUser
+    let sendPresetInfo = Workflows.sendPresetInfo loadPreset editMessageButtons
 
-    let sendPresetInfo = Workflows.sendPresetInfo loadPreset editMessage
+    let showIncludedPlaylists = Workflows.showIncludedPlaylists loadPreset editMessageButtons
+    let showExcludedPlaylists = Workflows.showExcludedPlaylists loadPreset editMessageButtons
+    let showTargetedPlaylists = Workflows.showTargetedPlaylists loadPreset editMessageButtons
 
-    let showIncludedPlaylists = Workflows.showIncludedPlaylists loadPreset editMessage
-    let showExcludedPlaylists = Workflows.showExcludedPlaylists loadPreset editMessage
-    let showTargetedPlaylists = Workflows.showTargetedPlaylists loadPreset editMessage
-
-    let showIncludedPlaylist = Workflows.showIncludedPlaylist editMessage loadPreset countPlaylistTracks
-    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessage loadPreset countPlaylistTracks
-    let showTargetedPlaylist = Workflows.showTargetedPlaylist editMessage loadPreset countPlaylistTracks
+    let showIncludedPlaylist = Workflows.showIncludedPlaylist editMessageButtons loadPreset countPlaylistTracks
+    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessageButtons loadPreset countPlaylistTracks
+    let showTargetedPlaylist = Workflows.showTargetedPlaylist editMessageButtons loadPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
@@ -321,7 +333,6 @@ type CallbackQueryService
       let removeTargetedPlaylist = Workflows.removeTargetedPlaylist removeTargetedPlaylist answerCallbackQuery showTargetedPlaylists
 
       removeTargetedPlaylist presetId playlistId
-    | Action.AskForPlaylistSize -> askForReply Messages.SendPlaylistSize
     | Action.IncludeLikedTracks presetId ->
       let includeLikedTracks = Preset.includeLikedTracks loadPreset updatePreset
       let includeLikedTracks = Workflows.includeLikedTracks answerCallbackQuery sendPresetInfo includeLikedTracks
