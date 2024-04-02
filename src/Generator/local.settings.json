@@ -8,7 +8,7 @@
     "Spotify__ClientId": "<Spotify app Client Id>",
     "Spotify__ClientSecret": "<Spotify app ClientSecret>",
     "Spotify__CallbackUrl": "<Spotify login callback url>",
-    "Database__ConnectionString": "<PostgreSQL connection string>",
+    "Database__ConnectionString": "<MongoDB connection string>",
     "GeneratorSchedule": "0 * * * * *",
     "Redis__ConnectionString": "<Redis connection string>",
     "Storage__ConnectionString": "<Azure storage account connection string>",

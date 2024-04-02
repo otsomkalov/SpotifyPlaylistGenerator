@@ -22,61 +22,6 @@ open otsom.fs.Telegram.Bot.Core
 let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
 
-let sendButtons (bot: ITelegramBotClient) userId : SendButtons =
-  fun text buttons ->
-    let replyMarkup =
-      buttons
-      |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData)
-      |> InlineKeyboardMarkup
-
-    bot.SendTextMessageAsync(
-      (userId |> UserId.value |> ChatId),
-      text |> escapeMarkdownString,
-      parseMode = ParseMode.MarkdownV2,
-      replyMarkup = replyMarkup
-    )
-    |> Task.map ignore
-
-let sendKeyboard (bot: ITelegramBotClient) userId : SendKeyboard =
-  fun text buttons ->
-    let replyMarkup =
-      buttons |> Seq.map Seq.toArray |> Seq.toArray |> ReplyKeyboardMarkup.op_Implicit
-
-    bot.SendTextMessageAsync(
-      (userId |> UserId.value |> ChatId),
-      text |> escapeMarkdownString,
-      parseMode = ParseMode.MarkdownV2,
-      replyMarkup = replyMarkup
-    )
-    |> Task.map ignore
-
-let editMessage (bot: ITelegramBotClient) messageId userId : EditMessage =
-  fun text buttons ->
-    let replyMarkup =
-      buttons
-      |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData)
-      |> InlineKeyboardMarkup
-
-    bot.EditMessageTextAsync(
-      (userId |> UserId.value |> ChatId),
-      messageId,
-      text |> escapeMarkdownString,
-      ParseMode.MarkdownV2,
-      replyMarkup = replyMarkup
-    )
-    |> Task.map ignore
-
-let askForReply (bot: ITelegramBotClient) userId messageId : AskForReply =
-  fun text ->
-    bot.SendTextMessageAsync(
-      (userId |> UserId.value |> ChatId),
-      text |> escapeMarkdownString,
-      parseMode = ParseMode.MarkdownV2,
-      replyToMessageId = messageId,
-      replyMarkup = ForceReplyMarkup()
-    )
-    |> Task.map ignore
-
 let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallbackQuery =
   fun text ->
     task {
@@ -150,7 +95,7 @@ module Playlist =
           | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
 
-        return! includePlaylistResult |> TaskResult.taskEither onSuccess onError
+        return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
   let excludePlaylist
@@ -174,7 +119,7 @@ module Playlist =
           | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
 
-        return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError
+        return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
   let targetPlaylist (replyToMessage: ReplyToMessage) (loadUser: User.Load) (targetPlaylist: Playlist.TargetPlaylist) : Playlist.Target =
@@ -195,7 +140,7 @@ module Playlist =
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
           | Playlist.TargetPlaylistError.AccessError _ -> replyToMessage Messages.PlaylistIsReadonly
 
-        return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError
+        return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
   let queueGeneration
@@ -227,6 +172,7 @@ module Playlist =
     >> Task.map validatePreset
     >> TaskResult.taskMap queueGeneration
     >> TaskResult.taskEither onSuccess onError
+    >> Task.ignore
 
   let generate sendMessage (generatePlaylist: Domain.Core.Playlist.Generate) =
     let onSuccess () = sendMessage "Playlist generated!"
@@ -240,7 +186,7 @@ module Playlist =
       task {
         do! sendMessage "Generating playlist..."
 
-        return! generatePlaylist presetId |> TaskResult.taskEither onSuccess onError
+        return! generatePlaylist presetId |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
 let parseAction: ParseAction =
