@@ -55,7 +55,7 @@ let private loadTracks' limit loadBatch =
       | Some count ->
         [ limit..limit..count ]
         |> List.map (loadBatch >> Async.map fst)
-        |> (fun batches -> (batches, 20))
+        |> (fun batches -> (batches, 15))
         |> Async.Parallel
         |> Async.map (List.concat >> (List.append initialBatch))
       | None -> initialBatch |> async.Return
