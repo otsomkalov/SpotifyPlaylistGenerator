@@ -2,7 +2,6 @@
 
 open System
 open System.Net
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Microsoft.Extensions.Logging
@@ -47,25 +46,29 @@ let private getTracksIds (tracks: FullTrack seq) =
   |> Seq.map TrackId
   |> Seq.toList
 
+[<Literal>]
+let private mapParallelBatches = 15
+
 let private loadTracks' limit loadBatch =
-  task {
+  async {
     let! initialBatch, totalCount = loadBatch 0
 
     return!
       match totalCount |> Option.ofNullable with
       | Some count ->
         [ limit..limit..count ]
-        |> List.map (loadBatch >> Task.map fst)
-        |> Task.WhenAll
-        |> Task.map (List.concat >> (List.append initialBatch))
-      | None -> initialBatch |> Task.FromResult
+        |> List.map (loadBatch >> Async.map fst)
+        |> (fun batches -> (batches, mapParallelBatches))
+        |> Async.Parallel
+        |> Async.map (List.concat >> (List.append initialBatch))
+      | None -> initialBatch |> async.Return
   }
 
 [<RequireQualifiedAccess>]
 module Playlist =
   let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
-    task {
-      let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
+    async {
+      let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
 
       return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
     }
@@ -86,12 +89,11 @@ module Playlist =
           return []
       }
 
-
 [<RequireQualifiedAccess>]
 module User =
   let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
-    task {
-      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+    async {
+      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50)) |> Async.AwaitTask
 
       return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
     }
@@ -100,7 +102,7 @@ module User =
     let listLikedTracks' = listLikedTracks' client
     let loadTracks' = loadTracks' likedTacksLimit
 
-    fun () -> loadTracks' listLikedTracks'
+    fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
 
 type CreateClientFromTokenResponse = AuthorizationCodeTokenResponse -> ISpotifyClient
 
