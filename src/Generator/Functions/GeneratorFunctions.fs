@@ -4,6 +4,7 @@ open FSharp
 open Infrastructure.Telegram.Services
 open Infrastructure.Workflows
 open Infrastructure
+open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
 open StackExchange.Redis
@@ -19,7 +20,8 @@ type GeneratorFunctions
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer,
-    sendUserMessage: SendUserMessage
+    sendUserMessage: SendUserMessage,
+    telemetryClient: TelemetryClient
   ) =
 
   [<Function("GenerateAsync")>]
@@ -58,7 +60,7 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value) (preset.UserId |> UserId.value)
 
       let listTracks = Spotify.Playlist.listTracks _logger client
-      let listTracks = Cache.Playlist.listTracks playlistsCache listTracks
+      let listTracks = Cache.Playlist.listTracks telemetryClient playlistsCache listTracks
       let listLikedTracks = Spotify.User.listLikedTracks client
 
       let listIncludedTracks =
@@ -68,7 +70,7 @@ type GeneratorFunctions
         Workflows.Preset.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
-        Cache.User.listLikedTracks likedTracksCache logLikedTracks listLikedTracks preset.UserId
+        Cache.User.listLikedTracks telemetryClient likedTracksCache logLikedTracks listLikedTracks preset.UserId
 
       let sendMessage = sendUserMessage preset.UserId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
