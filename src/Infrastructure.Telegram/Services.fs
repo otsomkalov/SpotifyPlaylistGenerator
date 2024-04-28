@@ -27,6 +27,7 @@ open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 open otsom.fs.Telegram.Bot.Core
+open Infrastructure.Repos
 
 type SpotifyClientProvider(createClientFromTokenResponse: CreateClientFromTokenResponse, loadCompletedAuth: Completed.Load) =
   let _clientsByTelegramId =
@@ -245,8 +246,7 @@ type CallbackQueryService
     updatePreset: Preset.Update,
     loadUser: User.Load,
     _database: IMongoDatabase,
-    editBotMessageButtons: EditBotMessageButtons,
-    removeUserPreset: Telegram.Core.User.RemovePreset
+    editBotMessageButtons: EditBotMessageButtons
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -278,6 +278,9 @@ type CallbackQueryService
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->
+      let removePreset = PresetRepo.remove _database
+      let removeUserPreset = Domain.Workflows.User.removePreset loadUser removePreset updateUser
+      let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset showUserPresets
       removeUserPreset userId presetId
     | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
     | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId

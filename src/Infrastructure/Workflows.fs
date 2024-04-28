@@ -217,15 +217,6 @@ module Preset =
         return! collection.InsertOneAsync(dbPreset)
       }
 
-  let remove (db: IMongoDatabase) : Domain.Repos.Preset.Remove =
-    fun presetId ->
-      let collection = db.GetCollection "presets"
-
-      let id = presetId |> PresetId.value
-      let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
-
-      collection.DeleteOneAsync(presetsFilter) |> Task.ignore
-
   let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
     List.map listTracks
     >> Task.WhenAll
