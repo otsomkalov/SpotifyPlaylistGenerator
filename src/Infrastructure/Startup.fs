@@ -15,6 +15,7 @@ open MongoDB.ApplicationInsights.DependencyInjection
 open Infrastructure.Workflows
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Extensions.DependencyInjection
+open Domain.Core
 
 let private configureRedisCache (options: IOptions<RedisSettings>) =
   let settings = options.Value
@@ -53,5 +54,8 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.BuildScoped<Preset.Update, IMongoDatabase>(Preset.update)
   services.BuildScoped<User.Load, IMongoDatabase>(User.load)
   services.BuildScoped<User.Exists, IMongoDatabase>(User.exists)
+
+  services.BuildSingleton<Preset.Remove, IMongoDatabase>(Preset.remove)
+  services.BuildSingleton<User.RemovePreset, User.Load, Preset.Remove, User.Update>(User.removePreset)
 
   services.BuildSingleton<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)

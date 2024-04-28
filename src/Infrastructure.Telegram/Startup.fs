@@ -10,6 +10,8 @@ open Microsoft.Extensions.Options
 open Telegram.Bot
 open otsom.fs.Extensions.DependencyInjection
 open otsom.fs.Telegram.Bot
+open Telegram.Core
+open Telegram.Workflows
 
 let private configureTelegramBotClient (options: IOptions<TelegramSettings>) =
   let settings = options.Value
@@ -25,5 +27,7 @@ let addTelegram (configuration: IConfiguration) (services: IServiceCollection) =
   services.BuildSingleton<ITelegramBotClient, IOptions<TelegramSettings>>(configureTelegramBotClient)
 
   services.AddScoped<MessageService>().AddScoped<CallbackQueryService>()
+
+  services.BuildSingleton<Telegram.Core.User.RemovePreset, Domain.Core.User.RemovePreset, SendUserPresets>(User.removePreset)
 
   services.AddSingleton<SpotifyClientProvider>()

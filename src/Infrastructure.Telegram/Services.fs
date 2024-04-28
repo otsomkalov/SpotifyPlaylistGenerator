@@ -245,7 +245,8 @@ type CallbackQueryService
     updatePreset: Preset.Update,
     loadUser: User.Load,
     _database: IMongoDatabase,
-    editBotMessageButtons: EditBotMessageButtons
+    editBotMessageButtons: EditBotMessageButtons,
+    removeUserPreset: Telegram.Core.User.RemovePreset
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -277,11 +278,7 @@ type CallbackQueryService
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->
-      let removePreset = Workflows.Preset.remove _database
-      let removePreset = Preset.remove loadUser removePreset updateUser
-      let removePreset = Workflows.CallbackQuery.removePreset removePreset showUserPresets
-
-      removePreset presetId
+      removeUserPreset userId presetId
     | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
     | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->

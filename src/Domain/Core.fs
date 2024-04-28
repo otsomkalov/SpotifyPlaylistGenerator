@@ -141,7 +141,7 @@ module Preset =
   type IgnoreLikedTracks = PresetId -> Task<unit>
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
-  type Remove = PresetId -> Task<Preset>
+  type Remove = PresetId -> Task<unit>
 
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
@@ -149,6 +149,7 @@ module Preset =
 [<RequireQualifiedAccess>]
 module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
+  type RemovePreset = UserId -> PresetId -> Task<unit>
 
   let create userId =
     { Id = userId
