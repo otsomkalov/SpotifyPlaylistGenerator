@@ -5,6 +5,8 @@ open Domain.Workflows
 open MongoDB.Driver
 open Database
 open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
+open Infrastructure.Mapping
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
@@ -16,3 +18,18 @@ module PresetRepo =
       let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
 
       collection.DeleteOneAsync(presetsFilter) |> Task.ignore
+
+[<RequireQualifiedAccess>]
+module UserRepo =
+  let load (db: IMongoDatabase) : UserRepo.Load =
+    fun userId ->
+      task {
+        let collection = db.GetCollection "users"
+        let id = userId |> UserId.value
+
+        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+
+        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
+
+        return User.fromDb dbUser
+      }

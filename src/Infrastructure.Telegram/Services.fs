@@ -69,7 +69,6 @@ type MessageService
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
-    loadUser: User.Load,
     loadPreset: Preset.Load,
     updatePreset: Preset.Update,
     _database: IMongoDatabase,
@@ -85,8 +84,8 @@ type MessageService
     askUserForReply: AskUserForReply
   ) =
 
-  let sendUserPresets sendMessage (message: Message) =
-    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage loadUser
+  let sendUserPresets sendMessage (message: Message) getUser =
+    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage getUser
     sendUserPresets (message.From.Id |> UserId)
 
   member this.ProcessAsync(message: Message) =
@@ -100,9 +99,11 @@ type MessageService
     let askForReply = askUserForReply userId message.MessageId
     let savePreset = Preset.save _database
     let updateUser = User.update _database
+    let loadUser = UserRepo.load _database
+    let getUser = User.get loadUser
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo loadUser loadPreset sendKeyboard
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage loadUser loadPreset sendKeyboard
+    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo getUser loadPreset sendKeyboard
+    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage getUser loadPreset sendKeyboard
 
     let sendLoginMessage () =
       initAuth userId [ Scopes.PlaylistModifyPrivate; Scopes.PlaylistModifyPublic; Scopes.UserLibraryRead ]
@@ -124,15 +125,15 @@ type MessageService
         match message.Type with
         | MessageType.Text ->
           let includePlaylist = Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let includePlaylist = Workflows.Playlist.includePlaylist replyToMessage loadUser includePlaylist
+          let includePlaylist = Workflows.Playlist.includePlaylist replyToMessage getUser includePlaylist
 
           let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let excludePlaylist = Workflows.Playlist.excludePlaylist replyToMessage loadUser excludePlaylist
+          let excludePlaylist = Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
 
           let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
-          let targetPlaylist = Workflows.Playlist.targetPlaylist replyToMessage loadUser targetPlaylist
+          let targetPlaylist = Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
 
-          let queueGeneration = Workflows.Playlist.queueGeneration _queueClient replyToMessage loadUser loadPreset Preset.validate
+          let queueGeneration = Workflows.Playlist.queueGeneration _queueClient replyToMessage getUser loadPreset Preset.validate
 
           match isNull message.ReplyToMessage with
           | false ->
@@ -145,7 +146,7 @@ type MessageService
               match message.Text with
               | Int size ->
                 let setPlaylistSize = Preset.setPlaylistSize loadPreset updatePreset
-                let setPlaylistSize = Workflows.setPlaylistSize sendMessage sendSettingsMessage loadUser setPlaylistSize
+                let setPlaylistSize = Workflows.setPlaylistSize sendMessage sendSettingsMessage getUser setPlaylistSize
 
                 setPlaylistSize userId size
               | _ ->
@@ -158,7 +159,7 @@ type MessageService
             | Equals Messages.SendTargetedPlaylist, Authorized ->
               targetPlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendPresetName, _ ->
-              let createPreset = Preset.create savePreset loadUser updateUser userId
+              let createPreset = Preset.create savePreset getUser updateUser userId
               let sendPresetInfo = Telegram.Workflows.sendPresetInfo loadPreset sendButtons
               let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
@@ -224,7 +225,7 @@ type MessageService
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
             | Equals Buttons.GeneratePlaylist, Authorized -> queueGeneration userId
-            | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message
+            | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message getUser
             | Equals Buttons.Settings, _ -> sendSettingsMessage userId
             | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
             | Equals Buttons.ExcludePlaylist, Authorized -> askForReply Messages.SendExcludedPlaylist
@@ -244,7 +245,6 @@ type CallbackQueryService
     _connectionMultiplexer: IConnectionMultiplexer,
     loadPreset: Preset.Load,
     updatePreset: Preset.Update,
-    loadUser: User.Load,
     _database: IMongoDatabase,
     editBotMessageButtons: EditBotMessageButtons
   ) =
@@ -257,8 +257,10 @@ type CallbackQueryService
     let editMessageButtons = editBotMessageButtons userId botMessageId
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
+    let loadUser = UserRepo.load _database
+    let getUser = User.get loadUser
 
-    let showUserPresets = Workflows.sendUserPresets editMessageButtons loadUser
+    let showUserPresets = Workflows.sendUserPresets editMessageButtons getUser
 
     let sendPresetInfo = Workflows.sendPresetInfo loadPreset editMessageButtons
 
@@ -273,13 +275,13 @@ type CallbackQueryService
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId ->
-      let setCurrentPreset = Domain.Workflows.User.setCurrentPreset loadUser updateUser
+      let setCurrentPreset = Domain.Workflows.User.setCurrentPreset getUser updateUser
       let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->
       let removePreset = PresetRepo.remove _database
-      let removeUserPreset = Domain.Workflows.User.removePreset loadUser removePreset updateUser
+      let removeUserPreset = Domain.Workflows.User.removePreset getUser removePreset updateUser
       let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset showUserPresets
       removeUserPreset userId presetId
     | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page

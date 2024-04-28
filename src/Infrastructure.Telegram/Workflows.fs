@@ -55,7 +55,7 @@ let private savePlaylistSize loadUser setPlaylistSize =
 let setPlaylistSize
   (sendMessage: SendMessage)
   (sendSettingsMessage: SendSettingsMessage)
-  (loadUser: User.Load)
+  (loadUser: User.Get)
   (setPlaylistSize: Preset.SetPlaylistSize)
   =
   fun userId size ->
@@ -77,7 +77,7 @@ module Playlist =
 
   let includePlaylist
     (replyToMessage: ReplyToMessage)
-    (loadUser: User.Load)
+    (loadUser: User.Get)
     (includePlaylist: Playlist.IncludePlaylist)
     : Playlist.Include =
     fun userId rawPlaylistId ->
@@ -100,7 +100,7 @@ module Playlist =
 
   let excludePlaylist
     (replyToMessage: ReplyToMessage)
-    (loadUser: User.Load)
+    (loadUser: User.Get)
     (excludePlaylist: Playlist.ExcludePlaylist)
     : Playlist.Exclude =
     fun userId rawPlaylistId ->
@@ -122,7 +122,7 @@ module Playlist =
         return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
-  let targetPlaylist (replyToMessage: ReplyToMessage) (loadUser: User.Load) (targetPlaylist: Playlist.TargetPlaylist) : Playlist.Target =
+  let targetPlaylist (replyToMessage: ReplyToMessage) (loadUser: User.Get) (targetPlaylist: Playlist.TargetPlaylist) : Playlist.Target =
     fun userId rawPlaylistId ->
       task {
         let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
@@ -146,7 +146,7 @@ module Playlist =
   let queueGeneration
     (queueClient: QueueClient)
     (replyToMessage: ReplyToMessage)
-    (loadUser: User.Load)
+    (loadUser: User.Get)
     (loadPreset: Preset.Load)
     (validatePreset: Preset.Validate)
     : Playlist.QueueGeneration =
