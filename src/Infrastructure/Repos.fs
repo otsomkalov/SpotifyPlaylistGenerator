@@ -10,6 +10,20 @@ open Infrastructure.Mapping
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
+  let load (db: IMongoDatabase) : PresetRepo.Load =
+    fun presetId ->
+      task {
+        let collection = db.GetCollection "presets"
+
+        let id = presetId |> PresetId.value
+
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
+
+        let! dbPreset = collection.Find(presetsFilter).SingleOrDefaultAsync()
+
+        return dbPreset |> Preset.fromDb
+      }
+
   let remove (db: IMongoDatabase) : PresetRepo.Remove =
     fun presetId ->
       let collection = db.GetCollection "presets"

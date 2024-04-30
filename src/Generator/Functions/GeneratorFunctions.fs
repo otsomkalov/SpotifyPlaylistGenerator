@@ -1,12 +1,14 @@
 ﻿namespace Generator.Functions
 
 open FSharp
+open Infrastructure.Repos
 open Infrastructure.Telegram.Services
 open Infrastructure.Workflows
 open Infrastructure
 open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
+open MongoDB.Driver
 open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
@@ -15,8 +17,8 @@ open otsom.fs.Telegram.Bot.Core
 
 type GeneratorFunctions
   (
+    _db: IMongoDatabase,
     _spotifyClientProvider: SpotifyClientProvider,
-    loadPreset: Preset.Load,
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer,
@@ -28,6 +30,9 @@ type GeneratorFunctions
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {|UserId: UserId; PresetId: PresetId|}, _: FunctionContext) =
     let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
     let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase
+
+    let loadPreset = PresetRepo.load _db
+    let getPreset = Preset.get loadPreset
 
     task {
       let! client = _spotifyClientProvider.GetAsync command.UserId
@@ -82,7 +87,7 @@ type GeneratorFunctions
           ListIncludedTracks = listIncludedTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
-          LoadPreset = loadPreset
+          LoadPreset = getPreset
           UpdateTargetedPlaylists = updateTargetedPlaylist
           GetRecommendations = getRecommendations }
 

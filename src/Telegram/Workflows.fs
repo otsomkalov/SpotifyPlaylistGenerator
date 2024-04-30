@@ -76,10 +76,10 @@ let private getPresetMessage =
       return (text, keyboard)
     }
 
-let sendPresetInfo (loadPreset: Preset.Load) (editMessage: EditMessageButtons) : SendPresetInfo =
+let sendPresetInfo (getPreset: Preset.Get) (editMessage: EditMessageButtons) : SendPresetInfo =
   fun presetId ->
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let! text, keyboard = getPresetMessage preset
 
@@ -148,7 +148,7 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
 
-let showIncludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowIncludedPlaylists =
+let showIncludedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowIncludedPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: IncludedPlaylist) ->
       InlineKeyboardButton.WithCallbackData(
@@ -160,7 +160,7 @@ let showIncludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMes
     let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let replyMarkup =
         createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
@@ -228,7 +228,7 @@ module ExcludedPlaylist =
         return! showExcludedPlaylist presetId playlistId
       }
 
-let showExcludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowExcludedPlaylists =
+let showExcludedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowExcludedPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: ExcludedPlaylist) ->
       InlineKeyboardButton.WithCallbackData(
@@ -240,7 +240,7 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMes
     let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let replyMarkup =
         createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
@@ -248,7 +248,7 @@ let showExcludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMes
       return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
     }
 
-let showTargetedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowTargetedPlaylists =
+let showTargetedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowTargetedPlaylists =
   let createButtonFromPlaylist presetId =
     fun (playlist: TargetedPlaylist) ->
       InlineKeyboardButton.WithCallbackData(
@@ -260,7 +260,7 @@ let showTargetedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMes
     let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let replyMarkup =
         createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
@@ -315,11 +315,11 @@ let disableRecommendations
       return! sendPresetInfo presetId
     }
 
-let sendSettingsMessage (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
+let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
       let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      let! preset = loadPreset currentPresetId
+      let! preset = getPreset currentPresetId
       let! text, _ = getPresetMessage preset
 
       let buttons =
@@ -329,7 +329,7 @@ let sendSettingsMessage (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyb
       return! sendKeyboard text buttons
     }
 
-let sendCurrentPresetInfo (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
+let sendCurrentPresetInfo (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
   fun userId ->
     task {
       let! currentPresetId = loadUser userId |> Task.map _.CurrentPresetId
@@ -338,7 +338,7 @@ let sendCurrentPresetInfo (loadUser: User.Get) (loadPreset: Preset.Load) (sendKe
         match currentPresetId with
         | Some presetId ->
           task {
-            let! preset = loadPreset presetId
+            let! preset = getPreset presetId
             let! text, _ = getPresetMessage preset
 
             let buttons =
@@ -385,12 +385,12 @@ let private getPlaylistButtons presetId playlistId playlistType enabled =
 
 let showIncludedPlaylist
   (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
+  (getPreset: Preset.Get)
   (countPlaylistTracks: Playlist.CountTracks)
   : ShowIncludedPlaylist =
   fun presetId playlistId ->
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let includedPlaylist =
         preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
@@ -407,12 +407,12 @@ let showIncludedPlaylist
 
 let showExcludedPlaylist
   (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
+  (getPreset: Preset.Get)
   (countPlaylistTracks: Playlist.CountTracks)
   : ShowExcludedPlaylist =
   fun presetId playlistId ->
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let excludedPlaylist =
         preset.ExcludedPlaylists |> List.find (fun p -> p.Id = playlistId)
@@ -429,12 +429,12 @@ let showExcludedPlaylist
 
 let showTargetedPlaylist
   (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
+  (getPreset: Preset.Get)
   (countPlaylistTracks: Playlist.CountTracks)
   : ShowTargetedPlaylist =
   fun presetId playlistId ->
     task {
-      let! preset = loadPreset presetId
+      let! preset = getPreset presetId
 
       let targetPlaylist =
         preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
