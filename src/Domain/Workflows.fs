@@ -141,8 +141,7 @@ module Preset =
             Settings =
               { PlaylistSize = (PresetSettings.PlaylistSize.create 20)
                 RecommendationsEnabled = false
-                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include }
-            UserId = userId }
+                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include }}
 
         let! user = loadUser userId
 

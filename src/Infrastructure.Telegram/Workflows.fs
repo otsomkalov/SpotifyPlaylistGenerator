@@ -163,16 +163,18 @@ module Playlist =
 
       replyToMessage errorsText
 
-    let queueGeneration (preset: Preset) =
-      {| PresetId = preset.Id |} |> JSON.serialize |> queueClient.SendMessageAsync |> Task.map ignore
+    fun userId ->
+      let queueGeneration (preset: Preset) =
+        {| UserId = userId; PresetId = preset.Id |} |> JSON.serialize |> queueClient.SendMessageAsync |> Task.map ignore
 
-    loadUser
-    >> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-    >> Task.bind loadPreset
-    >> Task.map validatePreset
-    >> TaskResult.taskMap queueGeneration
-    >> TaskResult.taskEither onSuccess onError
-    >> Task.ignore
+      userId
+      |> loadUser
+      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      |> Task.bind loadPreset
+      |> Task.map validatePreset
+      |> TaskResult.taskMap queueGeneration
+      |> TaskResult.taskEither onSuccess onError
+      |> Task.ignore
 
   let generate sendMessage (generatePlaylist: Domain.Core.Playlist.Generate) =
     let onSuccess () = sendMessage "Playlist generated!"
