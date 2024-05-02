@@ -543,11 +543,11 @@ module Message =
       }
 
 [<RequireQualifiedAccess>]
-module CallbackQuery =
-  let removePreset (removePreset: Preset.Remove) (sendUserPresets: SendUserPresets) : CallbackQuery.RemovePreset =
-    fun presetId ->
+module User =
+  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: SendUserPresets) : User.RemovePreset =
+    fun userId presetId ->
       task {
-        let! removedPreset = removePreset presetId
+        do! removePreset userId presetId
 
-        return! sendUserPresets removedPreset.UserId
+        return! sendUserPresets userId
       }

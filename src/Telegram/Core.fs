@@ -31,8 +31,8 @@ module Playlist =
   type QueueGeneration = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
-module CallbackQuery =
-  type RemovePreset = PresetId -> Task<unit>
+module User =
+  type RemovePreset = UserId -> PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type Action =

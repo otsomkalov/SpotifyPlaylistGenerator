@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Extensions
+open Domain.Repos
 open IcedTasks.ColdTasks
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
@@ -49,6 +50,17 @@ module User =
             CurrentPresetId = Some presetId })
       |> Task.bind update
 
+  let removePreset (load: Load) (removePreset: Core.Preset.Remove) (update: Update) : User.RemovePreset =
+    fun userId presetId ->
+      userId
+      |> load
+      |> Task.map (fun u ->
+        { u with
+            Presets = u.Presets |> List.filter (fun p -> p.Id <> presetId)
+            CurrentPresetId = if u.CurrentPresetId = Some presetId then None else u.CurrentPresetId })
+      |> Task.bind update
+      |> Task.bind (fun _ -> removePreset presetId)
+
 [<RequireQualifiedAccess>]
 module SimplePreset =
   let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
@@ -60,8 +72,6 @@ module Preset =
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
   type GetRecommendations = TrackId list -> Task<TrackId list>
-  type Remove = PresetId -> Task<Preset>
-
   type ListIncludedTracks = IncludedPlaylist list -> Task<TrackId list>
   type ListExcludedTracks = ExcludedPlaylist list -> Task<TrackId list>
 
@@ -146,24 +156,9 @@ module Preset =
         return newPreset.Id
       }
 
-  let remove (loadUser: User.Load) (remove: Remove) (updateUser: User.Update) : Preset.Remove =
+  let remove (removePreset: Preset.Remove) : Preset.Remove =
     fun presetId ->
-      task {
-        let! preset = remove presetId
-
-        let! user = loadUser preset.UserId
-
-        let userPreset = preset |> SimplePreset.fromPreset
-
-        let updatedUser =
-          { user with
-              Presets = user.Presets |> List.except [ userPreset ]
-              CurrentPresetId = user.CurrentPresetId |> Option.filter (fun currentId -> currentId <> presetId) }
-
-        do! updateUser updatedUser
-
-        return preset
-      }
+      removePreset presetId
 
   let private setRecommendations (load: Load) (update: Update) =
     fun enabled ->
@@ -383,7 +378,7 @@ module Playlist =
       rawPlaylistId
       |> parseId
       |> Result.taskBind loadFromSpotify
-      |> TaskResult.bind checkAccess
+      |> Task.map (Result.bind checkAccess)
       |> TaskResult.taskMap updatePreset
 
   type GenerateIO =

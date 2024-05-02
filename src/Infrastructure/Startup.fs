@@ -15,6 +15,7 @@ open MongoDB.ApplicationInsights.DependencyInjection
 open Infrastructure.Workflows
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Extensions.DependencyInjection
+open Domain.Core
 
 let private configureRedisCache (options: IOptions<RedisSettings>) =
   let settings = options.Value
