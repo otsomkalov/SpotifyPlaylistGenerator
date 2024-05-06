@@ -148,6 +148,7 @@ module Preset =
 
 [<RequireQualifiedAccess>]
 module User =
+  type Get = UserId -> Task<User>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
 

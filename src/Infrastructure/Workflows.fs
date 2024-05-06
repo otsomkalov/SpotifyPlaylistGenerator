@@ -20,19 +20,6 @@ open otsom.fs.Telegram.Bot.Core
 
 [<RequireQualifiedAccess>]
 module User =
-  let load (db: IMongoDatabase) : User.Load =
-    fun userId ->
-      task {
-        let collection = db.GetCollection "users"
-        let id = userId |> UserId.value
-
-        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
-
-        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
-
-        return User.fromDb dbUser
-      }
-
   let update (db: IMongoDatabase) : User.Update =
     fun user ->
       task {

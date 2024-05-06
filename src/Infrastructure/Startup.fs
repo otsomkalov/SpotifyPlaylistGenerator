@@ -52,7 +52,6 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
 
   services.BuildScoped<Preset.Load, IMongoDatabase>(Preset.load)
   services.BuildScoped<Preset.Update, IMongoDatabase>(Preset.update)
-  services.BuildScoped<User.Load, IMongoDatabase>(User.load)
   services.BuildScoped<User.Exists, IMongoDatabase>(User.exists)
 
   services.BuildSingleton<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)

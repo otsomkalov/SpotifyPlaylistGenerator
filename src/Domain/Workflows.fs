@@ -36,12 +36,14 @@ module WritablePlaylistId =
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = ColdTask<TrackId list>
-  type Load = UserId -> Task<User>
   type Update = User -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
   type Exists = UserId -> Task<bool>
 
-  let setCurrentPreset (load: Load) (update: Update) : User.SetCurrentPreset =
+  let get (load: UserRepo.Load) : User.Get =
+    load
+
+  let setCurrentPreset (load: UserRepo.Load) (update: Update) : User.SetCurrentPreset =
     fun userId presetId ->
       userId
       |> load
@@ -50,7 +52,7 @@ module User =
             CurrentPresetId = Some presetId })
       |> Task.bind update
 
-  let removePreset (load: Load) (removePreset: Core.Preset.Remove) (update: Update) : User.RemovePreset =
+  let removePreset (load: UserRepo.Load) (removePreset: Preset.Remove) (update: Update) : User.RemovePreset =
     fun userId presetId ->
       userId
       |> load
@@ -127,7 +129,7 @@ module Preset =
             Settings = { p.Settings with PlaylistSize = size } })
       |> Task.bind update
 
-  let create (savePreset: Save) (loadUser: User.Load) (updateUser: User.Update) userId : Preset.Create =
+  let create (savePreset: Save) (loadUser: UserRepo.Load) (updateUser: User.Update) userId : Preset.Create =
     fun name ->
       task {
         let newPreset =

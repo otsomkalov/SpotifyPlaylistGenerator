@@ -19,7 +19,7 @@ let buttonsPerPage = 20
 
 type SendLink = string -> string -> string -> Task<unit>
 
-let sendUserPresets (sendButtons: SendMessageButtons) (loadUser: User.Load) : SendUserPresets =
+let sendUserPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : SendUserPresets =
   fun userId ->
     task {
       let! user = loadUser userId
@@ -315,7 +315,7 @@ let disableRecommendations
       return! sendPresetInfo presetId
     }
 
-let sendSettingsMessage (loadUser: User.Load) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
+let sendSettingsMessage (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
       let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
@@ -329,7 +329,7 @@ let sendSettingsMessage (loadUser: User.Load) (loadPreset: Preset.Load) (sendKey
       return! sendKeyboard text buttons
     }
 
-let sendCurrentPresetInfo (loadUser: User.Load) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
+let sendCurrentPresetInfo (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
   fun userId ->
     task {
       let! currentPresetId = loadUser userId |> Task.map _.CurrentPresetId
