@@ -125,14 +125,12 @@ module Preset =
       IncludedPlaylists = mapIncludedPlaylist preset.IncludedPlaylists
       ExcludedPlaylists = mapExcludedPlaylist preset.ExcludedPlaylists
       TargetedPlaylists = TargetedPlaylist.mapPlaylists preset.TargetedPlaylists
-      Settings = PresetSettings.fromDb preset.Settings
-      UserId = preset.UserId |> UserId }
+      Settings = PresetSettings.fromDb preset.Settings }
 
   let toDb (preset: Domain.Core.Preset) : Entities.Preset =
     Entities.Preset(
       Id = (preset.Id |> PresetId.value),
       Name = preset.Name,
-      UserId = (preset.UserId |> UserId.value),
       Settings = (preset.Settings |> PresetSettings.toDb),
       IncludedPlaylists = (preset.IncludedPlaylists |> Seq.map IncludedPlaylist.toDb),
       ExcludedPlaylists = (preset.ExcludedPlaylists |> Seq.map ExcludedPlaylist.toDb),
