@@ -7,6 +7,8 @@ public class Settings
     public int PlaylistSize { get; set; }
 
     public bool RecommendationsEnabled { get; set; }
+
+    public bool UniqueArtists { get; set; }
 }
 
 public class Preset

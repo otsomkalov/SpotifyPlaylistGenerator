@@ -15,3 +15,7 @@ module CallbackQueryConstants =
   let enableRecommendations = "er"
   [<Literal>]
   let disableRecommendations = "dr"
+  [<Literal>]
+  let enableUniqueArtists = "eua"
+  [<Literal>]
+  let disableUniqueArtists = "dua"

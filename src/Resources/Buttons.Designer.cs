@@ -78,11 +78,29 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 👥 Non-unique artists.
+        /// </summary>
+        public static string DisableUniqueArtists {
+            get {
+                return ResourceManager.GetString("DisableUniqueArtists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➕ Enable recommendations.
         /// </summary>
         public static string EnableRecommendations {
             get {
                 return ResourceManager.GetString("EnableRecommendations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 👤 Unique artists.
+        /// </summary>
+        public static string EnableUniqueArtists {
+            get {
+                return ResourceManager.GetString("EnableUniqueArtists", resourceCulture);
             }
         }
         

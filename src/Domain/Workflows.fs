@@ -34,14 +34,26 @@ module WritablePlaylistId =
   let value (WritablePlaylistId id) = id
 
 [<RequireQualifiedAccess>]
+module Tracks =
+  let uniqueByArtists (tracks: Track seq) =
+    let addUniqueTrack (knownArtists, uniqueTracks) currentTrack =
+      if
+        knownArtists |> Set.intersect currentTrack.Artists |> Set.isEmpty
+      then
+        (knownArtists |> Set.union currentTrack.Artists, currentTrack :: uniqueTracks)
+      else
+        knownArtists, uniqueTracks
+
+    tracks |> Seq.fold addUniqueTrack (Set.empty, []) |> snd
+
+[<RequireQualifiedAccess>]
 module User =
-  type ListLikedTracks = ColdTask<TrackId list>
+  type ListLikedTracks = ColdTask<Track list>
   type Update = User -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
   type Exists = UserId -> Task<bool>
 
-  let get (load: UserRepo.Load) : User.Get =
-    load
+  let get (load: UserRepo.Load) : User.Get = load
 
   let setCurrentPreset (load: UserRepo.Load) (update: Update) : User.SetCurrentPreset =
     fun userId presetId ->
@@ -73,9 +85,9 @@ module Preset =
   type Save = Preset -> Task<unit>
   type Update = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
-  type GetRecommendations = TrackId list -> Task<TrackId list>
-  type ListIncludedTracks = IncludedPlaylist list -> Task<TrackId list>
-  type ListExcludedTracks = ExcludedPlaylist list -> Task<TrackId list>
+  type GetRecommendations = TrackId list -> Task<Track list>
+  type ListIncludedTracks = IncludedPlaylist list -> Task<Track list>
+  type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
 
   let validate: Preset.Validate =
     fun preset ->
@@ -141,7 +153,8 @@ module Preset =
             Settings =
               { PlaylistSize = (PresetSettings.PlaylistSize.create 20)
                 RecommendationsEnabled = false
-                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include }}
+                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include
+                UniqueArtists = false } }
 
         let! user = loadUser userId
 
@@ -174,6 +187,22 @@ module Preset =
   let enableRecommendations load update : Preset.EnableRecommendations = setRecommendations load update true
 
   let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update false
+
+  let private setUniqueArtists (load: Load) (update: Update) =
+    fun uniqueArists ->
+      load
+      >> Task.map (fun preset ->
+        { preset with
+            Settings =
+              { preset.Settings with
+                  UniqueArtists = uniqueArists } })
+      >> Task.bind update
+
+
+
+  let enableUniqueArtists load update : Preset.EnableUniqueArtists = setUniqueArtists load update true
+
+  let disableUniqueArtists load update : Preset.DisableUniqueArtists = setUniqueArtists load update false
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
@@ -259,7 +288,7 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ListTracks = ReadablePlaylistId -> Task<TrackId list>
+  type ListTracks = ReadablePlaylistId -> Task<Track list>
 
   type UpdateTracks = TargetedPlaylist -> TrackId list -> Task<unit>
 
@@ -394,13 +423,18 @@ module Playlist =
   let generate (io: GenerateIO) : Playlist.Generate =
 
     let saveTracks preset =
-      fun tracks ->
+      fun (tracks: Track list) ->
         match tracks with
         | [] -> Playlist.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
         | tracks ->
           task {
+            let tracks =
+              if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
+
             let tracksIdsToImport =
-              tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+              tracks
+              |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+              |> List.map _.Id
 
             for playlist in preset.TargetedPlaylists |> Seq.filter _.Enabled do
               do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
@@ -409,14 +443,14 @@ module Playlist =
           }
 
     let generateAndSaveTracks preset =
-      fun includedTracks excludedTracks ->
+      fun (includedTracks: Track list) excludedTracks ->
         match includedTracks with
         | [] -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
         | includedTracks ->
           task {
             let! recommendedTracks =
               if preset.Settings.RecommendationsEnabled then
-                includedTracks |> io.GetRecommendations
+                includedTracks |> List.map (_.Id) |> io.GetRecommendations
               else
                 [] |> Task.FromResult
 
