@@ -198,8 +198,6 @@ module Preset =
                   UniqueArtists = uniqueArists } })
       >> Task.bind update
 
-
-
   let enableUniqueArtists load update : Preset.EnableUniqueArtists = setUniqueArtists load update true
 
   let disableUniqueArtists load update : Preset.DisableUniqueArtists = setUniqueArtists load update false

@@ -59,7 +59,7 @@ let private getPresetMessage =
           sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
 
       let uniqueArtistsText, uniqueArtistsButtonText, uniqueArtistsButtonData =
-        match preset.Settings.RecommendationsEnabled with
+        match preset.Settings.UniqueArtists with
         | true ->
           Messages.UniqueArtistsEnabled,
           Buttons.DisableUniqueArtists,
