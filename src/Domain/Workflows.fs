@@ -191,7 +191,7 @@ module Preset =
 
   let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update false
 
-  let private setUniqueArtists (load: Load) (update: Update) =
+  let private setUniqueArtists (load: PresetRepo.Load) (update: Update) =
     fun uniqueArists ->
       load
       >> Task.map (fun preset ->
