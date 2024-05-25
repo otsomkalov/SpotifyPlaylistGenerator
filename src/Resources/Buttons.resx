@@ -60,4 +60,10 @@
     <data name="DisableRecommendations" xml:space="preserve">
         <value>➖ Disable recommendations</value>
     </data>
+    <data name="EnableUniqueArtists" xml:space="preserve">
+        <value>👤 Unique artists</value>
+    </data>
+    <data name="DisableUniqueArtists" xml:space="preserve">
+        <value>👥 Non-unique artists</value>
+    </data>
 </root>

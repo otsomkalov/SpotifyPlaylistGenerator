@@ -9,6 +9,12 @@ type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
 type TrackId = TrackId of string
 
+type ArtistId = ArtistId of string
+
+type Artist = { Id: ArtistId; }
+
+type Track = { Id: TrackId; Artists: Set<Artist> }
+
 [<RequireQualifiedAccess>]
 module TrackId =
   let value (TrackId id) = id
@@ -55,7 +61,8 @@ module PresetSettings =
   type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
       PlaylistSize: PlaylistSize
-      RecommendationsEnabled: bool }
+      RecommendationsEnabled: bool
+      UniqueArtists: bool }
 
   [<RequireQualifiedAccess>]
   module PlaylistSize =
@@ -145,6 +152,9 @@ module Preset =
 
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
+
+  type EnableUniqueArtists = PresetId -> Task<unit>
+  type DisableUniqueArtists = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module User =

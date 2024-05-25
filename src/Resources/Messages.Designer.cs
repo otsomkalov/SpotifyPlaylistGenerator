@@ -207,7 +207,8 @@ namespace Resources {
         ///Preset settings:
         ///*Include liked tracks* - {1}
         ///*Recommendations* - {2}
-        ///*Playlist size* - {3}.
+        ///*Unique artists* - {3}
+        ///*Playlist size* - {4}.
         /// </summary>
         public static string PresetInfo {
             get {
@@ -287,6 +288,24 @@ namespace Resources {
         public static string SendTargetedPlaylist {
             get {
                 return ResourceManager.GetString("SendTargetedPlaylist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 👥 Non-unique artists.
+        /// </summary>
+        public static string UniqueArtistsDisabled {
+            get {
+                return ResourceManager.GetString("UniqueArtistsDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 👤 Unique artists.
+        /// </summary>
+        public static string UniqueArtistsEnabled {
+            get {
+                return ResourceManager.GetString("UniqueArtistsEnabled", resourceCulture);
             }
         }
         

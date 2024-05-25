@@ -13,8 +13,10 @@ open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 
 [<Literal>]
 let private recommendationsLimit = 100
+
 [<Literal>]
 let private playlistTracksLimit = 100
+
 [<Literal>]
 let private likedTacksLimit = 50
 
@@ -34,16 +36,19 @@ let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.Ge
 
       return
         recommendationsResponse.Tracks
-        |> Seq.map (_.Id >> TrackId)
+        |> Seq.map (fun st ->
+          { Id = TrackId st.Id
+            Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
         |> Seq.toList
     }
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
   |> Seq.filter (isNull >> not)
-  |> Seq.map _.Id
-  |> Seq.filter (isNull >> not)
-  |> Seq.map TrackId
+  |> Seq.filter (_.Id >> isNull >> not)
+  |> Seq.map (fun st ->
+    { Id = TrackId st.Id
+      Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
   |> Seq.toList
 
 [<Literal>]

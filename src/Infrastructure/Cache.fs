@@ -4,7 +4,6 @@ open System
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
-open Infrastructure.Core
 open Microsoft.ApplicationInsights
 open Microsoft.ApplicationInsights.DataContracts
 open StackExchange.Redis
@@ -40,12 +39,12 @@ let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
 let private listCachedTracks telemetryClient cache =
   fun key ->
     loadList telemetryClient cache key
-    |> Task.map (List.ofArray >> List.map (string >> TrackId))
+    |> Task.map (List.ofArray >> List.map (string >> JSON.deserialize<Track>))
 
 let private cacheTracks telemetryClient cache =
   fun key tracks ->
     task {
-      let values = tracks |> List.map (TrackId.value >> RedisValue) |> Array.ofSeq
+      let values = tracks |> List.map (JSON.serialize >> RedisValue) |> Array.ofSeq
 
       do! saveList telemetryClient cache key values
       let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(1))

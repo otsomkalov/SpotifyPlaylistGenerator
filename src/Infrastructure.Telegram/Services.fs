@@ -69,6 +69,7 @@ type MessageService
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
+    loadPreset: Preset.Load,
     updatePreset: Preset.Update,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
@@ -365,4 +366,15 @@ type CallbackQueryService
         Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
+    | Action.EnableUniqueArtists presetId ->
+      let enableUniqueArtists = Preset.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = Workflows.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
+
+      enableUniqueArtists presetId
+    | Action.DisableUniqueArtists presetId ->
+      let disableUniqueArtists = Preset.disableUniqueArtists loadPreset updatePreset
+      let disableUniqueArtists =
+        Workflows.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
+
+      disableUniqueArtists presetId
     | Action.ShowUserPresets -> showUserPresets userId

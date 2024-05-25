@@ -58,18 +58,31 @@ let private getPresetMessage =
           Buttons.EnableRecommendations,
           sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
 
+      let uniqueArtistsText, uniqueArtistsButtonText, uniqueArtistsButtonData =
+        match preset.Settings.UniqueArtists with
+        | true ->
+          Messages.UniqueArtistsEnabled,
+          Buttons.DisableUniqueArtists,
+          sprintf "p|%s|%s" presetId CallbackQueryConstants.disableUniqueArtists
+        | false ->
+          Messages.UniqueArtistsDisabled,
+          Buttons.EnableUniqueArtists,
+          sprintf "p|%s|%s" presetId CallbackQueryConstants.enableUniqueArtists
+
       let text =
         System.String.Format(
           Messages.PresetInfo,
           preset.Name,
           likedTracksHandlingText,
           recommendationsText,
+          uniqueArtistsText,
           (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
         )
 
       let keyboard =
         seq {
           InlineKeyboardButton.WithCallbackData(likedTracksButtonText, likedTracksButtonData)
+          InlineKeyboardButton.WithCallbackData(uniqueArtistsButtonText, uniqueArtistsButtonData)
           InlineKeyboardButton.WithCallbackData(recommendationsButtonText, recommendationsButtonData)
         }
 
@@ -309,6 +322,34 @@ let disableRecommendations
   fun presetId ->
     task {
       do! disableRecommendations presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
+let enableUniqueArtists
+  (enableUniqueArtists: Preset.EnableUniqueArtists)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (sendPresetInfo: SendPresetInfo)
+  : Preset.EnableUniqueArtists =
+  fun presetId ->
+    task {
+      do! enableUniqueArtists presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
+let disableUniqueArtists
+  (disableUniqueArtists: Preset.DisableUniqueArtists)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (sendPresetInfo: SendPresetInfo)
+  : Preset.DisableUniqueArtists =
+  fun presetId ->
+    task {
+      do! disableUniqueArtists presetId
 
       do! answerCallbackQuery Messages.Updated
 

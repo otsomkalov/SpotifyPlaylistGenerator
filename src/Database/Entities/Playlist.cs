@@ -1,5 +1,8 @@
-﻿namespace Database.Entities;
+﻿using MongoDB.Bson.Serialization.Attributes;
 
+namespace Database.Entities;
+
+[BsonIgnoreExtraElements]
 public abstract class Playlist
 {
     public string Id { get; init; }

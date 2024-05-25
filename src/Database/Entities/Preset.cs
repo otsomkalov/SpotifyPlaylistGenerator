@@ -1,5 +1,8 @@
-﻿namespace Database.Entities;
+﻿using MongoDB.Bson.Serialization.Attributes;
 
+namespace Database.Entities;
+
+[BsonIgnoreExtraElements]
 public class Settings
 {
     public bool? IncludeLikedTracks { get; set; }
@@ -7,8 +10,11 @@ public class Settings
     public int PlaylistSize { get; set; }
 
     public bool RecommendationsEnabled { get; set; }
+
+    public bool UniqueArtists { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class Preset
 {
     public string Id { get; set; }
