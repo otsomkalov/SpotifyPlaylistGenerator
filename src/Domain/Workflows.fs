@@ -288,7 +288,7 @@ module ExcludedPlaylist =
 module Playlist =
   type ListTracks = ReadablePlaylistId -> Task<Track list>
 
-  type UpdateTracks = TargetedPlaylist -> TrackId list -> Task<unit>
+  type UpdateTracks = TargetedPlaylist -> Track list -> Task<unit>
 
   type ParsedPlaylistId = ParsedPlaylistId of string
 
@@ -429,13 +429,12 @@ module Playlist =
             let tracks =
               if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
 
-            let tracksIdsToImport =
+            let tracksToImport =
               tracks
               |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
-              |> List.map _.Id
 
             for playlist in preset.TargetedPlaylists |> Seq.filter _.Enabled do
-              do! io.UpdateTargetedPlaylists playlist tracksIdsToImport
+              do! io.UpdateTargetedPlaylists playlist tracksToImport
 
             return Ok()
           }
