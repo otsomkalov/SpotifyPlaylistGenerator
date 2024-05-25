@@ -440,45 +440,49 @@ module Playlist =
             return Ok()
           }
 
-    let generateAndSaveTracks preset =
-      fun (includedTracks: Track list) excludedTracks ->
-        match includedTracks with
-        | [] -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
-        | includedTracks ->
-          task {
-            let! recommendedTracks =
-              if preset.Settings.RecommendationsEnabled then
-                includedTracks |> List.map (_.Id) |> io.GetRecommendations
-              else
-                [] |> Task.FromResult
+    let includeLiked (preset: Preset) =
+      fun tracks ->
+        match preset.Settings.LikedTracksHandling with
+        | PresetSettings.LikedTracksHandling.Include ->
+          io.ListLikedTracks() |> Task.map (List.append tracks)
+        | _ ->
+          Task.FromResult tracks
 
-            let includedTracks = recommendedTracks @ includedTracks
+    let excludeLiked (preset: Preset) =
+      fun tracks ->
+        match preset.Settings.LikedTracksHandling with
+        | PresetSettings.LikedTracksHandling.Exclude ->
+          io.ListLikedTracks() |> Task.map (List.append tracks)
+        | _ ->
+          Task.FromResult tracks
 
-            let potentialTracks = includedTracks |> List.except excludedTracks
+    let getRecommendations (preset: Preset) =
+      fun (tracks: Track list) ->
+        match (tracks, preset.Settings.RecommendationsEnabled) with
+        | [], false -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
+        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.append tracks) |> Task.map Ok
+        | _ -> [] |> Ok |> Task.FromResult
 
-            io.LogPotentialTracks potentialTracks.Length
+    let filterUniqueArtists (preset: Preset) =
+      fun (tracks: Track list) ->
+        match preset.Settings.UniqueArtists with
+        | true -> tracks |> Tracks.uniqueByArtists
+        | false -> tracks
 
-            return! saveTracks preset potentialTracks
-          }
-
-    fun presetId ->
-      task {
-        let! preset = io.LoadPreset presetId
-
-        let! likedTracks = io.ListLikedTracks
-
-        let! includedTracks = preset.IncludedPlaylists |> io.ListIncludedTracks
-
-        let! excludedTracks = preset.ExcludedPlaylists |> io.ListExcludedTracks
-
-        let excludedTracks, includedTracks =
-          match preset.Settings.LikedTracksHandling with
-          | PresetSettings.LikedTracksHandling.Include -> excludedTracks, includedTracks @ likedTracks
-          | PresetSettings.LikedTracksHandling.Exclude -> likedTracks @ excludedTracks, includedTracks
-          | PresetSettings.LikedTracksHandling.Ignore -> excludedTracks, includedTracks
-
-        return! generateAndSaveTracks preset (includedTracks |> List.shuffle) excludedTracks
-      }
+    io.LoadPreset
+    >> Task.bind (fun preset ->
+      preset.IncludedPlaylists
+      |> io.ListIncludedTracks
+      |> Task.bind (includeLiked preset)
+      |> Task.bind (getRecommendations preset)
+      |> TaskResult.taskMap (fun includedTracks ->
+        preset.ExcludedPlaylists
+        |> io.ListExcludedTracks
+        |> Task.bind (excludeLiked preset)
+        |> Task.map (List.except includedTracks))
+      |> TaskResult.map (filterUniqueArtists preset)
+      |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
+      |> TaskResult.bind (saveTracks preset))
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
