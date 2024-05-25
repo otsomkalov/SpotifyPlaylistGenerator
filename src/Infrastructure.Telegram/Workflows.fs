@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Infrastructure.Telegram.Workflows
 
+open Infrastructure.Helpers
 open Resources
 open System
 open System.Text.RegularExpressions

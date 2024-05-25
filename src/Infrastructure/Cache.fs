@@ -1,7 +1,6 @@
 ﻿module Infrastructure.Cache
 
 open System
-open System.Text.Json
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
@@ -42,12 +41,12 @@ let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
 let private listCachedTracks telemetryClient cache =
   fun key ->
     loadList telemetryClient cache key
-    |> Task.map (List.ofArray >> List.map (string >> JsonSerializer.Deserialize<Track>))
+    |> Task.map (List.ofArray >> List.map (string >> JSON.deserialize<Track>))
 
 let private cacheTracks telemetryClient cache =
   fun key tracks ->
     task {
-      let values = tracks |> List.map (JsonSerializer.Serialize >> RedisValue) |> Array.ofSeq
+      let values = tracks |> List.map (JSON.serialize >> RedisValue) |> Array.ofSeq
 
       do! saveList telemetryClient cache key values
       let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(1))
