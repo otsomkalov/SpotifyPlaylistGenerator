@@ -443,7 +443,7 @@ module Playlist =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (List.append tracks)
+          io.ListLikedTracks() |> Task.map (fun liked -> liked @ tracks)
         | _ ->
           Task.FromResult tracks
 
@@ -459,7 +459,7 @@ module Playlist =
       fun (tracks: Track list) ->
         match (tracks, preset.Settings.RecommendationsEnabled) with
         | [], false -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
-        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.append tracks) |> Task.map Ok
+        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (fun recs -> recs @ tracks) |> Task.map Ok
         | _ -> [] |> Ok |> Task.FromResult
 
     let filterUniqueArtists (preset: Preset) =
@@ -473,6 +473,7 @@ module Playlist =
       preset.IncludedPlaylists
       |> io.ListIncludedTracks
       |> Task.bind (includeLiked preset)
+      |> Task.map List.shuffle
       |> Task.bind (getRecommendations preset)
       |> TaskResult.taskMap (fun includedTracks ->
         preset.ExcludedPlaylists
