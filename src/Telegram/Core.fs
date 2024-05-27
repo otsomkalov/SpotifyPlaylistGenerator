@@ -68,6 +68,9 @@ type Action =
   | EnableRecommendations of presetId: PresetId
   | DisableRecommendations of presetId: PresetId
 
+  | EnableUniqueArtists of presetId: PresetId
+  | DisableUniqueArtists of presetId: PresetId
+
   | ShowUserPresets
 
 type ParseAction = string -> Action

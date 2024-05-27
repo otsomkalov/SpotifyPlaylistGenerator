@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Infrastructure
+open Infrastructure.Helpers
 open MongoDB.Driver
 open SpotifyAPI.Web
 open System.Net
@@ -66,8 +67,8 @@ module User =
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
   let updateTracks (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdateTracks =
-    fun playlist tracksIds ->
-      let tracksIds = tracksIds |> List.map TrackId.value
+    fun playlist tracks ->
+      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
       let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
 
       let spotifyTracksIds =
@@ -98,7 +99,7 @@ module TargetedPlaylist =
       else
         let playlistAddItemsRequest = spotifyTracksIds |> PlaylistAddItemsRequest
 
-        [ cache.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) |> Task.map ignore
+        [ cache.ListLeftPushAsync(playlistId, (tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray)) |> Task.map ignore
           client.Playlists.AddItems(playlistId, playlistAddItemsRequest) |> Task.map ignore ]
         |> Task.WhenAll
         |> Task.map ignore

@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Infrastructure.Telegram.Workflows
 
+open Infrastructure.Helpers
 open Resources
 open System
 open System.Text.RegularExpressions
@@ -234,5 +235,8 @@ let parseAction: ParseAction =
 
     | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
     | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
+
+    | [| "p"; presetId; CallbackQueryConstants.enableUniqueArtists |] -> Action.EnableUniqueArtists(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] -> Action.DisableUniqueArtists(PresetId presetId)
 
     | [| "p" |] -> Action.ShowUserPresets
