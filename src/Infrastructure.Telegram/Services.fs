@@ -69,7 +69,6 @@ type MessageService
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
-    updatePreset: Preset.Update,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
     _spotifyOptions: IOptions<SpotifySettings>,
@@ -91,6 +90,7 @@ type MessageService
     let userId = message.From.Id |> UserId
 
     let loadPreset = PresetRepo.load _database
+    let updatePreset = PresetRepo.update _database
     let getPreset = Preset.get loadPreset
 
     let sendMessage = sendUserMessage userId
@@ -245,12 +245,13 @@ type CallbackQueryService
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
     _connectionMultiplexer: IConnectionMultiplexer,
-    updatePreset: Preset.Update,
     _database: IMongoDatabase,
     editBotMessageButtons: EditBotMessageButtons
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
+    let updatePreset = PresetRepo.update _database
+
     let userId = callbackQuery.From.Id |> UserId
     let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
 

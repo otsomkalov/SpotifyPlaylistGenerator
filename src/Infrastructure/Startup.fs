@@ -4,6 +4,7 @@
 
 open Domain.Workflows
 open Azure.Storage.Queues
+open Infrastructure.Repos
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -50,7 +51,6 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.BuildSingleton<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)
   services.BuildSingleton<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
-  services.BuildScoped<Preset.Update, IMongoDatabase>(Preset.update)
   services.BuildScoped<User.Exists, IMongoDatabase>(User.exists)
 
   services.BuildSingleton<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)
