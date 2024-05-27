@@ -356,6 +356,34 @@ let disableUniqueArtists
       return! sendPresetInfo presetId
     }
 
+let enableUniqueArtists
+  (enableUniqueArtists: Preset.EnableUniqueArtists)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (sendPresetInfo: SendPresetInfo)
+  : Preset.EnableUniqueArtists =
+  fun presetId ->
+    task {
+      do! enableUniqueArtists presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
+let disableUniqueArtists
+  (disableUniqueArtists: Preset.DisableUniqueArtists)
+  (answerCallbackQuery: AnswerCallbackQuery)
+  (sendPresetInfo: SendPresetInfo)
+  : Preset.DisableUniqueArtists =
+  fun presetId ->
+    task {
+      do! disableUniqueArtists presetId
+
+      do! answerCallbackQuery Messages.Updated
+
+      return! sendPresetInfo presetId
+    }
+
 let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
