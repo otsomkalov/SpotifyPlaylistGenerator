@@ -431,11 +431,8 @@ module Playlist =
             let tracks =
               if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
 
-            let tracks =
-              if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists elsetracks
-             let tracksToImport =
+            let tracksToImport =
               tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
-              |> List.map _.Id
 
             for playlist in preset.TargetedPlaylists |> Seq.filter _.Enabled do
               do! io.UpdateTargetedPlaylists playlist tracksToImport
