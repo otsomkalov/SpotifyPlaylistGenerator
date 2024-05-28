@@ -50,7 +50,6 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.BuildSingleton<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)
   services.BuildSingleton<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
 
-  services.BuildScoped<Preset.Load, IMongoDatabase>(Preset.load)
   services.BuildScoped<Preset.Update, IMongoDatabase>(Preset.update)
   services.BuildScoped<User.Exists, IMongoDatabase>(User.exists)
 

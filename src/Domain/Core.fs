@@ -134,6 +134,7 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module Preset =
+  type Get = PresetId -> Task<Preset>
 
   [<RequireQualifiedAccess>]
   type ValidationError =

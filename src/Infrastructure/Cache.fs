@@ -21,22 +21,20 @@ let private loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key ->
     let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
 
-    use operation = telemetryClient.StartOperation dependency
-
-    key
-    |> RedisKey
-    |> cache.ListRangeAsync
-    |> Task.tap (fun v -> operation.Telemetry.Success <- true)
+    using (telemetryClient.StartOperation dependency) (fun operation ->
+      key
+      |> RedisKey
+      |> cache.ListRangeAsync
+      |> Task.tap (fun v -> operation.Telemetry.Success <- true))
 
 let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key (value: 'a array) ->
     let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
 
-    use operation = telemetryClient.StartOperation dependency
-
-    cache.ListLeftPushAsync(key, value)
-    |> Task.tap (fun v -> operation.Telemetry.Success <- true)
-    |> Task.ignore
+    using (telemetryClient.StartOperation dependency) (fun operation ->
+      cache.ListLeftPushAsync(key, value)
+      |> Task.tap (fun v -> operation.Telemetry.Success <- true)
+      |> Task.ignore)
 
 let private listCachedTracks telemetryClient cache =
   fun key ->
@@ -56,7 +54,13 @@ let private cacheTracks telemetryClient cache =
 
 [<RequireQualifiedAccess>]
 module User =
-  let listLikedTracks telemetryClient (cache: IDatabase) logLikedTracks (listLikedTracks: User.ListLikedTracks) userId : User.ListLikedTracks =
+  let listLikedTracks
+    telemetryClient
+    (cache: IDatabase)
+    logLikedTracks
+    (listLikedTracks: User.ListLikedTracks)
+    userId
+    : User.ListLikedTracks =
     fun () ->
       let key = userId |> UserId.value |> string
       let cacheTracks = cacheTracks telemetryClient cache key

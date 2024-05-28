@@ -148,7 +148,7 @@ module Playlist =
     (queueClient: QueueClient)
     (replyToMessage: ReplyToMessage)
     (loadUser: User.Get)
-    (loadPreset: Preset.Load)
+    (loadPreset: Preset.Get)
     (validatePreset: Preset.Validate)
     : Playlist.QueueGeneration =
     let onSuccess () =
