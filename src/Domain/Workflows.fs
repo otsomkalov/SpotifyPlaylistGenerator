@@ -490,7 +490,7 @@ module TargetedPlaylist =
   type Update = PresetId -> TargetedPlaylist -> Task<unit>
   type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
 
-  let overwriteTargetedPlaylist (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) : TargetedPlaylist.OverwriteTracks =
+  let private setPlaylistOverwriting (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) overwriting =
     fun presetId targetedPlaylistId ->
       task {
         let! preset = loadPreset presetId
@@ -498,29 +498,9 @@ module TargetedPlaylist =
         let targetPlaylist =
           preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetedPlaylistId)
 
-        let updatedPlaylist = { targetPlaylist with Overwrite = true }
-
-        let updatedPreset =
-          { preset with
-              TargetedPlaylists =
-                preset.TargetedPlaylists
-                |> List.except [ targetPlaylist ]
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
-      }
-
-  let appendToTargetedPlaylist (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) : TargetedPlaylist.AppendTracks =
-    fun presetId targetPlaylistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let targetPlaylist =
-          preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
-
         let updatedPlaylist =
           { targetPlaylist with
-              Overwrite = false }
+              Overwrite = overwriting }
 
         let updatedPreset =
           { preset with
@@ -533,46 +513,10 @@ module TargetedPlaylist =
       }
 
   let overwriteTracks (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) : TargetedPlaylist.OverwriteTracks =
-    fun presetId targetPlaylistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let targetPlaylist =
-          preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
-
-        let updatedPlaylist = { targetPlaylist with Overwrite = true }
-
-        let updatedPreset =
-          { preset with
-              TargetedPlaylists =
-                preset.TargetedPlaylists
-                |> List.except [ targetPlaylist ]
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
-      }
+    setPlaylistOverwriting loadPreset updatePreset true
 
   let appendTracks (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) : TargetedPlaylist.AppendTracks =
-    fun presetId targetPlaylistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let targetPlaylist =
-          preset.TargetedPlaylists |> List.find (fun p -> p.Id = targetPlaylistId)
-
-        let updatedPlaylist =
-          { targetPlaylist with
-              Overwrite = false }
-
-        let updatedPreset =
-          { preset with
-              TargetedPlaylists =
-                preset.TargetedPlaylists
-                |> List.filter ((<>) targetPlaylist)
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
-      }
+    setPlaylistOverwriting loadPreset updatePreset false
 
   let remove (loadPreset: PresetRepo.Load) (updatePreset: Preset.Update) : TargetedPlaylist.Remove =
     fun presetId targetPlaylistId ->

@@ -325,12 +325,12 @@ type CallbackQueryService
     | Action.ShowTargetedPlaylists(presetId, page) -> showTargetedPlaylists presetId page
     | Action.ShowTargetedPlaylist(presetId, playlistId) -> showTargetedPlaylist presetId playlistId
     | Action.AppendToTargetedPlaylist(presetId, playlistId) ->
-      let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist getPreset updatePreset
+      let appendToTargetedPlaylist = TargetedPlaylist.appendTracks getPreset updatePreset
       let appendToTargetedPlaylist = Workflows.appendToTargetedPlaylist appendToTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
       appendToTargetedPlaylist presetId playlistId
     | Action.OverwriteTargetedPlaylist(presetId, playlistId) ->
-      let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist getPreset updatePreset
+      let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTracks getPreset updatePreset
       let overwriteTargetedPlaylist = Workflows.overwriteTargetedPlaylist overwriteTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
       overwriteTargetedPlaylist presetId playlistId
