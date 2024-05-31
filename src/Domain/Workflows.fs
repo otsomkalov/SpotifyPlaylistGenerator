@@ -88,9 +88,6 @@ module Preset =
   let get (load: PresetRepo.Load) : Preset.Get =
     load
 
-  let get (load: PresetRepo.Load) : Preset.Get =
-    load
-
   let validate: Preset.Validate =
     fun preset ->
       match preset.IncludedPlaylists, preset.Settings.LikedTracksHandling, preset.TargetedPlaylists with
