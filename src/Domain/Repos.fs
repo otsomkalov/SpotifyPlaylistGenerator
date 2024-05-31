@@ -18,4 +18,6 @@ module PresetRepo =
 module UserRepo =
   type Load = UserId -> Task<User>
   type Update = User -> Task<unit>
+  type Exists = UserId -> Task<bool>
+  type Create = User -> Task<unit>
 

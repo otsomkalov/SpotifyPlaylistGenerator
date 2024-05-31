@@ -161,6 +161,7 @@ module User =
   type Get = UserId -> Task<User>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
+  type CreateIfNotExists = UserId -> Task<unit>
 
   let create userId =
     { Id = userId

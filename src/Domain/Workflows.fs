@@ -49,10 +49,8 @@ module Tracks =
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = ColdTask<Track list>
-  type CreateIfNotExists = UserId -> Task<unit>
-  type Exists = UserId -> Task<bool>
-
   let get (load: UserRepo.Load) : User.Get = load
+
 
   let setCurrentPreset (load: UserRepo.Load) (update: UserRepo.Update) : User.SetCurrentPreset =
     fun userId presetId ->
@@ -73,6 +71,13 @@ module User =
             CurrentPresetId = if u.CurrentPresetId = Some presetId then None else u.CurrentPresetId })
       |> Task.bind update
       |> Task.bind (fun _ -> removePreset presetId)
+
+  let createIfNotExists (exists: UserRepo.Exists) (create: UserRepo.Create) : User.CreateIfNotExists =
+    fun userId ->
+      exists userId
+      |> Task.bind (function
+        | true -> Task.FromResult()
+        | false -> User.create userId |> create)
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
