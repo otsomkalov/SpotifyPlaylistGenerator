@@ -89,3 +89,16 @@ module UserRepo =
 
         return User.fromDb dbUser
       }
+
+  let update (db: IMongoDatabase) : UserRepo.Update =
+    fun user ->
+      task {
+        let collection = db.GetCollection "users"
+        let id = user.Id |> UserId.value
+
+        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+
+        let dbUser = user |> User.toDb
+
+        return! collection.ReplaceOneAsync(usersFilter, dbUser) |> Task.map ignore
+      }

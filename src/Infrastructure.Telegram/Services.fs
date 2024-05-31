@@ -100,7 +100,7 @@ type MessageService
     let sendButtons = sendUserMessageButtons userId
     let askForReply = askUserForReply userId message.MessageId
     let savePreset = Preset.save _database
-    let updateUser = User.update _database
+    let updateUser = UserRepo.update _database
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
@@ -255,7 +255,7 @@ type CallbackQueryService
     let userId = callbackQuery.From.Id |> UserId
     let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
 
-    let updateUser = User.update _database
+    let updateUser = UserRepo.update _database
     let editMessageButtons = editBotMessageButtons userId botMessageId
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
     let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer

@@ -17,3 +17,5 @@ module PresetRepo =
 [<RequireQualifiedAccess>]
 module UserRepo =
   type Load = UserId -> Task<User>
+  type Update = User -> Task<unit>
+

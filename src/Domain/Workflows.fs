@@ -49,13 +49,12 @@ module Tracks =
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = ColdTask<Track list>
-  type Update = User -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
   type Exists = UserId -> Task<bool>
 
   let get (load: UserRepo.Load) : User.Get = load
 
-  let setCurrentPreset (load: UserRepo.Load) (update: Update) : User.SetCurrentPreset =
+  let setCurrentPreset (load: UserRepo.Load) (update: UserRepo.Update) : User.SetCurrentPreset =
     fun userId presetId ->
       userId
       |> load
@@ -64,7 +63,7 @@ module User =
             CurrentPresetId = Some presetId })
       |> Task.bind update
 
-  let removePreset (load: UserRepo.Load) (removePreset: Preset.Remove) (update: Update) : User.RemovePreset =
+  let removePreset (load: UserRepo.Load) (removePreset: Preset.Remove) (update: UserRepo.Update) : User.RemovePreset =
     fun userId presetId ->
       userId
       |> load
@@ -140,7 +139,7 @@ module Preset =
             Settings = { p.Settings with PlaylistSize = size } })
       |> Task.bind update
 
-  let create (savePreset: Save) (loadUser: UserRepo.Load) (updateUser: User.Update) userId : Preset.Create =
+  let create (savePreset: Save) (loadUser: UserRepo.Load) (updateUser: UserRepo.Update) userId : Preset.Create =
     fun name ->
       task {
         let newPreset =
@@ -440,7 +439,7 @@ module Playlist =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (fun liked -> liked @ tracks)
+          io.ListLikedTracks() |> Task.map (List.prepend tracks)
         | _ ->
           Task.FromResult tracks
 
@@ -456,7 +455,7 @@ module Playlist =
       fun (tracks: Track list) ->
         match (tracks, preset.Settings.RecommendationsEnabled) with
         | [], false -> Playlist.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
-        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (fun recs -> recs @ tracks) |> Task.map Ok
+        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.prepend tracks) |> Task.map Ok
         | _ -> [] |> Ok |> Task.FromResult
 
     let filterUniqueArtists (preset: Preset) =
