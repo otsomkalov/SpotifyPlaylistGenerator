@@ -8,6 +8,7 @@ open otsom.fs.Telegram.Bot.Core
 module PresetRepo =
   type Load = PresetId -> Task<Preset>
 
+  type Update = Preset -> Task<unit>
   type Remove = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]

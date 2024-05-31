@@ -24,6 +24,20 @@ module PresetRepo =
         return dbPreset |> Preset.fromDb
       }
 
+  let update (db: IMongoDatabase) : PresetRepo.Update =
+    fun preset ->
+      task {
+        let collection = db.GetCollection "presets"
+
+        let dbPreset = preset |> Preset.toDb
+
+        let id = preset.Id |> PresetId.value
+
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
+
+        return! collection.ReplaceOneAsync(presetsFilter, dbPreset) |> Task.map ignore
+      }
+
   let remove (db: IMongoDatabase) : PresetRepo.Remove =
     fun presetId ->
       let collection = db.GetCollection "presets"

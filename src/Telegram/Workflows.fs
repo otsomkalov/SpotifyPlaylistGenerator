@@ -547,31 +547,34 @@ let removeTargetedPlaylist
       return! showTargetedPlaylists presetId (Page 0)
     }
 
-let appendToTargetedPlaylist
-  (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylist: ShowTargetedPlaylist)
-  : TargetedPlaylist.AppendTracks =
-  fun presetId playlistId ->
-    task {
-      do! appendToTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist will be appended with generated tracks"
+[<RequireQualifiedAccess>]
+module TargetedPlaylist =
 
-      return! showTargetedPlaylist presetId playlistId
-    }
+  let appendTracks
+    (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylist: ShowTargetedPlaylist)
+    : TargetedPlaylist.AppendTracks =
+    fun presetId playlistId ->
+      task {
+        do! appendToTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist will be appended with generated tracks"
 
-let overwriteTargetedPlaylist
-  (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylist: ShowTargetedPlaylist)
-  : TargetedPlaylist.OverwriteTracks =
-  fun presetId playlistId ->
-    task {
-      do! overwriteTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
+        return! showTargetedPlaylist presetId playlistId
+      }
 
-      return! showTargetedPlaylist presetId playlistId
-    }
+  let overwritePlaylist
+    (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylist: ShowTargetedPlaylist)
+    : TargetedPlaylist.OverwriteTracks =
+    fun presetId playlistId ->
+      task {
+        do! overwriteTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
+
+        return! showTargetedPlaylist presetId playlistId
+      }
 
 [<RequireQualifiedAccess>]
 module Message =

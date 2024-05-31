@@ -167,20 +167,6 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module Preset =
-  let update (db: IMongoDatabase) : Preset.Update =
-    fun preset ->
-      task {
-        let collection = db.GetCollection "presets"
-
-        let dbPreset = preset |> Preset.toDb
-
-        let id = preset.Id |> PresetId.value
-
-        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
-
-        return! collection.ReplaceOneAsync(presetsFilter, dbPreset) |> Task.map ignore
-      }
-
   let save (db: IMongoDatabase) : Preset.Save =
     fun preset ->
       task {
