@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Tracks.fs"/>
-    <Compile Include="Preset.fs"/>
-    <Compile Include="User.fs"/>
+    <Compile Include="IncludedPlaylist.fs" />
     <Compile Include="Program.fs"/>
   </ItemGroup>
 
@@ -30,7 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Domain\Domain.fsproj"/>
+    <ProjectReference Include="..\..\tests\Domain.Tests\Domain.Tests.fsproj" />
+    <ProjectReference Include="..\Telegram\Telegram.fsproj" />
   </ItemGroup>
 
 </Project>

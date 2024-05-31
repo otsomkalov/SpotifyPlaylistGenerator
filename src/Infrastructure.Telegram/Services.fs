@@ -271,7 +271,7 @@ type CallbackQueryService
 
     let sendPresetInfo = Workflows.sendPresetInfo getPreset editMessageButtons
 
-    let showIncludedPlaylists = Workflows.showIncludedPlaylists getPreset editMessageButtons
+    let listIncludedPlaylists = Workflows.IncludedPlaylist.list getPreset editMessageButtons
     let showExcludedPlaylists = Workflows.showExcludedPlaylists getPreset editMessageButtons
     let showTargetedPlaylists = Workflows.showTargetedPlaylists getPreset editMessageButtons
 
@@ -291,7 +291,9 @@ type CallbackQueryService
       let removeUserPreset = Domain.Workflows.User.removePreset getUser removePreset updateUser
       let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset showUserPresets
       removeUserPreset userId presetId
-    | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
+    | Action.IncludedPlaylist(a) ->
+      match a with
+      | IncludedPlaylistActions.List(presetId, page) -> listIncludedPlaylists presetId page
     | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->
       let enableIncludedPlaylist = IncludedPlaylist.enable getPreset updatePreset
@@ -305,7 +307,7 @@ type CallbackQueryService
       disableIncludedPlaylist presetId playlistId
     | Action.RemoveIncludedPlaylist(presetId, playlistId) ->
       let removeIncludedPlaylist = IncludedPlaylist.remove getPreset updatePreset
-      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery showIncludedPlaylists
+      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery listIncludedPlaylists
 
       removeIncludedPlaylist presetId playlistId
     | Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page
