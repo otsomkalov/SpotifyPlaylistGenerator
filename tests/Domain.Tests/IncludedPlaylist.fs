@@ -3,7 +3,7 @@
 open Domain.Core
 
 let mock : IncludedPlaylist = {
-  Id = ReadablePlaylistId(PlaylistId("playlist-id"))
-  Name = "playlist-name"
+  Id = ReadablePlaylistId(PlaylistId("included-playlist-id"))
+  Name = "included-playlist-name"
   Enabled = true
 }
