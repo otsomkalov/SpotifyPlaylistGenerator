@@ -273,7 +273,7 @@ type CallbackQueryService
 
     let listIncludedPlaylists = Workflows.IncludedPlaylist.list getPreset editMessageButtons
     let showExcludedPlaylists = Workflows.ExcludedPlaylist.list getPreset editMessageButtons
-    let showTargetedPlaylists = Workflows.showTargetedPlaylists getPreset editMessageButtons
+    let showTargetedPlaylists = Workflows.TargetedPlaylist.list getPreset editMessageButtons
 
     let showIncludedPlaylist = Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
     let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessageButtons getPreset countPlaylistTracks

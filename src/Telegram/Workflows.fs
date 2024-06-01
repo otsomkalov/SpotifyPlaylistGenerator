@@ -304,26 +304,6 @@ module ExcludedPlaylist =
         return! showExcludedPlaylist presetId playlistId
       }
 
-let showTargetedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowTargetedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: TargetedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = getPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
-    }
-
 let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
   fun presetId ->
     task {
@@ -537,7 +517,7 @@ let removeExcludedPlaylist
 let removeTargetedPlaylist
   (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylists: ShowTargetedPlaylists)
+  (showTargetedPlaylists: TargetedPlaylist.List)
   : TargetedPlaylist.Remove =
   fun presetId playlistId ->
     task {
@@ -549,6 +529,25 @@ let removeTargetedPlaylist
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: TargetedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
+        )
+
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+      task {
+        let! preset = getPreset presetId
+
+        let replyMarkup =
+          createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
+
+        return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
+      }
 
   let appendTracks
     (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
