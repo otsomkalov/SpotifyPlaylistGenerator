@@ -161,6 +161,27 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
 
+let private getPlaylistButtons presetId playlistId playlistType enabled =
+  let presetId = presetId |> PresetId.value
+
+  let buttonDataTemplate =
+    sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+
+  let enableDisableButtonText, enableDisableButtonData =
+    match enabled with
+    | true -> "Disable", buttonDataTemplate "d"
+    | false -> "Enable", buttonDataTemplate "e"
+
+  seq {
+    seq {
+      InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
+      InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
+    }
+
+    seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
+  }
+  |> InlineKeyboardMarkup
+
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : IncludedPlaylist.List =
@@ -183,10 +204,32 @@ module IncludedPlaylist =
         return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
       }
 
+  let show
+    (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get)
+    (countPlaylistTracks: Playlist.CountTracks)
+    : IncludedPlaylist.Show =
+    fun presetId playlistId ->
+      task {
+        let! preset = getPreset presetId
+
+        let includedPlaylist =
+          preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+
+        let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
+
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+
+        let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
+
+        return! editMessageButtons messageText buttons
+      }
+
   let enable
     (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (showIncludedPlaylist: ShowIncludedPlaylist)
+    (showIncludedPlaylist: IncludedPlaylist.Show)
     : IncludedPlaylist.Enable =
     fun presetId playlistId ->
       task {
@@ -200,7 +243,7 @@ module IncludedPlaylist =
   let disable
     (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (showIncludedPlaylist: ShowIncludedPlaylist)
+    (showIncludedPlaylist: IncludedPlaylist.Show)
     : IncludedPlaylist.Disable =
     fun presetId playlistId ->
       task {
@@ -401,49 +444,6 @@ let sendCurrentPresetInfo (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyb
             |> ReplyKeyboardMarkup.op_Implicit
 
           sendKeyboard "You did not select current preset" buttons
-    }
-
-let private getPlaylistButtons presetId playlistId playlistType enabled =
-  let presetId = presetId |> PresetId.value
-
-  let buttonDataTemplate =
-    sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
-
-  let enableDisableButtonText, enableDisableButtonData =
-    match enabled with
-    | true -> "Disable", buttonDataTemplate "d"
-    | false -> "Enable", buttonDataTemplate "e"
-
-  seq {
-    seq {
-      InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
-      InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
-    }
-
-    seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
-  }
-  |> InlineKeyboardMarkup
-
-let showIncludedPlaylist
-  (editMessageButtons: EditMessageButtons)
-  (getPreset: Preset.Get)
-  (countPlaylistTracks: Playlist.CountTracks)
-  : ShowIncludedPlaylist =
-  fun presetId playlistId ->
-    task {
-      let! preset = getPreset presetId
-
-      let includedPlaylist =
-        preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
-
-      let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
-
-      let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
-
-      let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
-
-      return! editMessageButtons messageText buttons
     }
 
 let showExcludedPlaylist
