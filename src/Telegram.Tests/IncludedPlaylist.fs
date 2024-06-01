@@ -42,7 +42,6 @@ let ``show should send included playlist`` () =
     fun playlistId ->
       playlistId
       |> should equal (IncludedPlaylist.mock.Id |> ReadablePlaylistId.value)
-
       0L |> Task.FromResult
 
   let sut = IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks

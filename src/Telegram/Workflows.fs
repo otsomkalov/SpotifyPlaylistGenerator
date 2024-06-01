@@ -256,6 +256,26 @@ module IncludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ExcludedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: ExcludedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        )
+
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+      task {
+        let! preset = getPreset presetId
+
+        let replyMarkup =
+          createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
+
+        return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
+      }
+
   let enable
     (enableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Enable)
     (answerCallbackQuery: AnswerCallbackQuery)
@@ -283,26 +303,6 @@ module ExcludedPlaylist =
 
         return! showExcludedPlaylist presetId playlistId
       }
-
-let showExcludedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowExcludedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: ExcludedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = getPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
-    }
 
 let showTargetedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowTargetedPlaylists =
   let createButtonFromPlaylist presetId =
@@ -524,7 +524,7 @@ let removeIncludedPlaylist
 let removeExcludedPlaylist
   (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showExcludedPlaylists: ShowExcludedPlaylists)
+  (showExcludedPlaylists: ExcludedPlaylist.List)
   : ExcludedPlaylist.Remove =
   fun presetId playlistId ->
     task {
