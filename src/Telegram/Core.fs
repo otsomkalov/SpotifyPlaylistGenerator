@@ -48,6 +48,7 @@ type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
   | ExcludedPlaylist of ExcludedPlaylistActions
+  | TargetedPlaylist of TargetedPlaylistActions
 
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
@@ -58,7 +59,6 @@ type Action =
   | DisableExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
-  | ShowTargetedPlaylists of presetId: PresetId * page: Page
   | ShowTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
