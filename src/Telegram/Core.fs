@@ -47,11 +47,17 @@ type TargetedPlaylistActions =
   | Remove of presetId: PresetId * playlistId: WritablePlaylistId
 
 [<RequireQualifiedAccess>]
+type PresetSettingsActions =
+  | DisableUniqueArtists of presetId: PresetId
+
+[<RequireQualifiedAccess>]
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
   | ExcludedPlaylist of ExcludedPlaylistActions
   | TargetedPlaylist of TargetedPlaylistActions
+
+  | PresetSettings of PresetSettingsActions
 
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
@@ -76,7 +82,6 @@ type Action =
   | DisableRecommendations of presetId: PresetId
 
   | EnableUniqueArtists of presetId: PresetId
-  | DisableUniqueArtists of presetId: PresetId
 
   | ShowUserPresets
 

@@ -413,20 +413,6 @@ let enableUniqueArtists
       return! sendPresetInfo presetId
     }
 
-let disableUniqueArtists
-  (disableUniqueArtists: Preset.DisableUniqueArtists)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
-  : Preset.DisableUniqueArtists =
-  fun presetId ->
-    task {
-      do! disableUniqueArtists presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
 let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
@@ -588,4 +574,20 @@ module User =
         do! removePreset userId presetId
 
         return! sendUserPresets userId
+      }
+
+[<RequireQualifiedAccess>]
+module PresetSettings =
+  let disableUniqueArtists
+    (disableUniqueArtists: Preset.DisableUniqueArtists)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (sendPresetInfo: SendPresetInfo)
+    : Preset.DisableUniqueArtists =
+    fun presetId ->
+      task {
+        do! disableUniqueArtists presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! sendPresetInfo presetId
       }
