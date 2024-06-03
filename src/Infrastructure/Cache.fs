@@ -99,15 +99,13 @@ module Playlist =
             task {
               let transaction = cache.CreateTransaction()
 
-              let _ = transaction.KeyDeleteAsync(playlistId) :> Task
+              let _ = transaction.KeyDeleteAsync(playlistId)
 
-              let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks) :> Task
+              let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks)
 
               let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
 
-              let! _ = transaction.ExecuteAsync()
-
-              return ()
+              return! transaction.ExecuteAsync() |> Task.map ignore
             }
           else
             cache.ListLeftPushAsync(playlistId, serializedTracks) |> Task.map ignore)

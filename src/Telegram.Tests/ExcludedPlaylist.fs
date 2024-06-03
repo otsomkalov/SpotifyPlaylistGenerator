@@ -7,6 +7,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open FsUnit
 open Xunit
+open Domain.Workflows
 open Telegram.Workflows
 
 [<Fact>]
@@ -26,6 +27,29 @@ let ``list should send excluded playlists`` () =
   let sut = ExcludedPlaylist.list getPreset editMessageButtons
 
   sut Preset.mock.Id (Page 0)
+
+[<Fact>]
+let ``show should send excluded playlist`` () =
+  let getPreset =
+    fun presetId ->
+      presetId |> should equal Preset.mockId
+      Preset.mock |> Task.FromResult
+
+  let editMessageButtons =
+    fun text (replyMarkup: InlineKeyboardMarkup) ->
+      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
+      Task.FromResult()
+
+  let countPlaylistTracks =
+    fun playlistId ->
+      playlistId
+      |> should equal (ExcludedPlaylist.mock.Id |> ReadablePlaylistId.value)
+
+      0L |> Task.FromResult
+
+  let sut = ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+
+  sut Preset.mockId ExcludedPlaylist.mock.Id
 
 [<Fact>]
 let ``remove should remove playlist and show the list`` () =

@@ -30,7 +30,7 @@ let ``list should send included playlists`` () =
 let ``show should send included playlist`` () =
   let getPreset =
     fun presetId ->
-      presetId |> should equal User.userPresetMock.Id
+      presetId |> should equal Preset.mockId
       Preset.mock |> Task.FromResult
 
   let editMessageButtons =
@@ -47,7 +47,7 @@ let ``show should send included playlist`` () =
 
   let sut = IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
-  sut User.userPresetMock.Id IncludedPlaylist.mock.Id
+  sut Preset.mockId IncludedPlaylist.mock.Id
 
 [<Fact>]
 let ``remove should remove playlist and show the list`` () =
