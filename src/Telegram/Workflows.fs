@@ -474,19 +474,6 @@ let removeExcludedPlaylist
       return! showExcludedPlaylists presetId (Page 0)
     }
 
-let removeTargetedPlaylist
-  (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylists: TargetedPlaylist.List)
-  : TargetedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist successfully removed"
-
-      return! showTargetedPlaylists presetId (Page 0)
-    }
-
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
@@ -573,6 +560,19 @@ module TargetedPlaylist =
         do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
 
         return! showTargetedPlaylist presetId playlistId
+      }
+
+  let remove
+    (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylists: TargetedPlaylist.List)
+    : TargetedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist successfully removed"
+
+        return! showTargetedPlaylists presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]

@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Tests
+open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
@@ -26,7 +27,7 @@ let ``list should send targeted playlists`` () =
 
   let sut = TargetedPlaylist.list getPreset editMessageButtons
 
-  sut Preset.mock.Id (Page 0)
+  sut Preset.mockId (Page 0)
 
 [<Fact>]
 let ``show should send targeted playlist`` () =
@@ -48,4 +49,25 @@ let ``show should send targeted playlist`` () =
 
   let sut = TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
-  sut User.userPresetMock.Id TargetedPlaylist.mock.Id
+  sut Preset.mockId TargetedPlaylist.mock.Id
+
+[<Fact>]
+let ``remove should remove playlist and show the list`` () =
+  let removePlaylist =
+    fun presetId playlistId ->
+      presetId |> should equal Preset.mockId
+      playlistId |> should equal TargetedPlaylist.mock.Id
+      Task.FromResult()
+
+  let answerCallbackQuery =
+    fun _ -> Task.FromResult()
+
+  let listTargetedPlaylists =
+    fun presetId  page ->
+      presetId |> should equal Preset.mockId
+      page |> should equal (Page 0)
+      Task.FromResult()
+
+  let sut = Workflows.TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+
+  sut Preset.mockId TargetedPlaylist.mock.Id

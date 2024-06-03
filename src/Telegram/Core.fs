@@ -42,6 +42,7 @@ type ExcludedPlaylistActions =
 type TargetedPlaylistActions =
   | List of presetId: PresetId * page: Page
   | Show of presetId: PresetId * playlistId: WritablePlaylistId
+  | Remove of presetId: PresetId * playlistId: WritablePlaylistId
 
 [<RequireQualifiedAccess>]
 type Action =
@@ -61,7 +62,6 @@ type Action =
 
   | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
-  | RemoveTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
   | ShowPresetInfo of presetId: PresetId
   | SetCurrentPreset of presetId: PresetId
