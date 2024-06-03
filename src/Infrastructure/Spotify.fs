@@ -12,35 +12,10 @@ open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 
 [<Literal>]
-let private recommendationsLimit = 100
-
-[<Literal>]
 let private playlistTracksLimit = 100
 
 [<Literal>]
 let private likedTacksLimit = 50
-
-let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.GetRecommendations =
-  fun tracks ->
-    task {
-      let request = RecommendationsRequest()
-
-      for track in tracks |> List.takeSafe 5 do
-        request.SeedTracks.Add(track |> TrackId.value)
-
-      request.Limit <- recommendationsLimit
-
-      let! recommendationsResponse = client.Browse.GetRecommendations(request)
-
-      logRecommendedTracks recommendationsResponse.Tracks.Count
-
-      return
-        recommendationsResponse.Tracks
-        |> Seq.map (fun st ->
-          { Id = TrackId st.Id
-            Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
-        |> Seq.toList
-    }
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks

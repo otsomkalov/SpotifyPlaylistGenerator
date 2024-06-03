@@ -102,7 +102,6 @@ module PresetSettings =
 module Preset =
   type Save = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
-  type GetRecommendations = TrackId list -> Task<Track list>
 
   let get (load: PresetRepo.Load) : Preset.Get =
     load
@@ -418,7 +417,7 @@ module Playlist =
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
-      GetRecommendations: Preset.GetRecommendations }
+      GetRecommendations: TrackRepo.GetRecommendations }
 
   let generate (io: GenerateIO) : Playlist.Generate =
 
