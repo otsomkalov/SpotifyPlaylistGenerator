@@ -441,39 +441,6 @@ let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboa
       return! sendKeyboard text buttons
     }
 
-let sendCurrentPresetInfo (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
-  fun userId ->
-    task {
-      let! currentPresetId = loadUser userId |> Task.map _.CurrentPresetId
-
-      return!
-        match currentPresetId with
-        | Some presetId ->
-          task {
-            let! preset = getPreset presetId
-            let! text, _ = getPresetMessage preset
-
-            let buttons =
-              [| [| Buttons.GeneratePlaylist |]
-                 [| Buttons.MyPresets |]
-                 [| Buttons.CreatePreset |]
-
-                 [| Buttons.IncludePlaylist; Buttons.ExcludePlaylist; Buttons.TargetPlaylist |]
-
-                 [| Buttons.Settings |] |]
-              |> ReplyKeyboardMarkup.op_Implicit
-
-            return! sendKeyboard text buttons
-          }
-        | None ->
-          let buttons =
-            [| [| Buttons.MyPresets |]
-               [| Buttons.CreatePreset |] |]
-            |> ReplyKeyboardMarkup.op_Implicit
-
-          sendKeyboard "You did not select current preset" buttons
-    }
-
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
@@ -587,6 +554,34 @@ module Message =
 
 [<RequireQualifiedAccess>]
 module User =
+  let showCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.ShowCurrentPreset =
+    loadUser
+    >> Task.map _.CurrentPresetId
+    >> Task.bind (function
+      | Some presetId ->
+        task {
+          let! preset = getPreset presetId
+          let! text, _ = getPresetMessage preset
+
+          let buttons =
+            [| [| Buttons.GeneratePlaylist |]
+               [| Buttons.MyPresets |]
+               [| Buttons.CreatePreset |]
+
+               [| Buttons.IncludePlaylist; Buttons.ExcludePlaylist; Buttons.TargetPlaylist |]
+
+               [| Buttons.Settings |] |]
+            |> ReplyKeyboardMarkup.op_Implicit
+
+          return! sendKeyboard text buttons
+        }
+      | None ->
+        let buttons =
+          [| [| Buttons.MyPresets |]; [| Buttons.CreatePreset |] |]
+          |> ReplyKeyboardMarkup.op_Implicit
+
+        sendKeyboard "You did not select current preset" buttons)
+
   let removePreset (removePreset: User.RemovePreset) (sendUserPresets: SendUserPresets) : User.RemovePreset =
     fun userId presetId ->
       task {
