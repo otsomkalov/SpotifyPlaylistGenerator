@@ -304,6 +304,19 @@ module ExcludedPlaylist =
         return! showExcludedPlaylist presetId playlistId
       }
 
+  let remove
+    (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showExcludedPlaylists: ExcludedPlaylist.List)
+    : ExcludedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeExcludedPlaylist presetId playlistId
+        do! answerCallbackQuery "Excluded playlist successfully removed"
+
+        return! showExcludedPlaylists presetId (Page 0)
+      }
+
 let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
   fun presetId ->
     task {
@@ -459,19 +472,6 @@ let removeIncludedPlaylist
       do! answerCallbackQuery "Included playlist successfully removed"
 
       return! showIncludedPlaylists presetId (Page 0)
-    }
-
-let removeExcludedPlaylist
-  (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showExcludedPlaylists: ExcludedPlaylist.List)
-  : ExcludedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeExcludedPlaylist presetId playlistId
-      do! answerCallbackQuery "Excluded playlist successfully removed"
-
-      return! showExcludedPlaylists presetId (Page 0)
     }
 
 [<RequireQualifiedAccess>]
