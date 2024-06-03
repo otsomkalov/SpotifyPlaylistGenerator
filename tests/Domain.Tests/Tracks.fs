@@ -6,7 +6,7 @@ open Xunit
 open FsUnit
 
 [<Fact>]
-let ``uniqueByArtists `` () =
+let ``uniqueByArtists returns tracks which have only unique artists`` () =
   // Arrange
 
   let track1 =

@@ -6,10 +6,10 @@ open Domain.Tests
 open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
-open Telegram.Workflows
 open FsUnit
 open Xunit
 open Domain.Workflows
+open Telegram.Workflows
 
 [<Fact>]
 let ``list should send targeted playlists`` () =
@@ -68,6 +68,6 @@ let ``remove should remove playlist and show the list`` () =
       page |> should equal (Page 0)
       Task.FromResult()
 
-  let sut = Workflows.TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+  let sut = TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
 
   sut Preset.mockId TargetedPlaylist.mock.Id

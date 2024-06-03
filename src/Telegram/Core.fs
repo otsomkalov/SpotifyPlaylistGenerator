@@ -33,6 +33,7 @@ module User =
 type IncludedPlaylistActions =
   | List of presetId: PresetId * page: Page
   | Show of presetId: PresetId * playlistId: ReadablePlaylistId
+  | Remove of presetId: PresetId * playlistId: ReadablePlaylistId
 
 [<RequireQualifiedAccess>]
 type ExcludedPlaylistActions =
@@ -54,7 +55,6 @@ type Action =
 
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
-  | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
   | ShowExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | EnableExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
