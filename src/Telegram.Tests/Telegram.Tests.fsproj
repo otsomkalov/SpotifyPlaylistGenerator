@@ -13,6 +13,7 @@
     <Compile Include="ExcludedPlaylist.fs" />
     <Compile Include="TargetedPlaylist.fs" />
     <Compile Include="User.fs" />
+    <Compile Include="PresetSettings.fs" />
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

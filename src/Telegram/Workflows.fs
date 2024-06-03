@@ -400,10 +400,10 @@ let disableRecommendations
     }
 
 let enableUniqueArtists
-  (enableUniqueArtists: Preset.EnableUniqueArtists)
+  (enableUniqueArtists: PresetSettings.EnableUniqueArtists)
   (answerCallbackQuery: AnswerCallbackQuery)
   (sendPresetInfo: SendPresetInfo)
-  : Preset.EnableUniqueArtists =
+  : PresetSettings.EnableUniqueArtists =
   fun presetId ->
     task {
       do! enableUniqueArtists presetId
@@ -579,10 +579,10 @@ module User =
 [<RequireQualifiedAccess>]
 module PresetSettings =
   let disableUniqueArtists
-    (disableUniqueArtists: Preset.DisableUniqueArtists)
+    (disableUniqueArtists: PresetSettings.DisableUniqueArtists)
     (answerCallbackQuery: AnswerCallbackQuery)
     (sendPresetInfo: SendPresetInfo)
-    : Preset.DisableUniqueArtists =
+    : PresetSettings.DisableUniqueArtists =
     fun presetId ->
       task {
         do! disableUniqueArtists presetId

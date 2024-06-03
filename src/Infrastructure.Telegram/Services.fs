@@ -369,12 +369,12 @@ type CallbackQueryService
 
       disableRecommendations presetId
     | Action.EnableUniqueArtists presetId ->
-      let enableUniqueArtists = Preset.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = PresetSettings.enableUniqueArtists loadPreset updatePreset
       let enableUniqueArtists = Workflows.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
 
       enableUniqueArtists presetId
     | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
-      let disableUniqueArtists = Preset.disableUniqueArtists loadPreset updatePreset
+      let disableUniqueArtists = PresetSettings.disableUniqueArtists loadPreset updatePreset
       let disableUniqueArtists =
         Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
