@@ -103,7 +103,7 @@ module Playlist =
 
               let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks) :> Task
 
-              let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
+              let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(1))
 
               let! _ = transaction.ExecuteAsync()
 
