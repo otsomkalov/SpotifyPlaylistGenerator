@@ -7,6 +7,7 @@ open Database
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 open Infrastructure.Mapping
+open System.Threading.Tasks
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
@@ -46,6 +47,33 @@ module PresetRepo =
       let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
 
       collection.DeleteOneAsync(presetsFilter) |> Task.ignore
+
+  let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
+    List.map listTracks >> Task.WhenAll >> Task.map List.concat
+
+  let listIncludedTracks logIncludedTracks (listTracks: Playlist.ListTracks) : PresetRepo.ListIncludedTracks =
+    let listTracks = listPlaylistsTracks listTracks
+
+    fun playlists ->
+      task {
+        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map _.Id |> listTracks
+
+        logIncludedTracks playlistsTracks.Length
+
+        return playlistsTracks
+      }
+
+  let listExcludedTracks logExcludedTracks (listTracks: Playlist.ListTracks) : PresetRepo.ListExcludedTracks =
+    let listTracks = listPlaylistsTracks listTracks
+
+    fun playlists ->
+      task {
+        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map _.Id |> listTracks
+
+        logExcludedTracks playlistsTracks.Length
+
+        return playlistsTracks
+      }
 
 [<RequireQualifiedAccess>]
 module UserRepo =
