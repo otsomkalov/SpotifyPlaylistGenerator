@@ -84,8 +84,6 @@ module Preset =
   type Save = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
   type GetRecommendations = TrackId list -> Task<Track list>
-  type ListIncludedTracks = IncludedPlaylist list -> Task<Track list>
-  type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
 
   let get (load: PresetRepo.Load) : Preset.Get =
     load
@@ -411,9 +409,8 @@ module Playlist =
       |> TaskResult.taskMap updatePreset
 
   type GenerateIO =
-    { LogPotentialTracks: int -> unit
-      ListIncludedTracks: Preset.ListIncludedTracks
-      ListExcludedTracks: Preset.ListExcludedTracks
+    { ListIncludedTracks: PresetRepo.ListIncludedTracks
+      ListExcludedTracks: PresetRepo.ListExcludedTracks
       ListLikedTracks: User.ListLikedTracks
       LoadPreset: PresetRepo.Load
       UpdateTargetedPlaylists: UpdateTracks
@@ -486,9 +483,6 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-  type Update = PresetId -> TargetedPlaylist -> Task<unit>
-  type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
-
   let private setPlaylistOverwriting (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) overwriting =
     fun presetId targetedPlaylistId ->
       task {
