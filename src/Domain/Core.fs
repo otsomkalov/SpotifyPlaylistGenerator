@@ -130,11 +130,6 @@ module Playlist =
   type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
   type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
-  type GenerateError =
-    | NoIncludedTracks
-    | NoPotentialTracks
-  type Generate = PresetId -> Task<Result<unit, GenerateError>>
-
 [<RequireQualifiedAccess>]
 module Preset =
   type Get = PresetId -> Task<Preset>
@@ -155,6 +150,11 @@ module Preset =
 
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
+
+  type GenerateError =
+    | NoIncludedTracks
+    | NoPotentialTracks
+  type Generate = PresetId -> Task<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
 module User =
