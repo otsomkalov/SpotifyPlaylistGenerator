@@ -4,7 +4,6 @@ open System
 open System.Collections.Generic
 open System.Threading.Tasks
 open Infrastructure
-open Infrastructure.Helpers
 open MongoDB.Driver
 open SpotifyAPI.Web
 open System.Net
@@ -66,7 +65,7 @@ module User =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-  let updateTracks (cache: IDatabase) (client: ISpotifyClient) : Playlist.UpdateTracks =
+  let updateTracks (client: ISpotifyClient) : Playlist.UpdateTracks =
     fun playlist tracks ->
       let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
       let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
@@ -75,34 +74,10 @@ module TargetedPlaylist =
         tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
 
       if playlist.Overwrite then
-        task {
-
-          let transaction = cache.CreateTransaction()
-
-          let deleteTask = transaction.KeyDeleteAsync(playlistId) :> Task
-
-          let addTask =
-            transaction.ListLeftPushAsync(playlistId, (tracksIds |> List.map RedisValue |> Seq.toArray)) :> Task
-
-          let expireTask = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
-
-          let! _ = transaction.ExecuteAsync()
-
-          let! _ = deleteTask
-          let! _ = addTask
-          let! _ = expireTask
-
-          let! _ = client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
-
-          ()
-        }
+        client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
+        |> Task.ignore
       else
-        let playlistAddItemsRequest = spotifyTracksIds |> PlaylistAddItemsRequest
-
-        [ cache.ListLeftPushAsync(playlistId, (tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray)) |> Task.map ignore
-          client.Playlists.AddItems(playlistId, playlistAddItemsRequest) |> Task.map ignore ]
-        |> Task.WhenAll
-        |> Task.map ignore
+        client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds) |> Task.map ignore
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -175,41 +150,4 @@ module Preset =
         let dbPreset = preset |> Preset.toDb
 
         return! collection.InsertOneAsync(dbPreset)
-      }
-
-  let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
-    List.map listTracks
-    >> Task.WhenAll
-    >> Task.map List.concat
-
-  let listIncludedTracks logIncludedTracks (listTracks: Playlist.ListTracks) : Preset.ListIncludedTracks =
-    let listTracks = listPlaylistsTracks listTracks
-
-    fun playlists ->
-      task{
-        let! playlistsTracks =
-          playlists
-          |> List.filter _.Enabled
-          |> List.map _.Id
-          |> listTracks
-
-        logIncludedTracks playlistsTracks.Length
-
-        return playlistsTracks
-      }
-
-  let listExcludedTracks logExcludedTracks (listTracks: Playlist.ListTracks) : Preset.ListExcludedTracks =
-    let listTracks = listPlaylistsTracks listTracks
-
-    fun playlists ->
-      task{
-        let! playlistsTracks =
-          playlists
-          |> List.filter _.Enabled
-          |> List.map _.Id
-          |> listTracks
-
-        logExcludedTracks playlistsTracks.Length
-
-        return playlistsTracks
       }
