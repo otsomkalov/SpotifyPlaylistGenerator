@@ -57,20 +57,15 @@ type GeneratorFunctions
           "Preset %s{PresetId} of user %i{TelegramId} has %i{RecommendedTracksCount} recommended tracks"
           (command.PresetId |> PresetId.value) (command.UserId |> UserId.value)
 
-      let logPotentialTracks =
-        Logf.logfi _logger
-          "Preset %s{PresetId} of user %i{TelegramId} has %i{PotentialTracksCount} potential tracks"
-          (command.PresetId |> PresetId.value) (command.UserId |> UserId.value)
-
       let listTracks = Spotify.Playlist.listTracks _logger client
       let listTracks = Cache.Playlist.listTracks telemetryClient playlistsCache listTracks
       let listLikedTracks = Spotify.User.listLikedTracks client
 
       let listIncludedTracks =
-        Workflows.Preset.listIncludedTracks  logIncludedTracks listTracks
+        PresetRepo.listIncludedTracks  logIncludedTracks listTracks
 
       let listExcludedTracks =
-        Workflows.Preset.listExcludedTracks logExcludedTracks listTracks
+        PresetRepo.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
         Cache.User.listLikedTracks telemetryClient likedTracksCache logLikedTracks listLikedTracks command.UserId
@@ -78,13 +73,13 @@ type GeneratorFunctions
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
 
-      let updateTargetedPlaylist = TargetedPlaylist.updateTracks playlistsCache client
+      let updateTargetedPlaylist = TargetedPlaylist.updateTracks client
+      let updateTargetedPlaylist = Cache.Playlist.updateTracks playlistsCache updateTargetedPlaylist
 
       do Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
 
       let io: Domain.Workflows.Playlist.GenerateIO =
-        { LogPotentialTracks = logPotentialTracks
-          ListIncludedTracks = listIncludedTracks
+        { ListIncludedTracks = listIncludedTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
           LoadPreset = getPreset
