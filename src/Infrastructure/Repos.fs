@@ -79,26 +79,36 @@ module PresetRepo =
 module UserRepo =
   let load (db: IMongoDatabase) : UserRepo.Load =
     fun userId ->
-      task {
-        let collection = db.GetCollection "users"
-        let id = userId |> UserId.value
+      let collection = db.GetCollection "users"
+      let id = userId |> UserId.value
 
-        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+      let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
 
-        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
-
-        return User.fromDb dbUser
-      }
+      collection.Find(usersFilter).SingleOrDefaultAsync() |> Task.map User.fromDb
 
   let update (db: IMongoDatabase) : UserRepo.Update =
     fun user ->
-      task {
-        let collection = db.GetCollection "users"
-        let id = user.Id |> UserId.value
+      let collection = db.GetCollection "users"
+      let id = user.Id |> UserId.value
 
-        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+      let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
 
-        let dbUser = user |> User.toDb
+      let dbUser = user |> User.toDb
 
-        return! collection.ReplaceOneAsync(usersFilter, dbUser) |> Task.map ignore
-      }
+      collection.ReplaceOneAsync(usersFilter, dbUser) |> Task.map ignore
+
+  let exists (db: IMongoDatabase) : UserRepo.Exists =
+    fun userId ->
+      let collection = db.GetCollection "users"
+      let id = userId |> UserId.value
+
+      let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+
+      collection.CountDocumentsAsync(usersFilter) |> Task.map ((>) 0)
+
+  let create (db: IMongoDatabase) : UserRepo.Create =
+    fun user ->
+      let collection = db.GetCollection "users"
+      let dbUser = user |> User.toDb
+
+      task { do! collection.InsertOneAsync(dbUser) }

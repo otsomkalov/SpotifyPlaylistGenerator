@@ -1,5 +1,6 @@
 ﻿module Domain.Tests.User
 
+open System
 open System.Threading.Tasks
 open Xunit
 open otsom.fs.Telegram.Bot.Core
@@ -39,7 +40,11 @@ let ``setCurrentPreset updates User.CurrentPresetId`` () =
 
 [<Fact>]
 let ``removePreset removes preset`` () =
-  let loadUser = loadUser >> Task.map(fun u -> {u with CurrentPresetId = Some userPresetMock.Id })
+  let loadUser =
+    loadUser
+    >> Task.map (fun u ->
+      { u with
+          CurrentPresetId = Some userPresetMock.Id })
 
   let expectedUser =
     { userMock with
@@ -59,3 +64,40 @@ let ``removePreset removes preset`` () =
   let sut = User.removePreset loadUser removePreset updateUser
 
   sut userMock.Id userPresetMock.Id
+
+[<Fact>]
+let ``createIfNotExists doesn't create attempt to create user if it already exists`` () =
+
+  let exists =
+    fun userId ->
+      userId |> should equal userMock.Id
+      Task.FromResult true
+
+  let create = fun _ -> raise (NotImplementedException())
+
+  let sut = User.createIfNotExists exists create
+
+  sut userMock.Id
+
+[<Fact>]
+let ``createIfNotExists creates user if it does not exist`` () =
+
+  let exists =
+    fun userId ->
+      userId |> should equal userMock.Id
+      Task.FromResult true
+
+  let create =
+    fun user ->
+      user
+      |> should
+        equal
+        { Id = userMock.Id
+          Presets = []
+          CurrentPresetId = None }
+
+      Task.FromResult()
+
+  let sut = User.createIfNotExists exists create
+
+  sut userMock.Id

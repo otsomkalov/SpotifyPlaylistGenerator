@@ -2,13 +2,11 @@
 
 open System
 open System.Collections.Generic
-open System.Threading.Tasks
 open Infrastructure
 open MongoDB.Driver
 open SpotifyAPI.Web
 open System.Net
 open System.Text.RegularExpressions
-open Database
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -16,39 +14,6 @@ open Infrastructure.Mapping
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
 open otsom.fs.Extensions
-open otsom.fs.Telegram.Bot.Core
-
-[<RequireQualifiedAccess>]
-module User =
-  let exists (db: IMongoDatabase) : User.Exists =
-    fun userId ->
-      task {
-        let collection = db.GetCollection "users"
-        let id = userId |> UserId.value
-
-        let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
-
-        let! dbUser = collection.Find(usersFilter).SingleOrDefaultAsync()
-
-        return not (isNull dbUser)
-      }
-
-  let createIfNotExists (db: IMongoDatabase) : User.CreateIfNotExists =
-    fun userId ->
-      userId
-      |> (exists db)
-      |> Task.bind (function
-        | true -> Task.FromResult()
-        | false ->
-          task {
-            let user = User.create userId
-
-            let dbUser = user |> User.toDb
-
-            let usersCollection = db.GetCollection "users"
-
-            do! usersCollection.InsertOneAsync(dbUser)
-          })
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =

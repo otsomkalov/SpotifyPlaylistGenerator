@@ -181,7 +181,9 @@ type MessageService
               sendCurrentPresetInfo userId
             | CommandWithData "/start" state, _ ->
               let processSuccessfulLogin =
-                let createUserIfNotExists = User.createIfNotExists _database
+                let create = UserRepo.create _database
+                let exists = UserRepo.exists _database
+                let createUserIfNotExists = User.createIfNotExists exists create
                 fun () ->
                   task{
                     do! createUserIfNotExists userId
