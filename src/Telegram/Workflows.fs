@@ -89,35 +89,6 @@ let private getPresetMessage =
       return (text, keyboard)
     }
 
-let sendPresetInfo (getPreset: Preset.Get) (editMessage: EditMessageButtons) : SendPresetInfo =
-  fun presetId ->
-    task {
-      let! preset = getPreset presetId
-
-      let! text, keyboard = getPresetMessage preset
-
-      let presetId = presetId |> PresetId.value
-
-      let keyboardMarkup =
-        seq {
-          seq {
-            InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
-            InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
-            InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
-          }
-
-          keyboard
-
-          seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
-
-          seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
-
-          seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
-        }
-
-      do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
-    }
-
 let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: User.SetCurrentPreset) : SetCurrentPreset =
   fun userId presetId ->
     task {
@@ -304,7 +275,7 @@ module ExcludedPlaylist =
         return! showExcludedPlaylist presetId playlistId
       }
 
-let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
+let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: Preset.Show) =
   fun presetId ->
     task {
       do! setLikedTracksHandling presetId
@@ -326,7 +297,7 @@ let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: Pre
 let enableRecommendations
   (enableRecommendations: Preset.EnableRecommendations)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
+  (sendPresetInfo: Preset.Show)
   : Preset.EnableRecommendations =
   fun presetId ->
     task {
@@ -340,7 +311,7 @@ let enableRecommendations
 let disableRecommendations
   (disableRecommendations: Preset.DisableRecommendations)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
+  (sendPresetInfo: Preset.Show)
   : Preset.DisableRecommendations =
   fun presetId ->
     task {
@@ -354,7 +325,7 @@ let disableRecommendations
 let enableUniqueArtists
   (enableUniqueArtists: Preset.EnableUniqueArtists)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
+  (sendPresetInfo: Preset.Show)
   : Preset.EnableUniqueArtists =
   fun presetId ->
     task {
@@ -368,7 +339,7 @@ let enableUniqueArtists
 let disableUniqueArtists
   (disableUniqueArtists: Preset.DisableUniqueArtists)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
+  (sendPresetInfo: Preset.Show)
   : Preset.DisableUniqueArtists =
   fun presetId ->
     task {
@@ -577,7 +548,7 @@ module TargetedPlaylist =
 
 [<RequireQualifiedAccess>]
 module Message =
-  let createPreset (createPreset: Preset.Create) (sendPresetInfo: SendPresetInfo) : Message.CreatePreset =
+  let createPreset (createPreset: Preset.Create) (sendPresetInfo: Preset.Show) : Message.CreatePreset =
     fun name ->
       task {
         let! presetId = createPreset name
@@ -593,4 +564,35 @@ module User =
         do! removePreset userId presetId
 
         return! sendUserPresets userId
+      }
+
+[<RequireQualifiedAccess>]
+module Preset =
+  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+    fun presetId ->
+      task {
+        let! preset = getPreset presetId
+
+        let! text, keyboard = getPresetMessage preset
+
+        let presetId = presetId |> PresetId.value
+
+        let keyboardMarkup =
+          seq {
+            seq {
+              InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
+              InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
+              InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
+            }
+
+            keyboard
+
+            seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
+
+            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
+
+            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
+          }
+
+        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
       }
