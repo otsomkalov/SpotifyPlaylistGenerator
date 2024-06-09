@@ -254,6 +254,19 @@ module IncludedPlaylist =
         return! showIncludedPlaylist presetId playlistId
       }
 
+  let remove
+    (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showIncludedPlaylists: IncludedPlaylist.List)
+    : IncludedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeIncludedPlaylist presetId playlistId
+        do! answerCallbackQuery "Included playlist successfully removed"
+
+        return! showIncludedPlaylists presetId (Page 0)
+      }
+
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ExcludedPlaylist.List =
@@ -459,19 +472,6 @@ let showExcludedPlaylist
       let buttons = getPlaylistButtons presetId playlistId "ep" excludedPlaylist.Enabled
 
       return! editMessageButtons messageText buttons
-    }
-
-let removeIncludedPlaylist
-  (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showIncludedPlaylists: IncludedPlaylist.List)
-  : IncludedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeIncludedPlaylist presetId playlistId
-      do! answerCallbackQuery "Included playlist successfully removed"
-
-      return! showIncludedPlaylists presetId (Page 0)
     }
 
 [<RequireQualifiedAccess>]

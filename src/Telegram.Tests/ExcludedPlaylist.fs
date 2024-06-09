@@ -9,6 +9,7 @@ open Telegram.Core
 open Telegram.Workflows
 open FsUnit
 open Xunit
+open Telegram.Workflows
 
 [<Fact>]
 let ``list should send excluded playlists`` () =
