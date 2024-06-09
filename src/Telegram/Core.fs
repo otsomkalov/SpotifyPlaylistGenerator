@@ -9,7 +9,6 @@ type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
 
 type SendUserPresets = UserId -> Task<unit>
-type SendCurrentPresetInfo = UserId -> Task<unit>
 type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
 type SendSettingsMessage = UserId -> Task<unit>
@@ -26,6 +25,7 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module User =
+  type ShowCurrentPreset = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
@@ -104,4 +104,3 @@ module ExcludedPlaylist =
 module TargetedPlaylist =
   type List = PresetId -> Page -> Task<unit>
   type Show = PresetId -> WritablePlaylistId -> Task<unit>
-

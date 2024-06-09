@@ -104,7 +104,7 @@ type MessageService
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo getUser getPreset sendKeyboard
+    let sendCurrentPresetInfo = Telegram.Workflows.User.showCurrentPreset getUser getPreset sendKeyboard
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage getUser getPreset sendKeyboard
 
     let sendLoginMessage () =
