@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EC4A53AE
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain.Tests", "..\tests\Domain.Tests\Domain.Tests.fsproj", "{F3C040BA-4CF9-4055-A10E-18F1AA822B21}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Telegram.Tests", "Telegram.Tests\Telegram.Tests.fsproj", "{15F1A95E-9180-4886-A334-EC5240CCA937}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,8 +64,13 @@ Global
 		{F3C040BA-4CF9-4055-A10E-18F1AA822B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3C040BA-4CF9-4055-A10E-18F1AA822B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3C040BA-4CF9-4055-A10E-18F1AA822B21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15F1A95E-9180-4886-A334-EC5240CCA937}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15F1A95E-9180-4886-A334-EC5240CCA937}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15F1A95E-9180-4886-A334-EC5240CCA937}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15F1A95E-9180-4886-A334-EC5240CCA937}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F3C040BA-4CF9-4055-A10E-18F1AA822B21} = {EC4A53AE-45F5-4B9A-8F09-61971D209C71}
+		{15F1A95E-9180-4886-A334-EC5240CCA937} = {EC4A53AE-45F5-4B9A-8F09-61971D209C71}
 	EndGlobalSection
 EndGlobal

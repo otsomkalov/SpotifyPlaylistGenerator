@@ -199,7 +199,7 @@ let parseAction: ParseAction =
     | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
     | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
 
-    | [| "p"; id; "ip"; Int page |] -> Action.ShowIncludedPlaylists(PresetId id, (Page page))
+    | [| "p"; id; "ip"; Int page |] -> IncludedPlaylistActions.List(PresetId id, (Page page)) |> Action.IncludedPlaylist
     | [| "p"; presetId; "ip"; playlistId; "i" |] ->
       Action.ShowIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; presetId; "ip"; playlistId; "e" |] ->

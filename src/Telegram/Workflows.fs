@@ -161,28 +161,28 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
 
-let showIncludedPlaylists (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ShowIncludedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: IncludedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = getPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
-    }
-
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : IncludedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: IncludedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        )
+
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+      task {
+        let! preset = getPreset presetId
+
+        let replyMarkup =
+          createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
+
+        return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
+      }
+
   let enable
     (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable)
     (answerCallbackQuery: AnswerCallbackQuery)
@@ -511,7 +511,7 @@ let showTargetedPlaylist
 let removeIncludedPlaylist
   (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
-  (showIncludedPlaylists: ShowIncludedPlaylists)
+  (showIncludedPlaylists: IncludedPlaylist.List)
   : IncludedPlaylist.Remove =
   fun presetId playlistId ->
     task {
