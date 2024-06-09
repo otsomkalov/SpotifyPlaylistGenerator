@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="IncludedPlaylist.fs" />
     <Compile Include="Tracks.fs"/>
     <Compile Include="Preset.fs"/>
     <Compile Include="User.fs"/>

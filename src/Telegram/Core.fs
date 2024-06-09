@@ -15,7 +15,6 @@ type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 type SendSettingsMessage = UserId -> Task<unit>
 
 type SendPresetInfo = PresetId -> Task<unit>
-type ShowIncludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 type ShowExcludedPlaylists = PresetId -> Page -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
@@ -36,13 +35,12 @@ module User =
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =
   | List of presetId: PresetId * page: Page
+  | Show of presetId: PresetId * playlistId: ReadablePlaylistId
 
 [<RequireQualifiedAccess>]
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
-
-  | ShowIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
@@ -90,3 +88,4 @@ module Message =
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   type List = PresetId -> Page -> Task<unit>
+  type Show = PresetId -> ReadablePlaylistId -> Task<unit>

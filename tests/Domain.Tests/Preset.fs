@@ -2,10 +2,12 @@
 
 open Domain.Core
 
-let presetMock =
-  { Id = PresetId("1")
+let mockId = PresetId("1")
+
+let mock =
+  { Id = mockId
     Name = "test"
-    IncludedPlaylists = []
+    IncludedPlaylists = [IncludedPlaylist.mock]
     ExcludedPlaylists = []
     TargetedPlaylists = []
     Settings =
