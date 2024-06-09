@@ -41,7 +41,6 @@ type IncludedPlaylistActions =
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
-
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
