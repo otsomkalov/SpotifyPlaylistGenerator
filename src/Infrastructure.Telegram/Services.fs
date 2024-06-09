@@ -337,9 +337,9 @@ type CallbackQueryService
       let overwriteTargetedPlaylist = Workflows.TargetedPlaylist.overwritePlaylist overwriteTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
       overwriteTargetedPlaylist presetId playlistId
-    | Action.RemoveTargetedPlaylist(presetId, playlistId) ->
+    | Action.TargetedPlaylist(TargetedPlaylistActions.Remove(presetId, playlistId)) ->
       let removeTargetedPlaylist = TargetedPlaylist.remove getPreset updatePreset
-      let removeTargetedPlaylist = Workflows.removeTargetedPlaylist removeTargetedPlaylist answerCallbackQuery listTargetedPlaylists
+      let removeTargetedPlaylist = Workflows.TargetedPlaylist.remove removeTargetedPlaylist answerCallbackQuery listTargetedPlaylists
 
       removeTargetedPlaylist presetId playlistId
     | Action.IncludeLikedTracks presetId ->

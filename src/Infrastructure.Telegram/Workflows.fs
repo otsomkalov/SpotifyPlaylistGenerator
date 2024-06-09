@@ -229,7 +229,7 @@ let parseAction: ParseAction =
     | [| "p"; presetId; "tp"; playlistId; "o" |] ->
       Action.OverwriteTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
-      Action.RemoveTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      TargetedPlaylistActions.Remove(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId) |> Action.TargetedPlaylist
 
     | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
     | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
