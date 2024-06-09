@@ -17,7 +17,6 @@ type SendSettingsMessage = UserId -> Task<unit>
 type SendPresetInfo = PresetId -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
-type ShowTargetedPlaylists = PresetId -> Page -> Task<unit>
 type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
