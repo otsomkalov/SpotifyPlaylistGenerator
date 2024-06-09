@@ -48,6 +48,8 @@ type TargetedPlaylist =
     Enabled: bool
     Overwrite: bool }
 
+type PresetId = PresetId of string
+
 [<RequireQualifiedAccess>]
 module PresetSettings =
   [<RequireQualifiedAccess>]
@@ -84,7 +86,8 @@ module PresetSettings =
 
     let value (PlaylistSize size) = size
 
-type PresetId = PresetId of string
+  type EnableUniqueArtists = PresetId -> Task<unit>
+  type DisableUniqueArtists = PresetId -> Task<unit>
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -152,9 +155,6 @@ module Preset =
 
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
-
-  type EnableUniqueArtists = PresetId -> Task<unit>
-  type DisableUniqueArtists = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module User =

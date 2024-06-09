@@ -8,7 +8,6 @@ open Telegram.Bot.Types.ReplyMarkups
 open FsUnit
 open Xunit
 open Telegram.Workflows
-open Xunit.Sdk
 
 [<Fact>]
 let ``showCurrentPreset should send current preset and keyboard if current preset is set`` () =

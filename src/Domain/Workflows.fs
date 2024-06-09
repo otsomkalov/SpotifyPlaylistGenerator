@@ -84,6 +84,22 @@ module SimplePreset =
   let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
 
 [<RequireQualifiedAccess>]
+module PresetSettings =
+  let private setUniqueArtists (load: PresetRepo.Load) (update: PresetRepo.Update) =
+    fun uniqueArtists ->
+      load
+      >> Task.map (fun preset ->
+        { preset with
+            Settings =
+              { preset.Settings with
+                  UniqueArtists = uniqueArtists } })
+      >> Task.bind update
+
+  let enableUniqueArtists load update : PresetSettings.EnableUniqueArtists = setUniqueArtists load update true
+
+  let disableUniqueArtists load update : PresetSettings.DisableUniqueArtists = setUniqueArtists load update false
+
+[<RequireQualifiedAccess>]
 module Preset =
   type Save = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
@@ -190,20 +206,6 @@ module Preset =
   let enableRecommendations load update : Preset.EnableRecommendations = setRecommendations load update true
 
   let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update false
-
-  let private setUniqueArtists (load: PresetRepo.Load) (update: PresetRepo.Update) =
-    fun uniqueArists ->
-      load
-      >> Task.map (fun preset ->
-        { preset with
-            Settings =
-              { preset.Settings with
-                  UniqueArtists = uniqueArists } })
-      >> Task.bind update
-
-  let enableUniqueArtists load update : Preset.EnableUniqueArtists = setUniqueArtists load update true
-
-  let disableUniqueArtists load update : Preset.DisableUniqueArtists = setUniqueArtists load update false
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

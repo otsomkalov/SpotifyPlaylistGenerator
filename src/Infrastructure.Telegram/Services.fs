@@ -368,15 +368,15 @@ type CallbackQueryService
         Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
-    | Action.EnableUniqueArtists presetId ->
-      let enableUniqueArtists = Preset.enableUniqueArtists loadPreset updatePreset
-      let enableUniqueArtists = Workflows.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
+    | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
+      let enableUniqueArtists = PresetSettings.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = Workflows.PresetSettings.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
 
       enableUniqueArtists presetId
-    | Action.DisableUniqueArtists presetId ->
-      let disableUniqueArtists = Preset.disableUniqueArtists loadPreset updatePreset
+    | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
+      let disableUniqueArtists = PresetSettings.disableUniqueArtists loadPreset updatePreset
       let disableUniqueArtists =
-        Workflows.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
+        Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
       disableUniqueArtists presetId
     | Action.ShowUserPresets -> showUserPresets userId
