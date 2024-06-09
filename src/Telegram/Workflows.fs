@@ -549,26 +549,6 @@ module TargetedPlaylist =
         return! editMessageButtons messageText buttons
       }
 
-  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
-    let createButtonFromPlaylist presetId =
-      fun (playlist: TargetedPlaylist) ->
-        InlineKeyboardButton.WithCallbackData(
-          playlist.Name,
-          sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
-        )
-
-    fun presetId page ->
-      let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-      task {
-        let! preset = getPreset presetId
-
-        let replyMarkup =
-          createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
-
-        return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
-      }
-
   let appendTracks
     (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
     (answerCallbackQuery: AnswerCallbackQuery)
