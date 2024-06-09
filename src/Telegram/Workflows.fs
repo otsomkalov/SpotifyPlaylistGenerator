@@ -448,46 +448,6 @@ let showExcludedPlaylist
       return! editMessageButtons messageText buttons
     }
 
-let showTargetedPlaylist
-  (editMessageButtons: EditMessageButtons)
-  (getPreset: Preset.Get)
-  (countPlaylistTracks: Playlist.CountTracks)
-  : ShowTargetedPlaylist =
-  fun presetId playlistId ->
-    task {
-      let! preset = getPreset presetId
-
-      let targetPlaylist =
-        preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
-
-      let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
-
-      let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
-
-      let presetId' = (presetId |> PresetId.value)
-      let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
-
-      let buttonText, buttonDataBuilder =
-        if targetPlaylist.Overwrite then
-          ("Append", sprintf "p|%s|tp|%s|a")
-        else
-          ("Overwrite", sprintf "p|%s|tp|%s|o")
-
-      let buttonData = buttonDataBuilder presetId' playlistId'
-
-      let buttons =
-        seq {
-          seq { InlineKeyboardButton.WithCallbackData(buttonText, buttonData) }
-          seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
-
-          seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
-        }
-        |> InlineKeyboardMarkup
-
-      return! editMessageButtons messageText buttons
-    }
-
 let removeIncludedPlaylist
   (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
   (answerCallbackQuery: AnswerCallbackQuery)
@@ -529,7 +489,6 @@ let removeTargetedPlaylist
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
     let createButtonFromPlaylist presetId =
       fun (playlist: TargetedPlaylist) ->
@@ -550,10 +509,50 @@ module TargetedPlaylist =
         return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
       }
 
+  let show
+    (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get)
+    (countPlaylistTracks: Playlist.CountTracks)
+    : TargetedPlaylist.Show =
+    fun presetId playlistId ->
+      task {
+        let! preset = getPreset presetId
+
+        let targetPlaylist =
+          preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
+
+        let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
+
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
+
+        let presetId' = (presetId |> PresetId.value)
+        let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+
+        let buttonText, buttonDataBuilder =
+          if targetPlaylist.Overwrite then
+            ("Append", sprintf "p|%s|tp|%s|a")
+          else
+            ("Overwrite", sprintf "p|%s|tp|%s|o")
+
+        let buttonData = buttonDataBuilder presetId' playlistId'
+
+        let buttons =
+          seq {
+            seq { InlineKeyboardButton.WithCallbackData(buttonText, buttonData) }
+            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
+
+            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
+          }
+          |> InlineKeyboardMarkup
+
+        return! editMessageButtons messageText buttons
+      }
+
   let appendTracks
     (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (showTargetedPlaylist: ShowTargetedPlaylist)
+    (showTargetedPlaylist: TargetedPlaylist.Show)
     : TargetedPlaylist.AppendTracks =
     fun presetId playlistId ->
       task {
@@ -566,7 +565,7 @@ module TargetedPlaylist =
   let overwritePlaylist
     (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (showTargetedPlaylist: ShowTargetedPlaylist)
+    (showTargetedPlaylist: TargetedPlaylist.Show)
     : TargetedPlaylist.OverwriteTracks =
     fun presetId playlistId ->
       task {

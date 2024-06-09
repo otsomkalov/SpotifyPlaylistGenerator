@@ -223,7 +223,7 @@ let parseAction: ParseAction =
 
     | [| "p"; id; "tp"; Int page |] -> TargetedPlaylistActions.List(PresetId id, (Page page)) |> Action.TargetedPlaylist
     | [| "p"; presetId; "tp"; playlistId; "i" |] ->
-      Action.ShowTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
+      TargetedPlaylistActions.Show(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId) |> Action.TargetedPlaylist
     | [| "p"; presetId; "tp"; playlistId; "a" |] ->
       Action.AppendToTargetedPlaylist(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId)
     | [| "p"; presetId; "tp"; playlistId; "o" |] ->
