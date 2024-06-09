@@ -33,8 +33,7 @@ let ``list should send included playlists`` () =
 let ``show should send included playlist`` () =
   let getPreset =
     fun presetId ->
-      presetId |> should equal User.userPresetMock.Id
-
+      presetId |> should equal Preset.mockId
       Preset.mock |> Task.FromResult
 
   let editMessageButtons =
@@ -52,7 +51,28 @@ let ``show should send included playlist`` () =
 
   let sut = IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
-  sut User.userPresetMock.Id IncludedPlaylist.mock.Id
+  sut Preset.mockId IncludedPlaylist.mock.Id
+
+[<Fact>]
+let ``remove should remove playlist and show the list`` () =
+  let removePlaylist =
+    fun presetId playlistId ->
+      presetId |> should equal Preset.mockId
+      playlistId |> should equal IncludedPlaylist.mock.Id
+      Task.FromResult()
+
+  let answerCallbackQuery = fun _ -> Task.FromResult()
+
+  let listExcludedPlaylists =
+    fun presetId page ->
+      presetId |> should equal Preset.mockId
+      page |> should equal (Page 0)
+      Task.FromResult()
+
+  let sut =
+    IncludedPlaylist.remove removePlaylist answerCallbackQuery listExcludedPlaylists
+
+  sut Preset.mockId IncludedPlaylist.mock.Id
 
 [<Fact>]
 let ``remove should remove playlist and show the list`` () =

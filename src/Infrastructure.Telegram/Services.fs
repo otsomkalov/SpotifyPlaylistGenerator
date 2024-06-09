@@ -276,7 +276,7 @@ type CallbackQueryService
     let listTargetedPlaylists = Workflows.TargetedPlaylist.list getPreset editMessageButtons
 
     let showIncludedPlaylist = Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
-    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessageButtons getPreset countPlaylistTracks
+    let showExcludedPlaylist = Workflows.ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
     let showTargetedPlaylist = Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
@@ -309,7 +309,7 @@ type CallbackQueryService
 
       removeIncludedPlaylist presetId playlistId
     | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) -> listExcludedPlaylists presetId page
-    | Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.Show(presetId, playlistId)) -> showExcludedPlaylist presetId playlistId
     | Action.EnableExcludedPlaylist(presetId, playlistId) ->
       let enableExcludedPlaylist = ExcludedPlaylist.enable getPreset updatePreset
       let enableExcludedPlaylist = Workflows.ExcludedPlaylist.enable enableExcludedPlaylist answerCallbackQuery showExcludedPlaylist
