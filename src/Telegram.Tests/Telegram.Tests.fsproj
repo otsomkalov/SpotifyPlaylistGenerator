@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="IncludedPlaylist.fs" />
+    <Compile Include="ExcludedPlaylist.fs" />
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

@@ -210,7 +210,8 @@ let parseAction: ParseAction =
     | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
       Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
 
-    | [| "p"; id; "ep"; Int page |] -> Action.ShowExcludedPlaylists(PresetId id, (Page page))
+    | [| "p"; id; "ep"; Int page |] ->
+      ExcludedPlaylistActions.List(PresetId id, (Page page)) |> Action.ExcludedPlaylist
     | [| "p"; presetId; "ep"; playlistId; "i" |] ->
       Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; presetId; "ep"; playlistId; "e" |] ->
