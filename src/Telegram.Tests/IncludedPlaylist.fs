@@ -73,24 +73,3 @@ let ``remove should remove playlist and show the list`` () =
     IncludedPlaylist.remove removePlaylist answerCallbackQuery listExcludedPlaylists
 
   sut Preset.mockId IncludedPlaylist.mock.Id
-
-[<Fact>]
-let ``remove should remove playlist and show the list`` () =
-  let removePlaylist =
-    fun presetId playlistId ->
-      presetId |> should equal Preset.mockId
-      playlistId |> should equal IncludedPlaylist.mock.Id
-      Task.FromResult()
-
-  let answerCallbackQuery = fun _ -> Task.FromResult()
-
-  let listExcludedPlaylists =
-    fun presetId page ->
-      presetId |> should equal Preset.mockId
-      page |> should equal (Page 0)
-      Task.FromResult()
-
-  let sut =
-    IncludedPlaylist.remove removePlaylist answerCallbackQuery listExcludedPlaylists
-
-  sut Preset.mockId IncludedPlaylist.mock.Id
