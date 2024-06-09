@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Tests
+open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
