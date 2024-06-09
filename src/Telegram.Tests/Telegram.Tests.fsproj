@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="IncludedPlaylist.fs" />
     <Compile Include="ExcludedPlaylist.fs" />
+    <Compile Include="TargetedPlaylist.fs" />
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

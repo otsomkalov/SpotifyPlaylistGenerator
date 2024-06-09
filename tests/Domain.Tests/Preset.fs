@@ -9,5 +9,5 @@ let mock =
     Name = "test-preset-name"
     IncludedPlaylists = [ IncludedPlaylist.mock ]
     ExcludedPlaylists = [ ExcludedPlaylist.mock ]
-    TargetedPlaylists = []
+    TargetedPlaylists = [ TargetedPlaylist.mock ]
     Settings = PresetSettings.mock }

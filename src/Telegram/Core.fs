@@ -17,7 +17,6 @@ type SendSettingsMessage = UserId -> Task<unit>
 type SendPresetInfo = PresetId -> Task<unit>
 type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
-type ShowTargetedPlaylists = PresetId -> Page -> Task<unit>
 type ShowTargetedPlaylist = PresetId -> WritablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
@@ -41,10 +40,15 @@ type ExcludedPlaylistActions =
   | List of presetId: PresetId * page: Page
 
 [<RequireQualifiedAccess>]
+type TargetedPlaylistActions =
+  | List of presetId: PresetId * page: Page
+
+[<RequireQualifiedAccess>]
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
   | ExcludedPlaylist of ExcludedPlaylistActions
+  | TargetedPlaylist of TargetedPlaylistActions
 
   | EnableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | DisableIncludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
@@ -55,7 +59,6 @@ type Action =
   | DisableExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
   | RemoveExcludedPlaylist of presetId: PresetId * playlistId: ReadablePlaylistId
 
-  | ShowTargetedPlaylists of presetId: PresetId * page: Page
   | ShowTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
@@ -96,4 +99,8 @@ module IncludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
+  type List = PresetId -> Page -> Task<unit>
+
+[<RequireQualifiedAccess>]
+module TargetedPlaylist =
   type List = PresetId -> Page -> Task<unit>
