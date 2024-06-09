@@ -15,6 +15,7 @@ let ``list should send excluded playlists`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal Preset.mock.Id
+
       Preset.mock |> Task.FromResult
 
   let editMessageButtons =
@@ -22,6 +23,7 @@ let ``list should send excluded playlists`` () =
       replyMarkup.InlineKeyboard
       |> Seq.length
       |> should equal 2
+
       Task.FromResult()
 
   let sut = ExcludedPlaylist.list getPreset editMessageButtons
