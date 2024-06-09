@@ -15,11 +15,13 @@ let ``list should send included playlists`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal Preset.mock.Id
+
       Preset.mock |> Task.FromResult
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
+
       Task.FromResult()
 
   let sut = IncludedPlaylist.list getPreset editMessageButtons
@@ -31,17 +33,20 @@ let ``show should send included playlist`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal User.userPresetMock.Id
+
       Preset.mock |> Task.FromResult
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
+
       Task.FromResult()
 
   let countPlaylistTracks =
     fun playlistId ->
       playlistId
       |> should equal (IncludedPlaylist.mock.Id |> ReadablePlaylistId.value)
+
       0L |> Task.FromResult
 
   let sut = IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
