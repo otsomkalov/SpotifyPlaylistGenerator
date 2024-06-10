@@ -8,8 +8,6 @@ open otsom.fs.Telegram.Bot.Core
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
 
-type SendSettingsMessage = UserId -> Task<unit>
-
 type SendPresetInfo = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
@@ -22,7 +20,8 @@ module Playlist =
 [<RequireQualifiedAccess>]
 module User =
   type ListPresets = UserId -> Task<unit>
-  type ShowCurrentPreset = UserId -> Task<unit>
+  type SendCurrentPreset = UserId -> Task<unit>
+  type SendCurrentPresetSettings = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
@@ -60,6 +59,7 @@ type PresetSettingsActions =
 [<RequireQualifiedAccess>]
 type UserActions =
   | ListPresets of userId: UserId
+  | SendCurrentPresetSettings of userId: UserId
 
 [<RequireQualifiedAccess>]
 type Action =
