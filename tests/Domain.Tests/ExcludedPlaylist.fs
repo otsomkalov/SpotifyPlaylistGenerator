@@ -2,8 +2,7 @@
 
 open Domain.Core
 
-let mock : ExcludedPlaylist = {
-  Id = ReadablePlaylistId(PlaylistId("playlist-id"))
-  Name = "playlist-name"
-  Enabled = true
-}
+let mock: ExcludedPlaylist =
+  { Id = ReadablePlaylistId(PlaylistId("excluded-playlist-id"))
+    Name = "excluded-playlist-name"
+    Enabled = true }
