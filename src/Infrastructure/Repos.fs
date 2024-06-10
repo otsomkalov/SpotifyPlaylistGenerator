@@ -5,6 +5,7 @@ open System.Collections.Generic
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
+open FSharp
 open Infrastructure.Helpers
 open MongoDB.Driver
 open Database
@@ -118,6 +119,17 @@ module UserRepo =
       let dbUser = user |> User.toDb
 
       task { do! collection.InsertOneAsync(dbUser) }
+
+  let listLikedTracks telemetryClient cache client logger userId : UserRepo.ListLikedTracks =
+    fun () ->
+      Cache.listLikedTracks telemetryClient cache userId ()
+      |> Task.bind(function
+        | [] ->
+          Spotify.listSpotifyLikedTracks client ()
+          |> Task.taskTap (Cache.cacheUserTracks telemetryClient cache userId)
+        | tracks -> Task.FromResult tracks)
+      |> Task.tap (fun tracks ->
+        Logf.logfi logger "User %i{TelegramId} has %i{LikedTracksCount} liked tracks" (userId |> UserId.value) tracks.Length)
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =

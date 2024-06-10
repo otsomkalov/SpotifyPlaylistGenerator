@@ -3,6 +3,7 @@
 open System
 open System.Threading.Tasks
 open Domain.Core
+open Domain.Repos
 open Domain.Workflows
 open Microsoft.ApplicationInsights
 open Microsoft.ApplicationInsights.DataContracts
@@ -61,25 +62,17 @@ let private cacheTracks telemetryClient cache =
       return tracks
     }
 
-[<RequireQualifiedAccess>]
-module User =
-  let listLikedTracks
-    telemetryClient
-    (cache: IDatabase)
-    logLikedTracks
-    (listLikedTracks: User.ListLikedTracks)
-    userId
-    : User.ListLikedTracks =
-    fun () ->
-      let key = userId |> UserId.value |> string
-      let cacheTracks = cacheTracks telemetryClient cache key
+let cacheUserTracks telemetryClient cache =
+  fun userId tracks ->
+    let key = userId |> UserId.value |> string
 
-      key
-      |> (listCachedTracks telemetryClient cache)
-      |> Task.bind (function
-        | [] -> listLikedTracks () |> Task.bind cacheTracks
-        | v -> v |> Task.FromResult)
-      |> Task.tee (fun t -> logLikedTracks t.Length)
+    cacheTracks telemetryClient cache key tracks |> Task.ignore
+
+let listLikedTracks telemetryClient cache userId : UserRepo.ListLikedTracks =
+  fun () ->
+    let key = userId |> UserId.value |> string
+
+    key |> (listCachedTracks telemetryClient cache)
 
 [<RequireQualifiedAccess>]
 module Playlist =

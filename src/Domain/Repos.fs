@@ -26,6 +26,8 @@ module UserRepo =
   type Exists = UserId -> Task<bool>
   type Create = User -> Task<unit>
 
+  type ListLikedTracks = unit -> Task<Track list>
+
 [<RequireQualifiedAccess>]
 module TrackRepo =
   type GetRecommendations = TrackId list -> Task<Track list>
