@@ -51,6 +51,9 @@ type PresetSettingsActions =
   | EnableUniqueArtists of presetId: PresetId
   | DisableUniqueArtists of presetId: PresetId
 
+  | EnableRecommendations of presetId: PresetId
+  | DisableRecommendations of presetId: PresetId
+
 [<RequireQualifiedAccess>]
 type Action =
 
@@ -78,9 +81,6 @@ type Action =
   | IncludeLikedTracks of presetId: PresetId
   | ExcludeLikedTracks of presetId: PresetId
   | IgnoreLikedTracks of presetId: PresetId
-
-  | EnableRecommendations of presetId: PresetId
-  | DisableRecommendations of presetId: PresetId
 
   | ShowUserPresets
 

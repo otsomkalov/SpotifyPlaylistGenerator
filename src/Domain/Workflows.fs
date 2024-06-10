@@ -98,6 +98,20 @@ module PresetSettings =
 
   let disableUniqueArtists load update : PresetSettings.DisableUniqueArtists = setUniqueArtists load update false
 
+  let private setRecommendations (load: PresetRepo.Load) (update: PresetRepo.Update) =
+    fun enabled ->
+      load
+      >> Task.map (fun preset ->
+        { preset with
+            Settings =
+              { preset.Settings with
+                  RecommendationsEnabled = enabled } })
+      >> Task.bind update
+
+  let enableRecommendations load update : PresetSettings.EnableRecommendations = setRecommendations load update true
+
+  let disableRecommendations load update : PresetSettings.DisableRecommendations = setRecommendations load update false
+
 [<RequireQualifiedAccess>]
 module Preset =
   type Save = Preset -> Task<unit>
@@ -190,20 +204,6 @@ module Preset =
   let remove (removePreset: Preset.Remove) : Preset.Remove =
     fun presetId ->
       removePreset presetId
-
-  let private setRecommendations (load: PresetRepo.Load) (update: PresetRepo.Update) =
-    fun enabled ->
-      load
-      >> Task.map (fun preset ->
-        { preset with
-            Settings =
-              { preset.Settings with
-                  RecommendationsEnabled = enabled } })
-      >> Task.bind update
-
-  let enableRecommendations load update : Preset.EnableRecommendations = setRecommendations load update true
-
-  let disableRecommendations load update : Preset.DisableRecommendations = setRecommendations load update false
 
   type GenerateIO =
     { ListIncludedTracks: PresetRepo.ListIncludedTracks
