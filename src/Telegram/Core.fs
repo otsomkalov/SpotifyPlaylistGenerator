@@ -48,6 +48,7 @@ type TargetedPlaylistActions =
 
 [<RequireQualifiedAccess>]
 type PresetSettingsActions =
+  | EnableUniqueArtists of presetId: PresetId
   | DisableUniqueArtists of presetId: PresetId
 
 [<RequireQualifiedAccess>]
@@ -80,8 +81,6 @@ type Action =
 
   | EnableRecommendations of presetId: PresetId
   | DisableRecommendations of presetId: PresetId
-
-  | EnableUniqueArtists of presetId: PresetId
 
   | ShowUserPresets
 
