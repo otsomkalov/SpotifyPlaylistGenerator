@@ -31,3 +31,7 @@ module UserRepo =
 [<RequireQualifiedAccess>]
 module TrackRepo =
   type GetRecommendations = TrackId list -> Task<Track list>
+
+[<RequireQualifiedAccess>]
+module PlaylistRepo =
+  type ListTracks = PlaylistId -> Task<Track list>

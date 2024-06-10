@@ -59,30 +59,24 @@ let private cacheTracks telemetryClient cache =
       do! saveList telemetryClient cache key values
       let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(1))
 
-      return tracks
+      return ()
     }
 
 let cacheUserTracks telemetryClient cache =
   fun userId tracks ->
     let key = userId |> UserId.value |> string
 
-    cacheTracks telemetryClient cache key tracks |> Task.ignore
+    cacheTracks telemetryClient cache key tracks
+
+let cachePlaylistTracks telemetryClient cache =
+  fun playlistId tracks ->
+    let key = playlistId |> PlaylistId.value |> string
+
+    cacheTracks telemetryClient cache key tracks
 
 let listLikedTracks telemetryClient cache userId : UserRepo.ListLikedTracks =
-  fun () ->
-    let key = userId |> UserId.value |> string
+  fun () -> userId |> UserId.value |> string |> (listCachedTracks telemetryClient cache)
 
-    key |> (listCachedTracks telemetryClient cache)
-
-[<RequireQualifiedAccess>]
-module Playlist =
-  let listTracks telemetryClient (cache: IDatabase) (listTracks: Playlist.ListTracks) : Playlist.ListTracks =
-    fun id ->
-      let key = id |> ReadablePlaylistId.value |> PlaylistId.value
-      let cacheTracks = cacheTracks telemetryClient cache key
-
-      key
-      |> (listCachedTracks telemetryClient cache)
-      |> Task.bind (function
-        | [] -> (listTracks id) |> Task.bind cacheTracks
-        | v -> v |> Task.FromResult)
+let listPlaylistTracks telemetryClient (cache: IDatabase) : PlaylistRepo.ListTracks =
+  PlaylistId.value
+  >> (listCachedTracks telemetryClient cache)

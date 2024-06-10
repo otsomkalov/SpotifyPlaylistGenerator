@@ -5,6 +5,7 @@ open System.Net
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
+open FSharp
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open SpotifyAPI.Web
@@ -42,30 +43,28 @@ let private loadTracks' limit loadBatch =
       | None -> initialBatch |> async.Return
   }
 
-[<RequireQualifiedAccess>]
-module Playlist =
-  let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
-    async {
-      let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
+let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
+  async {
+    let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
 
-      return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
+    return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
+  }
+
+let listPlaylistTracks (logger: ILogger) client : PlaylistRepo.ListTracks =
+  fun playlistId ->
+    let playlistId = playlistId |> PlaylistId.value
+    let listPlaylistTracks = listTracks' client playlistId
+    let loadTracks' = loadTracks' playlistTracksLimit
+
+    task {
+      try
+        return! loadTracks' listPlaylistTracks
+
+      with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+        Logf.logfw logger "Playlist with id %s{PlaylistId} not found in Spotify" playlistId
+
+        return []
     }
-
-  let listTracks (logger: ILogger) client : Playlist.ListTracks =
-    fun playlistId ->
-      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-      let listPlaylistTracks = listTracks' client playlistId
-      let loadTracks' = loadTracks' playlistTracksLimit
-
-      task {
-        try
-          return! loadTracks' listPlaylistTracks
-
-        with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
-
-          return []
-      }
 
 let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
   async {
