@@ -85,7 +85,7 @@ type GeneratorFunctions
       do
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
 
-      let io: Domain.Workflows.Playlist.GenerateIO =
+      let io: Domain.Workflows.Preset.GenerateIO =
         { ListIncludedTracks = listIncludedTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
@@ -100,7 +100,7 @@ type GeneratorFunctions
               |> Task.ignore
           GetRecommendations = getRecommendations }
 
-      let generatePlaylist = Domain.Workflows.Playlist.generate io
+      let generatePlaylist = Domain.Workflows.Preset.generate io
 
       let generatePlaylist =
         Telegram.Workflows.Playlist.generate sendMessage generatePlaylist

@@ -38,7 +38,8 @@ let private loadTracks' limit loadBatch =
       | Some count ->
         [ limit..limit..count ]
         |> List.map (loadBatch >> Async.map fst)
-        |> Async.Sequential
+        |> (fun batches -> (batches, mapParallelBatches))
+        |> Async.Parallel
         |> Async.map (List.concat >> (List.append initialBatch))
       | None -> initialBatch |> async.Return
   }
@@ -49,7 +50,14 @@ module Playlist =
     async {
       let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
 
-      return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
+      return
+        (tracks.Items
+         |> Seq.choose (fun x ->
+           match x.Track with
+           | :? FullTrack as t -> Some t
+           | _ -> None)
+         |> getTracksIds,
+         tracks.Total)
     }
 
   let listTracks (logger: ILogger) client : Playlist.ListTracks =
