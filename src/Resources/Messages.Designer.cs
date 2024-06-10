@@ -176,6 +176,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be a number!.
+        /// </summary>
+        public static string PlaylistSizeNotANumber {
+            get {
+                return ResourceManager.GetString("PlaylistSizeNotANumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to New playlist size is set!.
         /// </summary>
         public static string PlaylistSizeSet {

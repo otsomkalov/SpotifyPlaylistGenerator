@@ -26,6 +26,7 @@ module Playlist =
 module User =
   type ShowCurrentPreset = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =

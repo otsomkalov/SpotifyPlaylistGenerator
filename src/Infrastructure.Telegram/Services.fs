@@ -145,15 +145,11 @@ type MessageService
             | Equals Messages.SendTargetedPlaylist, Unauthorized -> sendLoginMessage()
 
             | Equals Messages.SendPlaylistSize, _ ->
-              match message.Text with
-              | Int size ->
-                let setPlaylistSize = Preset.setPlaylistSize getPreset updatePreset
-                let setPlaylistSize = Workflows.setPlaylistSize sendMessage sendSettingsMessage getUser setPlaylistSize
+              let setTargetPlaylistSize = PresetSettings.setTargetPlaylistSize getPreset updatePreset
+              let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
+              let setTargetPlaylistSize = Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
 
-                setPlaylistSize userId size
-              | _ ->
-                replyToMessage Messages.WrongPlaylistSize
-                |> Task.ignore
+              setTargetPlaylistSize userId (PresetSettings.RawPlaylistSize message.Text)
             | Equals Messages.SendIncludedPlaylist, Authorized ->
               includePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendExcludedPlaylist, Authorized ->

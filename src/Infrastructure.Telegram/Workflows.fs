@@ -45,34 +45,6 @@ let sendLink (bot: ITelegramBotClient) userId : SendLink =
     )
     |> Task.map ignore
 
-let private savePlaylistSize loadUser setPlaylistSize =
-  fun userId playlistSize ->
-    task {
-      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-
-      do! setPlaylistSize currentPresetId playlistSize
-    }
-
-let setPlaylistSize
-  (sendMessage: SendMessage)
-  (sendSettingsMessage: SendSettingsMessage)
-  (loadUser: User.Get)
-  (setPlaylistSize: Preset.SetPlaylistSize)
-  =
-  fun userId size ->
-    let savePlaylistSize = savePlaylistSize loadUser setPlaylistSize userId
-
-    let onSuccess () = sendSettingsMessage userId
-
-    let onError =
-      function
-      | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
-      | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
-
-    PresetSettings.PlaylistSize.tryCreate size
-    |> Result.taskMap savePlaylistSize
-    |> TaskResult.taskEither onSuccess onError
-
 [<RequireQualifiedAccess>]
 module Playlist =
 

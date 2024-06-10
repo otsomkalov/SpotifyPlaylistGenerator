@@ -515,6 +515,24 @@ module User =
         return! sendUserPresets userId
       }
 
+  let setCurrentPresetSize
+    (sendMessage: SendMessage)
+    (sendSettingsMessage: SendSettingsMessage)
+    (setPlaylistSize: Domain.Core.User.SetCurrentPresetSize)
+    : User.SetCurrentPresetSize
+    =
+    fun userId size ->
+      let onSuccess () = sendSettingsMessage userId
+
+      let onError =
+        function
+        | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
+        | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
+        | PresetSettings.PlaylistSize.NotANumber -> sendMessage Messages.PlaylistSizeNotANumber
+
+      setPlaylistSize userId size
+      |> TaskResult.taskEither onSuccess onError
+
 [<RequireQualifiedAccess>]
 module PresetSettings =
   let enableUniqueArtists
@@ -591,3 +609,11 @@ module PresetSettings =
 
   let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
     setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
+
+  let private savePlaylistSize loadUser setPlaylistSize =
+    fun userId playlistSize ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+        do! setPlaylistSize currentPresetId playlistSize
+      }

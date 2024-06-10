@@ -47,6 +47,9 @@ Preset settings:
     <data name="PlaylistSizeTooBig" xml:space="preserve">
         <value>Playlist size should be lower than 10000!</value>
     </data>
+    <data name="PlaylistSizeNotANumber" xml:space="preserve">
+        <value>Playlist size should be a number!</value>
+    </data>
     <data name="LikedTracksIncluded" xml:space="preserve">
         <value>➕ Liked tracks are included</value>
     </data>
