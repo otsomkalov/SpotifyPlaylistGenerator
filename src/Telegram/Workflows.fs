@@ -538,7 +538,7 @@ module PresetSettings =
   let enableUniqueArtists
     (enableUniqueArtists: PresetSettings.EnableUniqueArtists)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (sendPresetInfo: SendPresetInfo)
+    (sendPresetInfo: Preset.Show)
     : PresetSettings.EnableUniqueArtists =
     fun presetId ->
       task {
@@ -552,7 +552,7 @@ module PresetSettings =
   let disableUniqueArtists
     (disableUniqueArtists: PresetSettings.DisableUniqueArtists)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (sendPresetInfo: SendPresetInfo)
+    (sendPresetInfo: Preset.Show)
     : PresetSettings.DisableUniqueArtists =
     fun presetId ->
       task {
