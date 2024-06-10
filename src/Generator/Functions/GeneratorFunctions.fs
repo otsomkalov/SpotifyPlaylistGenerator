@@ -74,7 +74,7 @@ type GeneratorFunctions
         Cache.User.listLikedTracks telemetryClient likedTracksCache logLikedTracks listLikedTracks command.UserId
 
       let sendMessage = sendUserMessage command.UserId
-      let getRecommendations = Spotify.getRecommendations logRecommendedTracks client
+      let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
 
       let appendTracksInSpotify = TargetedPlaylistRepo.appendTracksInSpotify client
       let replaceTracksInSpotify = TargetedPlaylistRepo.replaceTracksInSpotify client

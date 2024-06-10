@@ -19,22 +19,31 @@ let likedTracksDatabase = 1
 
 let private loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key ->
-    let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
+    task {
+      let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
 
-    using (telemetryClient.StartOperation dependency) (fun operation ->
-      key
-      |> RedisKey
-      |> cache.ListRangeAsync
-      |> Task.tap (fun v -> operation.Telemetry.Success <- true))
+      use operation = telemetryClient.StartOperation dependency
+
+      let! values = key |> RedisKey |> cache.ListRangeAsync
+
+      operation.Telemetry.Success <- true
+
+      return values
+    }
 
 let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key (value: 'a array) ->
-    let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
+    task{
+      let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
 
-    using (telemetryClient.StartOperation dependency) (fun operation ->
-      cache.ListLeftPushAsync(key, value)
-      |> Task.tap (fun v -> operation.Telemetry.Success <- true)
-      |> Task.ignore)
+      use operation = telemetryClient.StartOperation dependency
+
+      let! _ = cache.ListLeftPushAsync(key, value)
+
+      operation.Telemetry.Success <- true
+
+      return ()
+    }
 
 let private listCachedTracks telemetryClient cache =
   fun key ->
