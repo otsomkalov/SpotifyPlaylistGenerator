@@ -13,20 +13,20 @@ let userPresetMock =
   { Id = Preset.mockId
     Name = "user-preset-name" }
 
-let userMock =
+let mock =
   { Id = UserId(1)
     CurrentPresetId = None
     Presets = [ userPresetMock ] }
 
 let loadUser =
   fun userId ->
-    userId |> should equal userMock.Id
-    userMock |> Task.FromResult
+    userId |> should equal mock.Id
+    mock |> Task.FromResult
 
 [<Fact>]
 let ``setCurrentPreset updates User.CurrentPresetId`` () =
   let expectedUser =
-    { userMock with
+    { mock with
         CurrentPresetId = Some userPresetMock.Id }
 
   let updateUser =
@@ -36,7 +36,7 @@ let ``setCurrentPreset updates User.CurrentPresetId`` () =
 
   let sut = User.setCurrentPreset loadUser updateUser
 
-  sut userMock.Id userPresetMock.Id
+  sut mock.Id userPresetMock.Id
 
 [<Fact>]
 let ``removePreset removes preset`` () =
@@ -47,7 +47,7 @@ let ``removePreset removes preset`` () =
           CurrentPresetId = Some userPresetMock.Id })
 
   let expectedUser =
-    { userMock with
+    { mock with
         Presets = []
         CurrentPresetId = None }
 
@@ -63,28 +63,28 @@ let ``removePreset removes preset`` () =
 
   let sut = User.removePreset loadUser removePreset updateUser
 
-  sut userMock.Id userPresetMock.Id
+  sut mock.Id userPresetMock.Id
 
 [<Fact>]
 let ``createIfNotExists doesn't create attempt to create user if it already exists`` () =
 
   let exists =
     fun userId ->
-      userId |> should equal userMock.Id
+      userId |> should equal mock.Id
       Task.FromResult true
 
   let create = fun _ -> raise (NotImplementedException())
 
   let sut = User.createIfNotExists exists create
 
-  sut userMock.Id
+  sut mock.Id
 
 [<Fact>]
 let ``createIfNotExists creates user if it does not exist`` () =
 
   let exists =
     fun userId ->
-      userId |> should equal userMock.Id
+      userId |> should equal mock.Id
       Task.FromResult true
 
   let create =
@@ -92,7 +92,7 @@ let ``createIfNotExists creates user if it does not exist`` () =
       user
       |> should
         equal
-        { Id = userMock.Id
+        { Id = mock.Id
           Presets = []
           CurrentPresetId = None }
 
@@ -100,4 +100,4 @@ let ``createIfNotExists creates user if it does not exist`` () =
 
   let sut = User.createIfNotExists exists create
 
-  sut userMock.Id
+  sut mock.Id

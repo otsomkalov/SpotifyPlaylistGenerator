@@ -1,7 +1,6 @@
 ﻿namespace Infrastructure.Workflows
 
 open System
-open System.Collections.Generic
 open Infrastructure
 open MongoDB.Driver
 open SpotifyAPI.Web
@@ -13,23 +12,6 @@ open Infrastructure.Core
 open Infrastructure.Mapping
 open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
-open otsom.fs.Extensions
-
-[<RequireQualifiedAccess>]
-module TargetedPlaylist =
-  let updateTracks (client: ISpotifyClient) : Playlist.UpdateTracks =
-    fun playlist tracks ->
-      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
-      let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
-
-      let spotifyTracksIds =
-        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
-
-      if playlist.Overwrite then
-        client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
-        |> Task.ignore
-      else
-        client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds) |> Task.map ignore
 
 [<RequireQualifiedAccess>]
 module Playlist =

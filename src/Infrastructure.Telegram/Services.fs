@@ -104,7 +104,7 @@ type MessageService
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo getUser getPreset sendKeyboard
+    let sendCurrentPresetInfo = Telegram.Workflows.User.showCurrentPreset getUser getPreset sendKeyboard
     let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage getUser getPreset sendKeyboard
 
     let sendLoginMessage () =
@@ -276,7 +276,7 @@ type CallbackQueryService
     let listTargetedPlaylists = Workflows.TargetedPlaylist.list getPreset editMessageButtons
 
     let showIncludedPlaylist = Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
-    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessageButtons getPreset countPlaylistTracks
+    let showExcludedPlaylist = Workflows.ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
     let showTargetedPlaylist = Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
@@ -305,13 +305,13 @@ type CallbackQueryService
       let disableIncludedPlaylist = Workflows.IncludedPlaylist.disable disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
 
       disableIncludedPlaylist presetId playlistId
-    | Action.RemoveIncludedPlaylist(presetId, playlistId) ->
+    | Action.IncludedPlaylist(IncludedPlaylistActions.Remove(presetId, playlistId)) ->
       let removeIncludedPlaylist = IncludedPlaylist.remove getPreset updatePreset
-      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery listIncludedPlaylists
+      let removeIncludedPlaylist = Workflows.IncludedPlaylist.remove removeIncludedPlaylist answerCallbackQuery listIncludedPlaylists
 
       removeIncludedPlaylist presetId playlistId
     | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) -> listExcludedPlaylists presetId page
-    | Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.Show(presetId, playlistId)) -> showExcludedPlaylist presetId playlistId
     | Action.EnableExcludedPlaylist(presetId, playlistId) ->
       let enableExcludedPlaylist = ExcludedPlaylist.enable getPreset updatePreset
       let enableExcludedPlaylist = Workflows.ExcludedPlaylist.enable enableExcludedPlaylist answerCallbackQuery showExcludedPlaylist
@@ -322,9 +322,9 @@ type CallbackQueryService
       let disableExcludedPlaylist = Workflows.ExcludedPlaylist.disable disableExcludedPlaylist answerCallbackQuery showExcludedPlaylist
 
       disableExcludedPlaylist presetId playlistId
-    | Action.RemoveExcludedPlaylist(presetId, playlistId) ->
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.Remove(presetId, playlistId)) ->
       let removeExcludedPlaylist = ExcludedPlaylist.remove getPreset updatePreset
-      let removeExcludedPlaylist = Workflows.removeExcludedPlaylist removeExcludedPlaylist answerCallbackQuery listExcludedPlaylists
+      let removeExcludedPlaylist = Workflows.ExcludedPlaylist.remove removeExcludedPlaylist answerCallbackQuery listExcludedPlaylists
 
       removeExcludedPlaylist presetId playlistId
     | Action.TargetedPlaylist(TargetedPlaylistActions.List(presetId, page)) -> listTargetedPlaylists presetId page
@@ -370,15 +370,15 @@ type CallbackQueryService
         Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
-    | Action.EnableUniqueArtists presetId ->
-      let enableUniqueArtists = Preset.enableUniqueArtists loadPreset updatePreset
-      let enableUniqueArtists = Workflows.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
+    | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
+      let enableUniqueArtists = PresetSettings.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = Workflows.PresetSettings.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
 
       enableUniqueArtists presetId
-    | Action.DisableUniqueArtists presetId ->
-      let disableUniqueArtists = Preset.disableUniqueArtists loadPreset updatePreset
+    | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
+      let disableUniqueArtists = PresetSettings.disableUniqueArtists loadPreset updatePreset
       let disableUniqueArtists =
-        Workflows.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
+        Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
       disableUniqueArtists presetId
     | Action.ShowUserPresets -> showUserPresets userId

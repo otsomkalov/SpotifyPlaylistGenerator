@@ -1,9 +1,15 @@
 ﻿module Infrastructure.Repos
 
+open System
+open System.Collections.Generic
+open Domain.Core
 open Domain.Repos
 open Domain.Workflows
+open Infrastructure.Helpers
 open MongoDB.Driver
 open Database
+open SpotifyAPI.Web
+open StackExchange.Redis
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 open Infrastructure.Mapping
@@ -112,3 +118,73 @@ module UserRepo =
       let dbUser = user |> User.toDb
 
       task { do! collection.InsertOneAsync(dbUser) }
+
+[<RequireQualifiedAccess>]
+module TargetedPlaylistRepo =
+  let appendTracksInSpotify (client: ISpotifyClient) : TargetedPlaylistRepo.AppendTracks =
+    fun playlistId tracks ->
+      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
+      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
+
+      let spotifyTracksIds =
+        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+      client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds) |> Task.map ignore
+
+  let replaceTracksInSpotify (client: ISpotifyClient) : TargetedPlaylistRepo.ReplaceTracks =
+    fun playlistId tracks ->
+      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
+      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
+
+      let spotifyTracksIds =
+        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+      client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
+        |> Task.ignore
+
+  let private serializeTracks tracks =
+    tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray
+
+  let appendTracksInCache (cache: IDatabase) : TargetedPlaylistRepo.AppendTracks =
+    fun playlistId tracks ->
+      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
+      let serializedTracks = serializeTracks tracks
+
+      cache.ListLeftPushAsync(playlistId, serializedTracks) |> Task.map ignore
+
+  let replaceTracksInCache (cache: IDatabase) : TargetedPlaylistRepo.ReplaceTracks =
+    fun playlistId tracks ->
+      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
+      let serializedTracks = serializeTracks tracks
+
+      let transaction = cache.CreateTransaction()
+
+      let _ = transaction.KeyDeleteAsync(playlistId)
+      let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks)
+      let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
+
+      transaction.ExecuteAsync() |> Task.map ignore
+
+[<RequireQualifiedAccess>]
+module TrackRepo =
+  [<Literal>]
+  let private recommendationsLimit = 100
+
+  let getRecommendations logRecommendedTracks (client: ISpotifyClient) : TrackRepo.GetRecommendations =
+    fun tracks ->
+      let request = RecommendationsRequest()
+
+      for track in tracks |> List.takeSafe 5 do
+        request.SeedTracks.Add(track |> TrackId.value)
+
+      request.Limit <- recommendationsLimit
+
+      client.Browse.GetRecommendations(request)
+      |> Task.map _.Tracks
+      |> Task.tap (fun tracks -> logRecommendedTracks tracks.Count)
+      |> Task.map (
+        Seq.map (fun st ->
+          { Id = TrackId st.Id
+            Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
+        >> Seq.toList
+      )

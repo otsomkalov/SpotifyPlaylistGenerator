@@ -15,9 +15,17 @@ module PresetRepo =
   type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
 
 [<RequireQualifiedAccess>]
+module TargetedPlaylistRepo =
+  type AppendTracks = TargetedPlaylistId -> Track list -> Task<unit>
+  type ReplaceTracks = TargetedPlaylistId -> Track list -> Task<unit>
+
+[<RequireQualifiedAccess>]
 module UserRepo =
   type Load = UserId -> Task<User>
   type Update = User -> Task<unit>
   type Exists = UserId -> Task<bool>
   type Create = User -> Task<unit>
 
+[<RequireQualifiedAccess>]
+module TrackRepo =
+  type GetRecommendations = TrackId list -> Task<Track list>

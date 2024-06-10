@@ -19,22 +19,31 @@ let likedTracksDatabase = 1
 
 let private loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key ->
-    let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
+    task {
+      let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
 
-    using (telemetryClient.StartOperation dependency) (fun operation ->
-      key
-      |> RedisKey
-      |> cache.ListRangeAsync
-      |> Task.tap (fun v -> operation.Telemetry.Success <- true))
+      use operation = telemetryClient.StartOperation dependency
+
+      let! values = key |> RedisKey |> cache.ListRangeAsync
+
+      operation.Telemetry.Success <- true
+
+      return values
+    }
 
 let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
   fun key (value: 'a array) ->
-    let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
+    task{
+      let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
 
-    using (telemetryClient.StartOperation dependency) (fun operation ->
-      cache.ListLeftPushAsync(key, value)
-      |> Task.tap (fun v -> operation.Telemetry.Success <- true)
-      |> Task.ignore)
+      use operation = telemetryClient.StartOperation dependency
+
+      let! _ = cache.ListLeftPushAsync(key, value)
+
+      operation.Telemetry.Success <- true
+
+      return ()
+    }
 
 let private listCachedTracks telemetryClient cache =
   fun key ->
@@ -84,33 +93,3 @@ module Playlist =
       |> Task.bind (function
         | [] -> (listTracks id) |> Task.bind cacheTracks
         | v -> v |> Task.FromResult)
-
-  let private serializeTracks tracks =
-    tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray
-
-  let updateTracks (cache: IDatabase) (updateTracks: Playlist.UpdateTracks) : Playlist.UpdateTracks =
-    fun playlist tracks ->
-      let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
-      let serializedTracks = serializeTracks tracks
-
-      task{
-        do! (
-          if playlist.Overwrite then
-            task {
-              let transaction = cache.CreateTransaction()
-
-              let _ = transaction.KeyDeleteAsync(playlistId) :> Task
-
-              let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks) :> Task
-
-              let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(1))
-
-              let! _ = transaction.ExecuteAsync()
-
-              return ()
-            }
-          else
-            cache.ListLeftPushAsync(playlistId, serializedTracks) |> Task.map ignore)
-
-        return! updateTracks playlist tracks
-      }

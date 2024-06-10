@@ -177,13 +177,13 @@ module Playlist =
       |> TaskResult.taskEither onSuccess onError
       |> Task.ignore
 
-  let generate sendMessage (generatePlaylist: Domain.Core.Playlist.Generate) =
+  let generate sendMessage (generatePlaylist: Domain.Core.Preset.Generate) =
     let onSuccess () = sendMessage "Playlist generated!"
 
     let onError =
       function
-      | Playlist.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
-      | Playlist.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
+      | Preset.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
+      | Preset.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
 
     fun presetId ->
       task {
@@ -208,18 +208,18 @@ let parseAction: ParseAction =
     | [| "p"; presetId; "ip"; playlistId; "d" |] ->
       Action.DisableIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; presetId; "ip"; playlistId; "rm" |] ->
-      Action.RemoveIncludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+      IncludedPlaylistActions.Remove(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId) |> Action.IncludedPlaylist
 
     | [| "p"; id; "ep"; Int page |] ->
       ExcludedPlaylistActions.List(PresetId id, (Page page)) |> Action.ExcludedPlaylist
     | [| "p"; presetId; "ep"; playlistId; "i" |] ->
-      Action.ShowExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+      ExcludedPlaylistActions.Show(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId) |> Action.ExcludedPlaylist
     | [| "p"; presetId; "ep"; playlistId; "e" |] ->
       Action.EnableExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; presetId; "ep"; playlistId; "d" |] ->
       Action.DisableExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
     | [| "p"; presetId; "ep"; playlistId; "rm" |] ->
-      Action.RemoveExcludedPlaylist(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId)
+      ExcludedPlaylistActions.Remove(PresetId presetId, PlaylistId playlistId |> ReadablePlaylistId) |> Action.ExcludedPlaylist
 
     | [| "p"; id; "tp"; Int page |] -> TargetedPlaylistActions.List(PresetId id, (Page page)) |> Action.TargetedPlaylist
     | [| "p"; presetId; "tp"; playlistId; "i" |] ->
@@ -238,7 +238,10 @@ let parseAction: ParseAction =
     | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
     | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
 
-    | [| "p"; presetId; CallbackQueryConstants.enableUniqueArtists |] -> Action.EnableUniqueArtists(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] -> Action.DisableUniqueArtists(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.enableUniqueArtists |] ->
+      PresetSettingsActions.EnableUniqueArtists(PresetId presetId)
+      |> Action.PresetSettings
+    | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] ->
+      PresetSettingsActions.DisableUniqueArtists(PresetId presetId) |> Action.PresetSettings
 
     | [| "p" |] -> Action.ShowUserPresets

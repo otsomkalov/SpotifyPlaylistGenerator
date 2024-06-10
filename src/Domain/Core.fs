@@ -48,6 +48,8 @@ type TargetedPlaylist =
     Enabled: bool
     Overwrite: bool }
 
+type PresetId = PresetId of string
+
 [<RequireQualifiedAccess>]
 module PresetSettings =
   [<RequireQualifiedAccess>]
@@ -84,7 +86,8 @@ module PresetSettings =
 
     let value (PlaylistSize size) = size
 
-type PresetId = PresetId of string
+  type EnableUniqueArtists = PresetId -> Task<unit>
+  type DisableUniqueArtists = PresetId -> Task<unit>
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -127,11 +130,6 @@ module Playlist =
   type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
   type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
-  type GenerateError =
-    | NoIncludedTracks
-    | NoPotentialTracks
-  type Generate = PresetId -> Task<Result<unit, GenerateError>>
-
 [<RequireQualifiedAccess>]
 module Preset =
   type Get = PresetId -> Task<Preset>
@@ -153,8 +151,10 @@ module Preset =
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
 
-  type EnableUniqueArtists = PresetId -> Task<unit>
-  type DisableUniqueArtists = PresetId -> Task<unit>
+  type GenerateError =
+    | NoIncludedTracks
+    | NoPotentialTracks
+  type Generate = PresetId -> Task<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
 module User =
