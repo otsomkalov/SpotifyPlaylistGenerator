@@ -84,31 +84,3 @@ module Playlist =
       |> Task.bind (function
         | [] -> (listTracks id) |> Task.bind cacheTracks
         | v -> v |> Task.FromResult)
-
-  let private serializeTracks tracks =
-    tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray
-
-  let updateTracks (cache: IDatabase) (updateTracks: Playlist.UpdateTracks) : Playlist.UpdateTracks =
-    fun playlist tracks ->
-      let playlistId = playlist.Id |> WritablePlaylistId.value |> PlaylistId.value
-      let serializedTracks = serializeTracks tracks
-
-      task{
-        do! (
-          if playlist.Overwrite then
-            task {
-              let transaction = cache.CreateTransaction()
-
-              let _ = transaction.KeyDeleteAsync(playlistId)
-
-              let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks)
-
-              let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(1))
-
-              return! transaction.ExecuteAsync() |> Task.map ignore
-            }
-          else
-            cache.ListLeftPushAsync(playlistId, serializedTracks) |> Task.map ignore)
-
-        return! updateTracks playlist tracks
-      }

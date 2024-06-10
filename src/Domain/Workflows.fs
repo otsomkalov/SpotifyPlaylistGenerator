@@ -8,7 +8,6 @@ open IcedTasks.ColdTasks
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
 open otsom.fs.Extensions
-open otsom.fs.Telegram.Bot.Core
 open shortid
 open shortid.Configuration
 
@@ -293,8 +292,6 @@ module ExcludedPlaylist =
 module Playlist =
   type ListTracks = ReadablePlaylistId -> Task<Track list>
 
-  type UpdateTracks = TargetedPlaylist -> Track list -> Task<unit>
-
   type ParsedPlaylistId = ParsedPlaylistId of string
 
   type ParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IdParsingError>
@@ -419,7 +416,8 @@ module Playlist =
       ListExcludedTracks: PresetRepo.ListExcludedTracks
       ListLikedTracks: User.ListLikedTracks
       LoadPreset: PresetRepo.Load
-      UpdateTargetedPlaylists: UpdateTracks
+      AppendTracks: TargetedPlaylistRepo.AppendTracks
+      ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
       GetRecommendations: Preset.GetRecommendations }
 
   let generate (io: GenerateIO) : Playlist.Generate =
@@ -429,18 +427,21 @@ module Playlist =
         match tracks with
         | [] -> Playlist.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
         | tracks ->
-          task {
-            let tracks =
+          let tracks =
               if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
 
-            let tracksToImport =
-              tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+          let tracksToImport =
+            tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
-            for playlist in preset.TargetedPlaylists |> Seq.filter _.Enabled do
-              do! io.UpdateTargetedPlaylists playlist tracksToImport
-
-            return Ok()
-          }
+          preset.TargetedPlaylists
+          |> Seq.filter _.Enabled
+          |> Seq.map (fun p ->
+            match p.Overwrite with
+            | true -> io.ReplaceTracks p.Id tracksToImport
+            | false -> io.AppendTracks p.Id tracksToImport)
+          |> Task.WhenAll
+          |> Task.ignore
+          |> Task.map Ok
 
     let includeLiked (preset: Preset) =
       fun tracks ->
