@@ -15,7 +15,6 @@ module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
   type Exclude = UserId -> Playlist.RawPlaylistId -> Task<unit>
   type Target = UserId -> Playlist.RawPlaylistId -> Task<unit>
-  type QueueGeneration = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module User =
@@ -25,6 +24,7 @@ module User =
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
+  type QueueCurrentPresetGeneration = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =
@@ -60,6 +60,7 @@ type PresetSettingsActions =
 type UserActions =
   | ListPresets of userId: UserId
   | SendCurrentPresetSettings of userId: UserId
+  | QueueCurrentPresetGeneration of userId: UserId
 
 [<RequireQualifiedAccess>]
 type Action =

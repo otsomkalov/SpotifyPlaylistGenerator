@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Constants.fs"/>
     <Compile Include="Core.fs"/>
+    <Compile Include="Repos.fs" />
     <Compile Include="Workflows.fs"/>
   </ItemGroup>
 
