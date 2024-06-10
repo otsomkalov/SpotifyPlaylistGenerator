@@ -342,19 +342,19 @@ type CallbackQueryService
       let removeTargetedPlaylist = Workflows.TargetedPlaylist.remove removeTargetedPlaylist answerCallbackQuery listTargetedPlaylists
 
       removeTargetedPlaylist presetId playlistId
-    | Action.IncludeLikedTracks presetId ->
-      let includeLikedTracks = Preset.includeLikedTracks getPreset updatePreset
-      let includeLikedTracks = Workflows.includeLikedTracks answerCallbackQuery sendPresetInfo includeLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.IncludeLikedTracks presetId) ->
+      let includeLikedTracks = PresetSettings.includeLikedTracks getPreset updatePreset
+      let includeLikedTracks = Workflows.PresetSettings.includeLikedTracks answerCallbackQuery sendPresetInfo includeLikedTracks
 
       includeLikedTracks presetId
-    | Action.ExcludeLikedTracks presetId ->
-      let excludeLikedTracks = Preset.excludeLikedTracks getPreset updatePreset
-      let excludeLikedTracks = Workflows.excludeLikedTracks answerCallbackQuery sendPresetInfo excludeLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.ExcludeLikedTracks presetId) ->
+      let excludeLikedTracks = PresetSettings.excludeLikedTracks getPreset updatePreset
+      let excludeLikedTracks = Workflows.PresetSettings.excludeLikedTracks answerCallbackQuery sendPresetInfo excludeLikedTracks
 
       excludeLikedTracks presetId
-    | Action.IgnoreLikedTracks presetId ->
-      let ignoreLikedTracks = Preset.ignoreLikedTracks getPreset updatePreset
-      let ignoreLikedTracks = Workflows.ignoreLikedTracks answerCallbackQuery sendPresetInfo ignoreLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.IgnoreLikedTracks presetId) ->
+      let ignoreLikedTracks = PresetSettings.ignoreLikedTracks getPreset updatePreset
+      let ignoreLikedTracks = Workflows.PresetSettings.ignoreLikedTracks answerCallbackQuery sendPresetInfo ignoreLikedTracks
 
       ignoreLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.EnableRecommendations presetId) ->

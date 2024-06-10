@@ -92,6 +92,10 @@ module PresetSettings =
   type EnableRecommendations = PresetId -> Task<unit>
   type DisableRecommendations = PresetId -> Task<unit>
 
+  type IncludeLikedTracks = PresetId -> Task<unit>
+  type ExcludeLikedTracks = PresetId -> Task<unit>
+  type IgnoreLikedTracks = PresetId -> Task<unit>
+
 type SimplePreset = { Id: PresetId; Name: string }
 
 type Preset =
@@ -143,10 +147,6 @@ module Preset =
     | NoTargetedPlaylists
 
   type Validate = Preset -> Result<Preset, ValidationError list>
-
-  type IncludeLikedTracks = PresetId -> Task<unit>
-  type ExcludeLikedTracks = PresetId -> Task<unit>
-  type IgnoreLikedTracks = PresetId -> Task<unit>
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<unit>

@@ -15,7 +15,6 @@ type SendSettingsMessage = UserId -> Task<unit>
 
 type SendPresetInfo = PresetId -> Task<unit>
 
-
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
@@ -54,6 +53,10 @@ type PresetSettingsActions =
   | EnableRecommendations of presetId: PresetId
   | DisableRecommendations of presetId: PresetId
 
+  | IncludeLikedTracks of presetId: PresetId
+  | ExcludeLikedTracks of presetId: PresetId
+  | IgnoreLikedTracks of presetId: PresetId
+
 [<RequireQualifiedAccess>]
 type Action =
 
@@ -77,10 +80,6 @@ type Action =
   | RemovePreset of presetId: PresetId
 
   | AskForPlaylistSize
-
-  | IncludeLikedTracks of presetId: PresetId
-  | ExcludeLikedTracks of presetId: PresetId
-  | IgnoreLikedTracks of presetId: PresetId
 
   | ShowUserPresets
 

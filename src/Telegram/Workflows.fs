@@ -352,25 +352,6 @@ module ExcludedPlaylist =
         return! listExcludedPlaylists presetId (Page 0)
       }
 
-let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
-  fun presetId ->
-    task {
-      do! setLikedTracksHandling presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
-let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: Preset.IncludeLikedTracks) : Preset.IncludeLikedTracks =
-  setLikedTracksHandling answerCallbackQuery includeLikedTracks sendPresetInfo
-
-let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: Preset.ExcludeLikedTracks) : Preset.ExcludeLikedTracks =
-  setLikedTracksHandling answerCallbackQuery excludeLikedTracks sendPresetInfo
-
-let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: Preset.IgnoreLikedTracks) : Preset.IgnoreLikedTracks =
-  setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
-
 let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
@@ -591,3 +572,22 @@ module PresetSettings =
 
         return! sendPresetInfo presetId
       }
+
+  let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
+    fun presetId ->
+      task {
+        do! setLikedTracksHandling presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! sendPresetInfo presetId
+      }
+
+  let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
+    setLikedTracksHandling answerCallbackQuery includeLikedTracks sendPresetInfo
+
+  let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
+    setLikedTracksHandling answerCallbackQuery excludeLikedTracks sendPresetInfo
+
+  let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
+    setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
