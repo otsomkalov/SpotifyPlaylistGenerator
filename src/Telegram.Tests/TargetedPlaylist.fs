@@ -3,6 +3,7 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Tests
+open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open Telegram.Workflows
@@ -73,6 +74,6 @@ let ``remove should remove playlist and show the list`` () =
       page |> should equal (Page 0)
       Task.FromResult()
 
-  let sut = TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+  let sut = Workflows.TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
 
   sut Preset.mockId TargetedPlaylist.mock.Id
