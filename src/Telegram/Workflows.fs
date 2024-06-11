@@ -544,14 +544,14 @@ module PresetSettings =
         return! showPreset presetId
       }
 
-  let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
+  let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (shorPreset: Preset.Show) =
     fun presetId ->
       task {
         do! setLikedTracksHandling presetId
 
         do! answerCallbackQuery Messages.Updated
 
-        return! sendPresetInfo presetId
+        return! shorPreset presetId
       }
 
   let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =

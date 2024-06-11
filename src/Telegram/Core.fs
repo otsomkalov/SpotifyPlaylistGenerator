@@ -13,7 +13,6 @@ type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
 type SendSettingsMessage = UserId -> Task<unit>
 
-type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
