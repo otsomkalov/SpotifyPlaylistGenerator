@@ -13,8 +13,7 @@ type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
 type SendSettingsMessage = UserId -> Task<unit>
 
-type SendPresetInfo = PresetId -> Task<unit>
-
+type ShowExcludedPlaylist = PresetId -> ReadablePlaylistId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -52,11 +51,16 @@ type PresetSettingsActions =
   | DisableUniqueArtists of presetId: PresetId
 
 [<RequireQualifiedAccess>]
+type PresetActions =
+  | Show of presetId: PresetId
+
+[<RequireQualifiedAccess>]
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
   | ExcludedPlaylist of ExcludedPlaylistActions
   | TargetedPlaylist of TargetedPlaylistActions
+  | Preset of PresetActions
 
   | PresetSettings of PresetSettingsActions
 
@@ -69,7 +73,6 @@ type Action =
   | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
-  | ShowPresetInfo of presetId: PresetId
   | SetCurrentPreset of presetId: PresetId
   | RemovePreset of presetId: PresetId
 
@@ -108,3 +111,7 @@ module ExcludedPlaylist =
 module TargetedPlaylist =
   type List = PresetId -> Page -> Task<unit>
   type Show = PresetId -> WritablePlaylistId -> Task<unit>
+
+[<RequireQualifiedAccess>]
+module Preset =
+  type Show = PresetId -> Task<unit>
