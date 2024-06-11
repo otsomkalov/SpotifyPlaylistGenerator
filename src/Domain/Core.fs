@@ -58,6 +58,8 @@ module PresetSettings =
     | Exclude
     | Ignore
 
+  type RawPlaylistSize = RawPlaylistSize of string
+
   type PlaylistSize = private PlaylistSize of int
 
   type PresetSettings =
@@ -68,22 +70,19 @@ module PresetSettings =
 
   [<RequireQualifiedAccess>]
   module PlaylistSize =
-    type TryCreateError =
+    type ParsingError =
+      | NotANumber
       | TooSmall
       | TooBig
 
-    let tryCreate size =
-      match size with
-      | s when s <= 0 -> Error(TooSmall)
-      | s when s >= 10000 -> Error(TooBig)
-      | _ -> Ok(PlaylistSize(size))
+    let tryParse (RawPlaylistSize size) =
+      match Int32.TryParse size with
+      | true, s when s >= 10000 -> Error(TooBig)
+      | true, s when s <= 0 -> Error(TooSmall)
+      | true, s -> Ok(PlaylistSize(s))
+      | _ -> Error(NotANumber)
 
-    let create size =
-      match tryCreate size with
-      | Ok size -> size
-      | Error e ->
-        ArgumentException(e |> string, nameof size) |> raise
-
+    let create size = PlaylistSize(size)
     let value (PlaylistSize size) = size
 
   type EnableUniqueArtists = PresetId -> Task<unit>
@@ -95,6 +94,8 @@ module PresetSettings =
   type IncludeLikedTracks = PresetId -> Task<unit>
   type ExcludeLikedTracks = PresetId -> Task<unit>
   type IgnoreLikedTracks = PresetId -> Task<unit>
+
+  type SetTargetPlaylistSize = PresetId -> RawPlaylistSize -> Task<Result<unit, PlaylistSize.ParsingError>>
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -147,7 +148,6 @@ module Preset =
     | NoTargetedPlaylists
 
   type Validate = Preset -> Result<Preset, ValidationError list>
-  type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<unit>
 
@@ -162,6 +162,8 @@ module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
+
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
 
   let create userId =
     { Id = userId

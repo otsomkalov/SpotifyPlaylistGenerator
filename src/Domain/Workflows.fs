@@ -50,7 +50,6 @@ module User =
   type ListLikedTracks = ColdTask<Track list>
   let get (load: UserRepo.Load) : User.Get = load
 
-
   let setCurrentPreset (load: UserRepo.Load) (update: UserRepo.Update) : User.SetCurrentPreset =
     fun userId presetId ->
       userId
@@ -77,6 +76,13 @@ module User =
       |> Task.bind (function
         | true -> Task.FromResult()
         | false -> User.create userId |> create)
+
+  let setCurrentPresetSize (load: UserRepo.Load) (setTargetPlaylistSize: PresetSettings.SetTargetPlaylistSize) : User.SetCurrentPresetSize =
+    fun userId size ->
+      userId
+      |> load
+      |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
+      |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
@@ -132,6 +138,18 @@ module PresetSettings =
   let ignoreLikedTracks load update : PresetSettings.IgnoreLikedTracks =
     setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Ignore
 
+  let setTargetPlaylistSize (load: PresetRepo.Load) (update: PresetRepo.Update) : PresetSettings.SetTargetPlaylistSize =
+    fun presetId size ->
+      size
+      |> PresetSettings.PlaylistSize.tryParse
+      |> Result.taskMap (fun s ->
+        presetId
+        |> load
+        |> Task.map (fun p ->
+          { p with
+              Settings = { p.Settings with PlaylistSize = s } })
+        |> Task.bind update)
+
 [<RequireQualifiedAccess>]
 module Preset =
   type Save = Preset -> Task<unit>
@@ -162,15 +180,6 @@ module Preset =
         [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
       | [], PresetSettings.LikedTracksHandling.Ignore, _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
       | _ -> Ok preset
-
-  let setPlaylistSize (load: PresetRepo.Load) (update: PresetRepo.Update) : Preset.SetPlaylistSize =
-    fun presetId size ->
-      presetId
-      |> load
-      |> Task.map (fun p ->
-        { p with
-            Settings = { p.Settings with PlaylistSize = size } })
-      |> Task.bind update
 
   let create (savePreset: Save) (loadUser: UserRepo.Load) (updateUser: UserRepo.Update) userId : Preset.Create =
     fun name ->
