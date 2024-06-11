@@ -167,7 +167,7 @@ module Playlist =
 let parseAction: ParseAction =
   fun (str: string) ->
     match str.Split("|") with
-    | [| "p"; id; "i" |] -> PresetId id |> Action.ShowPresetInfo
+    | [| "p"; id; "i" |] -> PresetId id |> PresetActions.Show |> Action.Preset
     | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
     | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
 
@@ -220,4 +220,4 @@ let parseAction: ParseAction =
     | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] ->
       PresetSettingsActions.DisableUniqueArtists(PresetId presetId) |> Action.PresetSettings
 
-    | [| "p" |] -> Action.ShowUserPresets
+    | [| "p" |] -> Action.User(UserActions.ListPresets())
