@@ -301,20 +301,6 @@ module ExcludedPlaylist =
         return! listExcludedPlaylists presetId (Page 0)
       }
 
-let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
-  fun userId ->
-    task {
-      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      let! preset = getPreset currentPresetId
-      let! text, _ = getPresetMessage preset
-
-      let buttons =
-        [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
-        |> ReplyKeyboardMarkup.op_Implicit
-
-      return! sendKeyboard text buttons
-    }
-
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
   let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
@@ -442,7 +428,7 @@ module User =
         do! sendButtons "Your presets" keyboardMarkup
       }
 
-  let showCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.ShowCurrentPreset =
+  let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPreset =
     loadUser
     >> Task.map _.CurrentPresetId
     >> Task.bind (function
@@ -470,6 +456,20 @@ module User =
 
         sendKeyboard "You did not select current preset" buttons)
 
+  let sendCurrentPresetSettings (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPresetSettings =
+    fun userId ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+        let! preset = getPreset currentPresetId
+        let! text, _ = getPresetMessage preset
+
+        let buttons =
+          [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
+          |> ReplyKeyboardMarkup.op_Implicit
+
+        return! sendKeyboard text buttons
+      }
+
   let removePreset (removePreset: User.RemovePreset) (sendUserPresets: User.ListPresets) : User.RemovePreset =
     fun userId presetId ->
       task {
@@ -480,7 +480,7 @@ module User =
 
   let setCurrentPresetSize
     (sendMessage: SendMessage)
-    (sendSettingsMessage: SendSettingsMessage)
+    (sendSettingsMessage: User.SendCurrentPresetSettings)
     (setPlaylistSize: Domain.Core.User.SetCurrentPresetSize)
     : User.SetCurrentPresetSize
     =
