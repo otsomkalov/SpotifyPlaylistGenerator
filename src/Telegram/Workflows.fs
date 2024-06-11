@@ -538,7 +538,7 @@ module PresetSettings =
   let enableRecommendations
     (enableRecommendations: PresetSettings.EnableRecommendations)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (sendPresetInfo: SendPresetInfo)
+    (showPreset: Preset.Show)
     : PresetSettings.EnableRecommendations =
     fun presetId ->
       task {
@@ -546,13 +546,13 @@ module PresetSettings =
 
         do! answerCallbackQuery Messages.Updated
 
-        return! sendPresetInfo presetId
+        return! showPreset presetId
       }
 
   let disableRecommendations
     (disableRecommendations: PresetSettings.DisableRecommendations)
     (answerCallbackQuery: AnswerCallbackQuery)
-    (sendPresetInfo: SendPresetInfo)
+    (showPreset: Preset.Show)
     : PresetSettings.DisableRecommendations =
     fun presetId ->
       task {
@@ -560,7 +560,7 @@ module PresetSettings =
 
         do! answerCallbackQuery Messages.Updated
 
-        return! sendPresetInfo presetId
+        return! showPreset presetId
       }
 
 [<RequireQualifiedAccess>]
