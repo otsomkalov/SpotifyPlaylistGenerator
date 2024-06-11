@@ -8,8 +8,6 @@ open otsom.fs.Telegram.Bot.Core
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
 
-type SendPresetInfo = PresetId -> Task<unit>
-
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
@@ -58,9 +56,13 @@ type PresetSettingsActions =
 
 [<RequireQualifiedAccess>]
 type UserActions =
-  | ListPresets of userId: UserId
+  | ListPresets of unit
   | SendCurrentPresetSettings of userId: UserId
   | QueueCurrentPresetGeneration of userId: UserId
+
+[<RequireQualifiedAccess>]
+type PresetActions =
+  | Show of presetId: PresetId
 
 [<RequireQualifiedAccess>]
 type Action =
@@ -68,6 +70,8 @@ type Action =
   | IncludedPlaylist of IncludedPlaylistActions
   | ExcludedPlaylist of ExcludedPlaylistActions
   | TargetedPlaylist of TargetedPlaylistActions
+  | Preset of PresetActions
+  | User of UserActions
 
   | PresetSettings of PresetSettingsActions
 
@@ -80,13 +84,10 @@ type Action =
   | AppendToTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
   | OverwriteTargetedPlaylist of presetId: PresetId * playlistId: WritablePlaylistId
 
-  | ShowPresetInfo of presetId: PresetId
   | SetCurrentPreset of presetId: PresetId
   | RemovePreset of presetId: PresetId
 
   | AskForPlaylistSize
-
-  | ShowUserPresets
 
 type ParseAction = string -> Action
 
@@ -112,3 +113,7 @@ module ExcludedPlaylist =
 module TargetedPlaylist =
   type List = PresetId -> Page -> Task<unit>
   type Show = PresetId -> WritablePlaylistId -> Task<unit>
+
+[<RequireQualifiedAccess>]
+module Preset =
+  type Show = PresetId -> Task<unit>
