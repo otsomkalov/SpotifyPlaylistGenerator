@@ -220,4 +220,4 @@ let parseAction: ParseAction =
     | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] ->
       PresetSettingsActions.DisableUniqueArtists(PresetId presetId) |> Action.PresetSettings
 
-    | [| "p" |] -> Action.ShowUserPresets
+    | [| "p" |] -> Action.User(UserActions.ListPresets())

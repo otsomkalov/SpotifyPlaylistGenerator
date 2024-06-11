@@ -375,4 +375,4 @@ type CallbackQueryService
         Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
       disableUniqueArtists presetId
-    | Action.ShowUserPresets -> listUserPresets userId
+    | Action.User(UserActions.ListPresets()) -> listUserPresets userId

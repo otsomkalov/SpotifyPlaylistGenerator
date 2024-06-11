@@ -58,7 +58,7 @@ type PresetSettingsActions =
 
 [<RequireQualifiedAccess>]
 type UserActions =
-  | ListPresets of userId: UserId
+  | ListPresets of unit
 
 [<RequireQualifiedAccess>]
 type PresetActions =
