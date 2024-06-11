@@ -58,6 +58,10 @@ type PresetActions =
   | Show of presetId: PresetId
 
 [<RequireQualifiedAccess>]
+type PresetActions =
+  | Show of presetId: PresetId
+
+[<RequireQualifiedAccess>]
 type Action =
 
   | IncludedPlaylist of IncludedPlaylistActions
