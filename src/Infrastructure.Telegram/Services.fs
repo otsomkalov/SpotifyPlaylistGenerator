@@ -82,10 +82,6 @@ type MessageService
     askUserForReply: AskUserForReply
   ) =
 
-  let sendUserPresets sendMessage (message: Message) getUser =
-    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage getUser
-    sendUserPresets (message.From.Id |> UserId)
-
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
@@ -225,7 +221,9 @@ type MessageService
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
             | Equals Buttons.GeneratePlaylist, Authorized -> queueGeneration userId
-            | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message getUser
+            | Equals Buttons.MyPresets, _ ->
+              let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
+              sendUserPresets (message.From.Id |> UserId)
             | Equals Buttons.Settings, _ -> sendSettingsMessage userId
             | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
             | Equals Buttons.ExcludePlaylist, Authorized -> askForReply Messages.SendExcludedPlaylist
@@ -260,7 +258,7 @@ type CallbackQueryService
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
-    let showUserPresets = Workflows.sendUserPresets editMessageButtons getUser
+    let listUserPresets = Workflows.User.listPresets editMessageButtons getUser
 
     let loadPreset = PresetRepo.load _database
     let getPreset = Preset.get loadPreset
@@ -287,7 +285,7 @@ type CallbackQueryService
     | Action.RemovePreset presetId ->
       let removePreset = PresetRepo.remove _database
       let removeUserPreset = Domain.Workflows.User.removePreset getUser removePreset updateUser
-      let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset showUserPresets
+      let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset listUserPresets
       removeUserPreset userId presetId
     | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId
     | Action.IncludedPlaylist(IncludedPlaylistActions.List(presetId, page)) -> listIncludedPlaylists presetId page
@@ -377,4 +375,4 @@ type CallbackQueryService
         Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
       disableUniqueArtists presetId
-    | Action.ShowUserPresets -> showUserPresets userId
+    | Action.User(UserActions.ListPresets()) -> listUserPresets userId

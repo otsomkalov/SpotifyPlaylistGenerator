@@ -8,7 +8,6 @@ open otsom.fs.Telegram.Bot.Core
 type AnswerCallbackQuery = string -> Task<unit>
 type Page = Page of int
 
-type SendUserPresets = UserId -> Task<unit>
 type SetCurrentPreset = UserId -> PresetId -> Task<unit>
 
 type SendSettingsMessage = UserId -> Task<unit>
@@ -22,6 +21,7 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module User =
+  type ListPresets = UserId -> Task<unit>
   type ShowCurrentPreset = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
@@ -57,6 +57,10 @@ type PresetSettingsActions =
   | IgnoreLikedTracks of presetId: PresetId
 
 [<RequireQualifiedAccess>]
+type UserActions =
+  | ListPresets of unit
+
+[<RequireQualifiedAccess>]
 type PresetActions =
   | Show of presetId: PresetId
 
@@ -67,6 +71,7 @@ type Action =
   | ExcludedPlaylist of ExcludedPlaylistActions
   | TargetedPlaylist of TargetedPlaylistActions
   | Preset of PresetActions
+  | User of UserActions
 
   | PresetSettings of PresetSettingsActions
 
@@ -83,8 +88,6 @@ type Action =
   | RemovePreset of presetId: PresetId
 
   | AskForPlaylistSize
-
-  | ShowUserPresets
 
 type ParseAction = string -> Action
 

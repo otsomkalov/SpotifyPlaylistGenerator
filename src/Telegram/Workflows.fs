@@ -19,20 +19,6 @@ let buttonsPerPage = 20
 
 type SendLink = string -> string -> string -> Task<unit>
 
-let sendUserPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : SendUserPresets =
-  fun userId ->
-    task {
-      let! user = loadUser userId
-
-      let keyboardMarkup =
-        user.Presets
-        |> Seq.map (fun p -> InlineKeyboardButton.WithCallbackData(p.Name, $"p|{p.Id |> PresetId.value}|i"))
-        |> Seq.singleton
-        |> InlineKeyboardMarkup
-
-      do! sendButtons "Your presets" keyboardMarkup
-    }
-
 let private getPresetMessage =
   fun (preset: Preset) ->
     task {
@@ -450,6 +436,20 @@ module Message =
 
 [<RequireQualifiedAccess>]
 module User =
+  let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
+    fun userId ->
+      task {
+        let! user = loadUser userId
+
+        let keyboardMarkup =
+          user.Presets
+          |> Seq.map (fun p -> InlineKeyboardButton.WithCallbackData(p.Name, $"p|{p.Id |> PresetId.value}|i"))
+          |> Seq.singleton
+          |> InlineKeyboardMarkup
+
+        do! sendButtons "Your presets" keyboardMarkup
+      }
+
   let showCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.ShowCurrentPreset =
     loadUser
     >> Task.map _.CurrentPresetId
@@ -478,7 +478,7 @@ module User =
 
         sendKeyboard "You did not select current preset" buttons)
 
-  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: SendUserPresets) : User.RemovePreset =
+  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: User.ListPresets) : User.RemovePreset =
     fun userId presetId ->
       task {
         do! removePreset userId presetId
