@@ -95,6 +95,8 @@ module PresetSettings =
   type ExcludeLikedTracks = PresetId -> Task<unit>
   type IgnoreLikedTracks = PresetId -> Task<unit>
 
+  type SetTargetPlaylistSize = PresetId -> RawPlaylistSize -> Task<Result<unit, PlaylistSize.ParsingError>>
+
 type SimplePreset = { Id: PresetId; Name: string }
 
 type Preset =
@@ -162,6 +164,7 @@ module User =
   type CreateIfNotExists = UserId -> Task<unit>
 
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
+
   let create userId =
     { Id = userId
       CurrentPresetId = None
