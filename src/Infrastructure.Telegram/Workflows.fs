@@ -235,12 +235,13 @@ let parseAction: ParseAction =
     | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
     | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
 
-    | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] -> Action.EnableRecommendations(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] -> Action.DisableRecommendations(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] ->
+      PresetSettingsActions.EnableRecommendations(PresetId presetId) |> Action.PresetSettings
+    | [| "p"; presetId; CallbackQueryConstants.disableRecommendations |] ->
+      PresetSettingsActions.DisableRecommendations(PresetId presetId) |> Action.PresetSettings
 
     | [| "p"; presetId; CallbackQueryConstants.enableUniqueArtists |] ->
-      PresetSettingsActions.EnableUniqueArtists(PresetId presetId)
-      |> Action.PresetSettings
+      PresetSettingsActions.EnableUniqueArtists(PresetId presetId) |> Action.PresetSettings
     | [| "p"; presetId; CallbackQueryConstants.disableUniqueArtists |] ->
       PresetSettingsActions.DisableUniqueArtists(PresetId presetId) |> Action.PresetSettings
 

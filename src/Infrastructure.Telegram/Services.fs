@@ -359,15 +359,15 @@ type CallbackQueryService
       let ignoreLikedTracks = Workflows.ignoreLikedTracks answerCallbackQuery sendPresetInfo ignoreLikedTracks
 
       ignoreLikedTracks presetId
-    | Action.EnableRecommendations presetId ->
-      let enableRecommendations = Preset.enableRecommendations getPreset updatePreset
-      let enableRecommendations = Workflows.enableRecommendations enableRecommendations answerCallbackQuery sendPresetInfo
+    | Action.PresetSettings(PresetSettingsActions.EnableRecommendations presetId) ->
+      let enableRecommendations = PresetSettings.enableRecommendations getPreset updatePreset
+      let enableRecommendations = Workflows.PresetSettings.enableRecommendations enableRecommendations answerCallbackQuery sendPresetInfo
 
       enableRecommendations presetId
-    | Action.DisableRecommendations presetId ->
-      let disableRecommendations = Preset.disableRecommendations getPreset updatePreset
+    | Action.PresetSettings(PresetSettingsActions.DisableRecommendations presetId) ->
+      let disableRecommendations = PresetSettings.disableRecommendations getPreset updatePreset
       let disableRecommendations =
-        Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
+        Workflows.PresetSettings.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->

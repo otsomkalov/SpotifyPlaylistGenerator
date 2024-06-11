@@ -89,6 +89,9 @@ module PresetSettings =
   type EnableUniqueArtists = PresetId -> Task<unit>
   type DisableUniqueArtists = PresetId -> Task<unit>
 
+  type EnableRecommendations = PresetId -> Task<unit>
+  type DisableRecommendations = PresetId -> Task<unit>
+
 type SimplePreset = { Id: PresetId; Name: string }
 
 type Preset =
@@ -147,9 +150,6 @@ module Preset =
   type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<unit>
-
-  type EnableRecommendations = PresetId -> Task<unit>
-  type DisableRecommendations = PresetId -> Task<unit>
 
   type GenerateError =
     | NoIncludedTracks

@@ -342,34 +342,6 @@ let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: P
 let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: Preset.IgnoreLikedTracks) : Preset.IgnoreLikedTracks =
   setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
 
-let enableRecommendations
-  (enableRecommendations: Preset.EnableRecommendations)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: Preset.Show)
-  : Preset.EnableRecommendations =
-  fun presetId ->
-    task {
-      do! enableRecommendations presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
-let disableRecommendations
-  (disableRecommendations: Preset.DisableRecommendations)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: Preset.Show)
-  : Preset.DisableRecommendations =
-  fun presetId ->
-    task {
-      do! disableRecommendations presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
 let sendSettingsMessage (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
   fun userId ->
     task {
@@ -561,6 +533,34 @@ module PresetSettings =
         do! answerCallbackQuery Messages.Updated
 
         return! sendPresetInfo presetId
+      }
+
+  let enableRecommendations
+    (enableRecommendations: PresetSettings.EnableRecommendations)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showPreset: Preset.Show)
+    : PresetSettings.EnableRecommendations =
+    fun presetId ->
+      task {
+        do! enableRecommendations presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! showPreset presetId
+      }
+
+  let disableRecommendations
+    (disableRecommendations: PresetSettings.DisableRecommendations)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showPreset: Preset.Show)
+    : PresetSettings.DisableRecommendations =
+    fun presetId ->
+      task {
+        do! disableRecommendations presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! showPreset presetId
       }
 
 [<RequireQualifiedAccess>]
