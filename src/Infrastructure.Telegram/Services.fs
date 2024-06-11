@@ -279,7 +279,7 @@ type CallbackQueryService
       | PresetActions.Show presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId ->
       let setCurrentPreset = Domain.Workflows.User.setCurrentPreset getUser updateUser
-      let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
+      let setCurrentPreset = Workflows.User.setCurrentPreset answerCallbackQuery setCurrentPreset
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->

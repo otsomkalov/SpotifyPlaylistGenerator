@@ -75,14 +75,6 @@ let private getPresetMessage =
       return (text, keyboard)
     }
 
-let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: User.SetCurrentPreset) : SetCurrentPreset =
-  fun userId presetId ->
-    task {
-      do! setCurrentPreset userId presetId
-
-      return! answerCallbackQuery "Current preset is successfully set!"
-    }
-
 let internal createPlaylistsPage page (playlists: 'a list) playlistToButton presetId =
   let (Page page) = page
   let remainingPlaylists = playlists[page * buttonsPerPage ..]
@@ -503,6 +495,14 @@ module User =
 
       setPlaylistSize userId size
       |> TaskResult.taskEither onSuccess onError
+
+  let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: Domain.Core.User.SetCurrentPreset) : User.SetCurrentPreset =
+    fun userId presetId ->
+      task {
+        do! setCurrentPreset userId presetId
+
+        return! answerCallbackQuery "Current preset is successfully set!"
+      }
 
 [<RequireQualifiedAccess>]
 module PresetSettings =
