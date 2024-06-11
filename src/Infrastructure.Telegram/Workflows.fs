@@ -231,9 +231,12 @@ let parseAction: ParseAction =
     | [| "p"; presetId; "tp"; playlistId; "rm" |] ->
       TargetedPlaylistActions.Remove(PresetId presetId, PlaylistId playlistId |> WritablePlaylistId) |> Action.TargetedPlaylist
 
-    | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] -> Action.IncludeLikedTracks(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] -> Action.ExcludeLikedTracks(PresetId presetId)
-    | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] -> Action.IgnoreLikedTracks(PresetId presetId)
+    | [| "p"; presetId; CallbackQueryConstants.includeLikedTracks |] ->
+      PresetSettingsActions.IncludeLikedTracks(PresetId presetId) |> Action.PresetSettings
+    | [| "p"; presetId; CallbackQueryConstants.excludeLikedTracks |] ->
+      PresetSettingsActions.ExcludeLikedTracks(PresetId presetId) |> Action.PresetSettings
+    | [| "p"; presetId; CallbackQueryConstants.ignoreLikedTracks |] ->
+      PresetSettingsActions.IgnoreLikedTracks(PresetId presetId) |> Action.PresetSettings
 
     | [| "p"; presetId; CallbackQueryConstants.enableRecommendations |] ->
       PresetSettingsActions.EnableRecommendations(PresetId presetId) |> Action.PresetSettings

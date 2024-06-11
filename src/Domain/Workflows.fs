@@ -112,6 +112,26 @@ module PresetSettings =
 
   let disableRecommendations load update : PresetSettings.DisableRecommendations = setRecommendations load update false
 
+  let private setLikedTracksHandling (load: PresetRepo.Load) (update: PresetRepo.Update) =
+    fun handling presetId ->
+      presetId
+      |> load
+      |> Task.map (fun p ->
+        { p with
+            Settings =
+              { p.Settings with
+                  LikedTracksHandling = handling } })
+      |> Task.bind update
+
+  let includeLikedTracks load update : PresetSettings.IncludeLikedTracks =
+    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Include
+
+  let excludeLikedTracks load update : PresetSettings.ExcludeLikedTracks =
+    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Exclude
+
+  let ignoreLikedTracks load update : PresetSettings.IgnoreLikedTracks =
+    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Ignore
+
 [<RequireQualifiedAccess>]
 module Preset =
   type Save = Preset -> Task<unit>
@@ -142,26 +162,6 @@ module Preset =
         [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
       | [], PresetSettings.LikedTracksHandling.Ignore, _ -> [ Preset.ValidationError.NoIncludedPlaylists ] |> Error
       | _ -> Ok preset
-
-  let private setLikedTracksHandling (load: PresetRepo.Load) (update: PresetRepo.Update) =
-    fun handling presetId ->
-      presetId
-      |> load
-      |> Task.map (fun p ->
-        { p with
-            Settings =
-              { p.Settings with
-                  LikedTracksHandling = handling } })
-      |> Task.bind update
-
-  let includeLikedTracks load update : Preset.IncludeLikedTracks =
-    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Include
-
-  let excludeLikedTracks load update : Preset.ExcludeLikedTracks =
-    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Exclude
-
-  let ignoreLikedTracks load update : Preset.IgnoreLikedTracks =
-    setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Ignore
 
   let setPlaylistSize (load: PresetRepo.Load) (update: PresetRepo.Update) : Preset.SetPlaylistSize =
     fun presetId size ->
