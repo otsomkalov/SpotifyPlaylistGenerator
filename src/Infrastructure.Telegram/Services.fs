@@ -156,7 +156,7 @@ type MessageService
               targetPlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendPresetName, _ ->
               let createPreset = Preset.create savePreset getUser updateUser userId
-              let sendPresetInfo = Telegram.Workflows.sendPresetInfo getPreset sendButtons
+              let sendPresetInfo = Telegram.Workflows.Preset.show getPreset sendButtons
               let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
               createPreset message.Text
@@ -265,7 +265,7 @@ type CallbackQueryService
     let loadPreset = PresetRepo.load _database
     let getPreset = Preset.get loadPreset
 
-    let sendPresetInfo = Workflows.sendPresetInfo getPreset editMessageButtons
+    let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
 
     let listIncludedPlaylists = Workflows.IncludedPlaylist.list getPreset editMessageButtons
     let listExcludedPlaylists = Workflows.ExcludedPlaylist.list getPreset editMessageButtons
@@ -276,7 +276,9 @@ type CallbackQueryService
     let showTargetedPlaylist = Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
-    | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
+    | Action.Preset presetAction ->
+      match presetAction with
+      | PresetActions.Show presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId ->
       let setCurrentPreset = Domain.Workflows.User.setCurrentPreset getUser updateUser
       let setCurrentPreset = Workflows.User.setCurrentPreset answerCallbackQuery setCurrentPreset
@@ -375,4 +377,4 @@ type CallbackQueryService
         Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
 
       disableUniqueArtists presetId
-    | Action.ShowUserPresets -> listUserPresets userId
+    | Action.User(UserActions.ListPresets()) -> listUserPresets userId

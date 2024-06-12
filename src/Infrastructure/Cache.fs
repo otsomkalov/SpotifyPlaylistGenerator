@@ -27,7 +27,7 @@ let private loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
 
       let! values = key |> RedisKey |> cache.ListRangeAsync
 
-      operation.Telemetry.Success <- true
+      operation.Telemetry.Success <- values.Length > 0
 
       return values
     }
