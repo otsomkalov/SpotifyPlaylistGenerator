@@ -52,9 +52,6 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value)
           (command.UserId |> UserId.value)
 
-      let logLikedTracks =
-        Logf.logfi _logger "User %i{TelegramId} has %i{LikedTracksCount} liked tracks" (command.UserId |> UserId.value)
-
       let logRecommendedTracks =
         Logf.logfi
           _logger
@@ -64,14 +61,13 @@ type GeneratorFunctions
 
       let listTracks = Spotify.Playlist.listTracks _logger client
       let listTracks = Cache.Playlist.listTracks telemetryClient playlistsCache listTracks
-      let listLikedTracks = Spotify.User.listLikedTracks client
 
       let listIncludedTracks = PresetRepo.listIncludedTracks logIncludedTracks listTracks
 
       let listExcludedTracks = PresetRepo.listExcludedTracks logExcludedTracks listTracks
 
       let listLikedTracks =
-        Cache.User.listLikedTracks telemetryClient likedTracksCache logLikedTracks listLikedTracks command.UserId
+        UserRepo.listLikedTracks telemetryClient likedTracksCache client _logger command.UserId
 
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client

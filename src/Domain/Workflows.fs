@@ -4,7 +4,6 @@ open System.Threading.Tasks
 open Domain.Core
 open Domain.Extensions
 open Domain.Repos
-open IcedTasks.ColdTasks
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
 open otsom.fs.Extensions
@@ -47,7 +46,6 @@ module Tracks =
 
 [<RequireQualifiedAccess>]
 module User =
-  type ListLikedTracks = ColdTask<Track list>
   let get (load: UserRepo.Load) : User.Get = load
 
   let setCurrentPreset (load: UserRepo.Load) (update: UserRepo.Update) : User.SetCurrentPreset =
@@ -217,7 +215,7 @@ module Preset =
   type GenerateIO =
     { ListIncludedTracks: PresetRepo.ListIncludedTracks
       ListExcludedTracks: PresetRepo.ListExcludedTracks
-      ListLikedTracks: User.ListLikedTracks
+      ListLikedTracks: UserRepo.ListLikedTracks
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
