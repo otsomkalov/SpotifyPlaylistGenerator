@@ -1,6 +1,7 @@
 ﻿module Infrastructure.Telegram.Services
 
 open System.Reflection
+open Infrastructure.Telegram.Repos
 open Resources
 open Telegram
 open Infrastructure
@@ -131,7 +132,8 @@ type MessageService
           let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
           let targetPlaylist = Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
 
-          let queueGeneration = Workflows.Playlist.queueGeneration _queueClient replyToMessage getUser getPreset Preset.validate
+          let sendGenerationMessage = PresetRepo.queueGeneration _queueClient
+          let queueGeneration = Workflows.User.queueCurrentPresetGeneration sendGenerationMessage replyToMessage getUser getPreset Preset.validate
 
           match isNull message.ReplyToMessage with
           | false ->

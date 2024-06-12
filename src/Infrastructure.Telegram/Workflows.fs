@@ -1,11 +1,9 @@
 ﻿[<RequireQualifiedAccess>]
 module Infrastructure.Telegram.Workflows
 
-open Infrastructure.Helpers
 open Resources
 open System
 open System.Text.RegularExpressions
-open Azure.Storage.Queues
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
@@ -115,39 +113,6 @@ module Playlist =
 
         return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
-
-  let queueGeneration
-    (queueClient: QueueClient)
-    (replyToMessage: ReplyToMessage)
-    (loadUser: User.Get)
-    (loadPreset: Preset.Get)
-    (validatePreset: Preset.Validate)
-    : Playlist.QueueGeneration =
-    let onSuccess () =
-      replyToMessage "Your playlist generation request is queued!"
-
-    let onError errors =
-      let errorsText =
-        errors
-        |> Seq.map (function
-          | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
-          | Preset.ValidationError.NoTargetedPlaylists -> "No target playlists!")
-        |> String.concat Environment.NewLine
-
-      replyToMessage errorsText
-
-    fun userId ->
-      let queueGeneration (preset: Preset) =
-        {| UserId = userId; PresetId = preset.Id |} |> JSON.serialize |> queueClient.SendMessageAsync |> Task.map ignore
-
-      userId
-      |> loadUser
-      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      |> Task.bind loadPreset
-      |> Task.map validatePreset
-      |> TaskResult.taskMap queueGeneration
-      |> TaskResult.taskEither onSuccess onError
-      |> Task.ignore
 
   let generate sendMessage (generatePlaylist: Domain.Core.Preset.Generate) =
     let onSuccess () = sendMessage "Playlist generated!"

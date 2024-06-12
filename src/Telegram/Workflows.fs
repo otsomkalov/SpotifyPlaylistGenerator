@@ -8,8 +8,10 @@ open Resources
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
+open Telegram.Repos
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
+open System
 
 [<Literal>]
 let keyboardColumns = 4
@@ -56,7 +58,7 @@ let private getPresetMessage =
           sprintf "p|%s|%s" presetId CallbackQueryConstants.enableUniqueArtists
 
       let text =
-        System.String.Format(
+        String.Format(
           Messages.PresetInfo,
           preset.Name,
           likedTracksHandlingText,
@@ -503,6 +505,36 @@ module User =
 
         return! answerCallbackQuery "Current preset is successfully set!"
       }
+
+  let queueCurrentPresetGeneration
+    (queueGeneration: PresetRepo.QueueGeneration)
+    (replyToMessage: ReplyToMessage)
+    (loadUser: User.Get)
+    (loadPreset: Preset.Get)
+    (validatePreset: Preset.Validate)
+    : User.QueueCurrentPresetGeneration =
+    let onSuccess () =
+      replyToMessage "Your playlist generation request is queued!"
+
+    let onError errors =
+      let errorsText =
+        errors
+        |> Seq.map (function
+          | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
+          | Preset.ValidationError.NoTargetedPlaylists -> "No targeted playlists!")
+        |> String.concat Environment.NewLine
+
+      replyToMessage errorsText
+
+    fun userId ->
+      userId
+      |> loadUser
+      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      |> Task.bind loadPreset
+      |> Task.map validatePreset
+      |> TaskResult.taskMap (fun p -> queueGeneration userId p.Id)
+      |> TaskResult.taskEither onSuccess onError
+      |> Task.ignore
 
 [<RequireQualifiedAccess>]
 module PresetSettings =

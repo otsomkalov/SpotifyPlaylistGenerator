@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
+    <Compile Include="Repos.fs" />
     <Compile Include="Workflows.fs"/>
     <Compile Include="Services.fs"/>
     <Compile Include="Settings.fs"/>
