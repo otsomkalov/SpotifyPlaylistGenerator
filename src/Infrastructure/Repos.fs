@@ -111,7 +111,7 @@ module UserRepo =
 
       let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
 
-      collection.CountDocumentsAsync(usersFilter) |> Task.map ((>) 0)
+      collection.CountDocumentsAsync(usersFilter) |> Task.map ((<) 0)
 
   let create (db: IMongoDatabase) : UserRepo.Create =
     fun user ->
