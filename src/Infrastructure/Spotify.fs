@@ -47,7 +47,14 @@ let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
   async {
     let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
 
-    return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
+    return
+        (tracks.Items
+         |> Seq.choose (fun x ->
+           match x.Track with
+           | :? FullTrack as t -> Some t
+           | _ -> None)
+         |> getTracksIds,
+         tracks.Total)
   }
 
 let listPlaylistTracks (logger: ILogger) client : PlaylistRepo.ListTracks =

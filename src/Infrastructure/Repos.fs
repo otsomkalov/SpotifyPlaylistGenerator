@@ -111,7 +111,7 @@ module UserRepo =
 
       let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
 
-      collection.CountDocumentsAsync(usersFilter) |> Task.map ((>) 0)
+      collection.CountDocumentsAsync(usersFilter) |> Task.map ((<) 0)
 
   let create (db: IMongoDatabase) : UserRepo.Create =
     fun user ->
@@ -121,12 +121,16 @@ module UserRepo =
       task { do! collection.InsertOneAsync(dbUser) }
 
   let listLikedTracks telemetryClient cache client logger userId : UserRepo.ListLikedTracks =
+    let listCachedTracks = Cache.listLikedTracks telemetryClient cache userId
+    let listSpotifyTracks = Spotify.listSpotifyLikedTracks client
+    let cacheUserTracks = Cache.cacheUserTracks telemetryClient cache userId
+
     fun () ->
-      Cache.listLikedTracks telemetryClient cache userId ()
+      listCachedTracks ()
       |> Task.bind (function
         | [] ->
-          Spotify.listSpotifyLikedTracks client ()
-          |> Task.taskTap (Cache.cacheUserTracks telemetryClient cache userId)
+          listSpotifyTracks ()
+          |> Task.taskTap cacheUserTracks
         | tracks -> Task.FromResult tracks)
       |> Task.tap (fun tracks ->
         Logf.logfi logger "User %i{TelegramId} has %i{LikedTracksCount} liked tracks" (userId |> UserId.value) tracks.Length)
