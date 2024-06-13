@@ -35,22 +35,15 @@ type GeneratorFunctions
     let loadPreset = PresetRepo.load _db
     let getPreset = Preset.get loadPreset
 
+    use logger =
+      _logger.BeginScope(
+        "Running playlist generation for user %i{TelegramId} and preset %s{PresetId}",
+        (command.UserId |> UserId.value),
+        (command.PresetId |> PresetId.value)
+      )
+
     task {
       let! client = _spotifyClientProvider.GetAsync command.UserId
-
-      let logIncludedTracks =
-        Logf.logfi
-          _logger
-          "Preset %s{PresetId} of user %i{TelegramId} has %i{IncludedTracksCount} included tracks"
-          (command.PresetId |> PresetId.value)
-          (command.UserId |> UserId.value)
-
-      let logExcludedTracks =
-        Logf.logfi
-          _logger
-          "Preset %s{PresetId} of user %i{TelegramId} has %i{ExcludedTracksCount} excluded tracks"
-          (command.PresetId |> PresetId.value)
-          (command.UserId |> UserId.value)
 
       let logRecommendedTracks =
         Logf.logfi
@@ -59,12 +52,11 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value)
           (command.UserId |> UserId.value)
 
-      let listTracks = Spotify.Playlist.listTracks _logger client
-      let listTracks = Cache.Playlist.listTracks telemetryClient playlistsCache listTracks
+      let listTracks = PlaylistRepo.listTracks telemetryClient playlistsCache _logger client
 
-      let listIncludedTracks = PresetRepo.listIncludedTracks logIncludedTracks listTracks
+      let listIncludedTracks = PresetRepo.listIncludedTracks _logger listTracks
 
-      let listExcludedTracks = PresetRepo.listExcludedTracks logExcludedTracks listTracks
+      let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let listLikedTracks =
         UserRepo.listLikedTracks telemetryClient likedTracksCache client _logger command.UserId

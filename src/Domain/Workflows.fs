@@ -373,8 +373,6 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ListTracks = ReadablePlaylistId -> Task<Track list>
-
   type ParsedPlaylistId = ParsedPlaylistId of string
 
   type ParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IdParsingError>

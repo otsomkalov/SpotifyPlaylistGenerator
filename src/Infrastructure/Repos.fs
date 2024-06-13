@@ -55,29 +55,29 @@ module PresetRepo =
 
       collection.DeleteOneAsync(presetsFilter) |> Task.ignore
 
-  let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
+  let private listPlaylistsTracks (listTracks: PlaylistRepo.ListTracks) =
     List.map listTracks >> Task.WhenAll >> Task.map List.concat
 
-  let listIncludedTracks logIncludedTracks (listTracks: Playlist.ListTracks) : PresetRepo.ListIncludedTracks =
+  let listIncludedTracks logger (listTracks: PlaylistRepo.ListTracks) : PresetRepo.ListIncludedTracks =
     let listTracks = listPlaylistsTracks listTracks
 
     fun playlists ->
       task {
-        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map _.Id |> listTracks
+        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map (_.Id >> ReadablePlaylistId.value) |> listTracks
 
-        logIncludedTracks playlistsTracks.Length
+        Logf.logfi logger "Preset has %i{IncludedTracksCount} included tracks" playlistsTracks.Length
 
         return playlistsTracks
       }
 
-  let listExcludedTracks logExcludedTracks (listTracks: Playlist.ListTracks) : PresetRepo.ListExcludedTracks =
+  let listExcludedTracks logger (listTracks: PlaylistRepo.ListTracks) : PresetRepo.ListExcludedTracks =
     let listTracks = listPlaylistsTracks listTracks
 
     fun playlists ->
       task {
-        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map _.Id |> listTracks
+        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map (_.Id >> ReadablePlaylistId.value) |> listTracks
 
-        logExcludedTracks playlistsTracks.Length
+        Logf.logfi logger "Preset has %i{ExcludedTracksCount} excluded tracks" playlistsTracks.Length
 
         return playlistsTracks
       }
@@ -127,7 +127,7 @@ module UserRepo =
 
     fun () ->
       listCachedTracks ()
-      |> Task.bind(function
+      |> Task.bind (function
         | [] ->
           listSpotifyTracks ()
           |> Task.taskTap cacheUserTracks
@@ -145,7 +145,8 @@ module TargetedPlaylistRepo =
       let spotifyTracksIds =
         tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
 
-      client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds) |> Task.map ignore
+      client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds)
+      |> Task.map ignore
 
   let replaceTracksInSpotify (client: ISpotifyClient) : TargetedPlaylistRepo.ReplaceTracks =
     fun playlistId tracks ->
@@ -156,7 +157,7 @@ module TargetedPlaylistRepo =
         tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
 
       client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
-        |> Task.ignore
+      |> Task.ignore
 
   let private serializeTracks tracks =
     tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray
@@ -204,3 +205,14 @@ module TrackRepo =
             Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
         >> Seq.toList
       )
+
+[<RequireQualifiedAccess>]
+module PlaylistRepo =
+  let listTracks telemetryClient cache logger client : PlaylistRepo.ListTracks =
+    fun playlistId ->
+      Cache.listPlaylistTracks telemetryClient cache playlistId
+      |> Task.bind (function
+        | [] ->
+          Spotify.listPlaylistTracks logger client playlistId
+          |> Task.taskTap (Cache.cachePlaylistTracks telemetryClient cache playlistId)
+        | tracks -> Task.FromResult tracks)
