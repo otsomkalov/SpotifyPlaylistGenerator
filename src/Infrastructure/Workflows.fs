@@ -70,9 +70,8 @@ module Playlist =
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
       }
 
-  let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
-    let database = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
-    PlaylistId.value >> RedisKey >> database.ListLengthAsync
+  let countTracks telemetryClient multiplexer : Playlist.CountTracks =
+    Cache.Playlist.countTracks telemetryClient multiplexer
 
 [<RequireQualifiedAccess>]
 module Preset =

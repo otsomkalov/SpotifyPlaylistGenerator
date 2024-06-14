@@ -20,6 +20,7 @@
     <Compile Include="Helpers.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
+    <Compile Include="Redis.fs" />
     <Compile Include="Cache.fs"/>
     <Compile Include="Settings.fs"/>
     <Compile Include="Spotify.fs"/>

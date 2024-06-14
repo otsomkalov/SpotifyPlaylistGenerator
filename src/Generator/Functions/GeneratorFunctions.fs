@@ -29,9 +29,6 @@ type GeneratorFunctions
 
   [<Function("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: UserId; PresetId: PresetId |}, _: FunctionContext) =
-    let playlistsCache = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
-    let likedTracksCache = connectionMultiplexer.GetDatabase Cache.likedTracksDatabase
-
     let loadPreset = PresetRepo.load _db
     let getPreset = Preset.get loadPreset
 
@@ -52,23 +49,20 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value)
           (command.UserId |> UserId.value)
 
-      let listTracks = PlaylistRepo.listTracks telemetryClient playlistsCache _logger client
+      let listTracks = PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
       let listIncludedTracks = PresetRepo.listIncludedTracks _logger listTracks
 
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let listLikedTracks =
-        UserRepo.listLikedTracks telemetryClient likedTracksCache client _logger command.UserId
+        UserRepo.listLikedTracks telemetryClient connectionMultiplexer client _logger command.UserId
 
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
 
-      let appendTracksInSpotify = TargetedPlaylistRepo.appendTracksInSpotify client
-      let replaceTracksInSpotify = TargetedPlaylistRepo.replaceTracksInSpotify client
-
-      let appendTracksInCache = TargetedPlaylistRepo.appendTracksInCache playlistsCache
-      let replaceTracksInCache = TargetedPlaylistRepo.replaceTracksInCache playlistsCache
+      let appendTracks = TargetedPlaylistRepo.appendTracks telemetryClient client connectionMultiplexer
+      let replaceTracks = TargetedPlaylistRepo.replaceTracks telemetryClient client connectionMultiplexer
 
       do
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
@@ -78,14 +72,8 @@ type GeneratorFunctions
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
           LoadPreset = getPreset
-          AppendTracks =
-            fun a b ->
-              Task.WhenAll([| appendTracksInSpotify a b; appendTracksInCache a b |])
-              |> Task.ignore
-          ReplaceTracks =
-            fun a b ->
-              Task.WhenAll([| replaceTracksInSpotify a b; replaceTracksInCache a b |])
-              |> Task.ignore
+          AppendTracks = appendTracks
+          ReplaceTracks = replaceTracks
           GetRecommendations = getRecommendations }
 
       let generatePlaylist = Domain.Workflows.Preset.generate io

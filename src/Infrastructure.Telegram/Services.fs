@@ -2,6 +2,7 @@
 
 open System.Reflection
 open Infrastructure.Telegram.Repos
+open Microsoft.ApplicationInsights
 open Resources
 open Telegram
 open Infrastructure
@@ -244,7 +245,8 @@ type CallbackQueryService
     _queueClient: QueueClient,
     _connectionMultiplexer: IConnectionMultiplexer,
     _database: IMongoDatabase,
-    editBotMessageButtons: EditBotMessageButtons
+    editBotMessageButtons: EditBotMessageButtons,
+    telemetryClient: TelemetryClient
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -256,7 +258,7 @@ type CallbackQueryService
     let updateUser = UserRepo.update _database
     let editMessageButtons = editBotMessageButtons userId botMessageId
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
-    let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
+    let countPlaylistTracks = Playlist.countTracks telemetryClient _connectionMultiplexer
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
