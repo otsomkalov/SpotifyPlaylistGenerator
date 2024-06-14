@@ -10,7 +10,6 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Infrastructure.Mapping
-open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
 
 [<RequireQualifiedAccess>]
