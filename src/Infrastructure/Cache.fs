@@ -6,6 +6,7 @@ open Domain.Workflows
 open Microsoft.ApplicationInsights
 open StackExchange.Redis
 open Infrastructure.Helpers
+open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 

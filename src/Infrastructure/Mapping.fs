@@ -4,7 +4,7 @@ open System
 open Database
 open Domain.Core
 open Domain.Workflows
-open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
 module SimplePreset =

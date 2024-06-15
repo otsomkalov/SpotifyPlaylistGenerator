@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="otsom.fs.Telegram.Bot" Version="0.0.25"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
     <ProjectReference Include="..\Resources\Resources.csproj"/>
   </ItemGroup>

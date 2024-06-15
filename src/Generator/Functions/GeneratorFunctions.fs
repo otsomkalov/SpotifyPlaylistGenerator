@@ -13,6 +13,7 @@ open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
 open Telegram.Bot
+open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
 open otsom.fs.Extensions
 

@@ -15,6 +15,7 @@ open Telegram.Constants
 open Telegram.Core
 open Telegram.Workflows
 open Infrastructure.Telegram.Helpers
+open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 

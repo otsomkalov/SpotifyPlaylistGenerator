@@ -29,6 +29,7 @@ open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 open Infrastructure.Repos
 
 type SpotifyClientProvider(createClientFromTokenResponse: CreateClientFromTokenResponse, loadCompletedAuth: Completed.Load) =
