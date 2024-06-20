@@ -9,7 +9,6 @@ open Telegram.Workflows
 open FsUnit
 open Xunit
 open Domain.Workflows
-open Telegram.Workflows
 
 [<Fact>]
 let ``list should send included playlists`` () =

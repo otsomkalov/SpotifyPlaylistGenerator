@@ -1,6 +1,5 @@
 ﻿namespace Generator.Functions
 
-open System.Threading.Tasks
 open FSharp
 open Infrastructure.Repos
 open Infrastructure.Telegram.Services
@@ -15,7 +14,6 @@ open Domain.Core
 open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
-open otsom.fs.Extensions
 
 type GeneratorFunctions
   (
