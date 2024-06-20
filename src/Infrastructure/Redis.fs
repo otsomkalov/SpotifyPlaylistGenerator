@@ -50,7 +50,7 @@ let loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
 
       let! values = key |> cache.ListRangeAsync
 
-      operation.Telemetry.Success <- values.Length > 0
+      operation.Telemetry.Success <- true
 
       return values
     }
