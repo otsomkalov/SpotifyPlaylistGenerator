@@ -1,6 +1,7 @@
 ﻿module Infrastructure.Spotify
 
 open System
+open System.Collections.Generic
 open System.Net
 open Domain.Core
 open Domain.Repos
@@ -106,3 +107,19 @@ let createClientFromTokenResponse (spotifySettings: IOptions<SpotifySettings>) :
         .WithRetryHandler(retryHandler)
 
     config |> SpotifyClient :> ISpotifyClient
+
+[<RequireQualifiedAccess>]
+module internal Playlist =
+  let private getSpotifyIds =
+    fun tracksIds ->
+      tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+  let addTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.AddItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistAddItemsRequest)
+      |> Task.map ignore
+
+  let replaceTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
+      |> Task.ignore

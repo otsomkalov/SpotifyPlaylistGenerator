@@ -1,16 +1,13 @@
 ﻿module Infrastructure.Repos
 
-open System
-open System.Collections.Generic
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
 open FSharp
-open Infrastructure.Helpers
+open Microsoft.ApplicationInsights
 open MongoDB.Driver
 open Database
 open SpotifyAPI.Web
-open StackExchange.Redis
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 open Infrastructure.Mapping
@@ -120,10 +117,10 @@ module UserRepo =
 
       task { do! collection.InsertOneAsync(dbUser) }
 
-  let listLikedTracks telemetryClient cache client logger userId : UserRepo.ListLikedTracks =
-    let listCachedTracks = Cache.listLikedTracks telemetryClient cache userId
+  let listLikedTracks telemetryClient multiplexer client logger userId : UserRepo.ListLikedTracks =
+    let listCachedTracks = Cache.User.listLikedTracks telemetryClient multiplexer userId
     let listSpotifyTracks = Spotify.listSpotifyLikedTracks client
-    let cacheUserTracks = Cache.cacheUserTracks telemetryClient cache userId
+    let cacheUserTracks = Cache.User.cacheLikedTracks telemetryClient multiplexer userId
 
     fun () ->
       listCachedTracks ()
@@ -137,50 +134,27 @@ module UserRepo =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
-  let appendTracksInSpotify (client: ISpotifyClient) : TargetedPlaylistRepo.AppendTracks =
-    fun playlistId tracks ->
-      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
+  let private applyTracks spotifyAction cacheAction =
+    fun playlistId (tracks: Track list) ->
       let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
 
-      let spotifyTracksIds =
-        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+      let spotifyTask : Task<unit> = spotifyAction playlistId (tracks |> List.map (_.Id >> TrackId.value))
+      let cacheTask: Task<unit> = cacheAction playlistId tracks
 
-      client.Playlists.AddItems(playlistId, PlaylistAddItemsRequest spotifyTracksIds)
-      |> Task.map ignore
-
-  let replaceTracksInSpotify (client: ISpotifyClient) : TargetedPlaylistRepo.ReplaceTracks =
-    fun playlistId tracks ->
-      let tracksIds = tracks |> List.map (_.Id >> TrackId.value)
-      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
-
-      let spotifyTracksIds =
-        tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
-
-      client.Playlists.ReplaceItems(playlistId, PlaylistReplaceItemsRequest spotifyTracksIds)
+      Task.WhenAll([ spotifyTask; cacheTask])
       |> Task.ignore
 
-  let private serializeTracks tracks =
-    tracks |> List.map JSON.serialize |> List.map RedisValue |> Seq.toArray
+  let appendTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.AppendTracks =
+    let addInSpotify = Spotify.Playlist.addTracks spotifyClient
+    let addInCache = Cache.Playlist.appendTracks telemetryClient multiplexer
 
-  let appendTracksInCache (cache: IDatabase) : TargetedPlaylistRepo.AppendTracks =
-    fun playlistId tracks ->
-      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
-      let serializedTracks = serializeTracks tracks
+    applyTracks addInSpotify addInCache
 
-      cache.ListLeftPushAsync(playlistId, serializedTracks) |> Task.map ignore
+  let replaceTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.ReplaceTracks =
+    let replaceInSpotify = Spotify.Playlist.replaceTracks spotifyClient
+    let replaceInCache = Cache.Playlist.replaceTracks telemetryClient multiplexer
 
-  let replaceTracksInCache (cache: IDatabase) : TargetedPlaylistRepo.ReplaceTracks =
-    fun playlistId tracks ->
-      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
-      let serializedTracks = serializeTracks tracks
-
-      let transaction = cache.CreateTransaction()
-
-      let _ = transaction.KeyDeleteAsync(playlistId)
-      let _ = transaction.ListLeftPushAsync(playlistId, serializedTracks)
-      let _ = transaction.KeyExpireAsync(playlistId, TimeSpan.FromDays(7))
-
-      transaction.ExecuteAsync() |> Task.map ignore
+    applyTracks replaceInSpotify replaceInCache
 
 [<RequireQualifiedAccess>]
 module TrackRepo =
@@ -208,11 +182,15 @@ module TrackRepo =
 
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
-  let listTracks telemetryClient cache logger client : PlaylistRepo.ListTracks =
+  let listTracks telemetryClient multiplexer logger client : PlaylistRepo.ListTracks =
+    let listCachedPlaylistTracks = Cache.Playlist.listTracks telemetryClient multiplexer
+    let listSpotifyPlaylistTracks = Spotify.listPlaylistTracks logger client
+    let cachePlaylistTracks = Cache.Playlist.replaceTracks telemetryClient multiplexer
+
     fun playlistId ->
-      Cache.listPlaylistTracks telemetryClient cache playlistId
+      listCachedPlaylistTracks playlistId
       |> Task.bind (function
         | [] ->
-          Spotify.listPlaylistTracks logger client playlistId
-          |> Task.taskTap (Cache.cachePlaylistTracks telemetryClient cache playlistId)
+          listSpotifyPlaylistTracks playlistId
+          |> Task.taskTap (cachePlaylistTracks (playlistId |> PlaylistId.value))
         | tracks -> Task.FromResult tracks)

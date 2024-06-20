@@ -1,82 +1,66 @@
-﻿module Infrastructure.Cache
+﻿module internal Infrastructure.Cache
 
-open System
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
 open Microsoft.ApplicationInsights
-open Microsoft.ApplicationInsights.DataContracts
 open StackExchange.Redis
 open Infrastructure.Helpers
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 
-[<Literal>]
-let playlistsDatabase = 0
-
-[<Literal>]
-let likedTracksDatabase = 1
-
-let private loadList (telemetryClient: TelemetryClient) (cache: IDatabase) =
-  fun key ->
-    task {
-      let dependency = DependencyTelemetry("Redis", key, "ListRangeAsync", key)
-
-      use operation = telemetryClient.StartOperation dependency
-
-      let! values = key |> RedisKey |> cache.ListRangeAsync
-
-      operation.Telemetry.Success <- values.Length > 0
-
-      return values
-    }
-
-let private saveList (telemetryClient: TelemetryClient) (cache: IDatabase) =
-  fun key (value: 'a array) ->
-    task{
-      let dependency = DependencyTelemetry("Redis", key, "ListLeftPushAsync", key)
-
-      use operation = telemetryClient.StartOperation dependency
-
-      let! _ = cache.ListLeftPushAsync(key, value)
-
-      operation.Telemetry.Success <- true
-
-      return ()
-    }
-
 let private listCachedTracks telemetryClient cache =
   fun key ->
-    loadList telemetryClient cache key
+    Redis.loadList telemetryClient cache key
     |> Task.map (List.ofArray >> List.map (string >> JSON.deserialize<Track>))
 
-let private cacheTracks telemetryClient cache =
-  fun key tracks ->
-    task {
-      let values = tracks |> List.map (JSON.serialize >> RedisValue) |> Array.ofSeq
+let private serializeTracks tracks =
+  tracks |> List.map (JSON.serialize >> RedisValue)
 
-      do! saveList telemetryClient cache key values
-      let! _ = cache.KeyExpireAsync(key, TimeSpan.FromDays(1))
+[<RequireQualifiedAccess>]
+module User =
+  let usersTracksDatabase = 1
 
-      return ()
-    }
+  let private getUsersTracksDatabase (multiplexer: IConnectionMultiplexer) =
+    multiplexer.GetDatabase usersTracksDatabase
 
-let cacheUserTracks telemetryClient cache =
-  fun userId tracks ->
-    let key = userId |> UserId.value |> string
+  let listLikedTracks telemetryClient multiplexer userId =
+    let listCachedTracks = listCachedTracks telemetryClient (getUsersTracksDatabase multiplexer)
 
-    cacheTracks telemetryClient cache key tracks
+    fun () ->
+      userId |> UserId.value |> string |> listCachedTracks
 
-let cachePlaylistTracks telemetryClient cache =
-  fun playlistId tracks ->
-    let key = playlistId |> PlaylistId.value |> string
+  let cacheLikedTracks telemetryClient multiplexer =
+    fun userId tracks ->
+      let key = userId |> UserId.value |> string
 
-    cacheTracks telemetryClient cache key tracks
+      Redis.replaceList telemetryClient (getUsersTracksDatabase multiplexer) key (serializeTracks tracks)
 
-let listLikedTracks telemetryClient cache userId : UserRepo.ListLikedTracks =
-  fun () -> userId |> UserId.value |> string |> (listCachedTracks telemetryClient cache)
+[<RequireQualifiedAccess>]
+module Playlist =
+  let playlistsDatabase = 0
 
-let listPlaylistTracks telemetryClient (cache: IDatabase) : PlaylistRepo.ListTracks =
-  PlaylistId.value
-  >> (listCachedTracks telemetryClient cache)
+  let private getPlaylistsDatabase (multiplexer: IConnectionMultiplexer) =
+    multiplexer.GetDatabase playlistsDatabase
+
+  let appendTracks (telemetryClient: TelemetryClient) multiplexer =
+    let prependList = Redis.prependList telemetryClient (getPlaylistsDatabase multiplexer)
+
+    fun playlistId tracks ->
+      prependList playlistId (serializeTracks tracks)
+
+  let replaceTracks (telemetryClient: TelemetryClient) multiplexer =
+    let replaceList = Redis.replaceList telemetryClient (getPlaylistsDatabase multiplexer)
+
+    fun playlistId tracks ->
+      replaceList playlistId (serializeTracks tracks)
+
+  let listTracks telemetryClient multiplexer : PlaylistRepo.ListTracks =
+    PlaylistId.value
+    >> (listCachedTracks telemetryClient (getPlaylistsDatabase multiplexer))
+
+  let countTracks telemetryClient multiplexer =
+    let listLength = Redis.listLength telemetryClient (getPlaylistsDatabase multiplexer)
+
+    PlaylistId.value
+    >> listLength

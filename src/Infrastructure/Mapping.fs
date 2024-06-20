@@ -1,4 +1,4 @@
-﻿module Infrastructure.Mapping
+﻿module internal Infrastructure.Mapping
 
 open System
 open Database
@@ -14,16 +14,6 @@ module SimplePreset =
 
   let toDb (preset: SimplePreset) : Entities.SimplePreset =
     Entities.SimplePreset(Id = (preset.Id |> PresetId.value), Name = preset.Name)
-
-  let toFullDb (userId: UserId) (preset: SimplePreset) : Entities.Preset =
-    Entities.Preset(
-      Id = (preset.Id |> PresetId.value),
-      Name = preset.Name,
-      UserId = (userId |> UserId.value),
-      Settings = Entities.Settings(
-        PlaylistSize = 10,
-        IncludeLikedTracks = Nullable true,
-        RecommendationsEnabled = false))
 
 [<RequireQualifiedAccess>]
 module User =

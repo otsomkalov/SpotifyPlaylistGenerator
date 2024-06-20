@@ -10,7 +10,6 @@ open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Infrastructure.Mapping
-open StackExchange.Redis
 open Infrastructure.Helpers.Spotify
 
 [<RequireQualifiedAccess>]
@@ -70,9 +69,8 @@ module Playlist =
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
       }
 
-  let countTracks (connectionMultiplexer: IConnectionMultiplexer) : Playlist.CountTracks =
-    let database = connectionMultiplexer.GetDatabase Cache.playlistsDatabase
-    PlaylistId.value >> RedisKey >> database.ListLengthAsync
+  let countTracks telemetryClient multiplexer : Playlist.CountTracks =
+    Cache.Playlist.countTracks telemetryClient multiplexer
 
 [<RequireQualifiedAccess>]
 module Preset =
