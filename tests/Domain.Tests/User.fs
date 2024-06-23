@@ -3,10 +3,10 @@
 open System
 open System.Threading.Tasks
 open Xunit
-open otsom.fs.Telegram.Bot.Core
 open Domain.Core
 open Domain.Workflows
 open FsUnit
+open otsom.fs.Core
 open otsom.fs.Extensions
 
 let userPresetMock =

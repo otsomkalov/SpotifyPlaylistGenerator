@@ -3,7 +3,6 @@
 open System
 open System.Text.Json
 open System.Text.Json.Serialization
-open System.Threading.Tasks
 open SpotifyAPI.Web
 
 module Spotify =

@@ -1,10 +1,7 @@
 ﻿module Telegram.Tests.PresetSettings
 
-open System
 open System.Threading.Tasks
-open Domain.Core
 open Domain.Tests
-open Telegram.Bot.Types.ReplyMarkups
 open FsUnit
 open Xunit
 open Telegram.Workflows

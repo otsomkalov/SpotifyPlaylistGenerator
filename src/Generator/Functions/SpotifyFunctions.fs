@@ -1,7 +1,6 @@
 ﻿namespace Generator.Functions
 
 open System.Threading.Tasks
-open Domain.Extensions
 open Generator.Settings
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc

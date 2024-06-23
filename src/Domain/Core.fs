@@ -2,7 +2,7 @@
 
 open System
 open System.Threading.Tasks
-open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 
 type PlaylistId = PlaylistId of string
 type ReadablePlaylistId = ReadablePlaylistId of PlaylistId

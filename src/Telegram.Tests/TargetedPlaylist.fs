@@ -6,7 +6,6 @@ open Domain.Tests
 open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
-open Telegram.Workflows
 open FsUnit
 open Xunit
 open Domain.Workflows

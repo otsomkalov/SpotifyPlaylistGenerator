@@ -2,9 +2,7 @@
 
 #nowarn "20"
 
-open Domain.Workflows
 open Azure.Storage.Queues
-open Infrastructure.Repos
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -13,10 +11,8 @@ open MongoDB.ApplicationInsights
 open MongoDB.Driver
 open StackExchange.Redis
 open MongoDB.ApplicationInsights.DependencyInjection
-open Infrastructure.Workflows
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Extensions.DependencyInjection
-open Domain.Core
 
 let private configureRedisCache (options: IOptions<RedisSettings>) =
   let settings = options.Value

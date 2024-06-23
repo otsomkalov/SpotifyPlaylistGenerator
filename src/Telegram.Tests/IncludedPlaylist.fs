@@ -5,7 +5,6 @@ open Domain.Core
 open Domain.Tests
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
-open Telegram.Workflows
 open FsUnit
 open Xunit
 open Domain.Workflows
@@ -55,6 +54,12 @@ let ``show should send included playlist`` () =
 
 [<Fact>]
 let ``remove should remove playlist and show the list`` () =
+  let getPreset =
+    fun presetId ->
+      presetId |> should equal Preset.mock.Id
+
+      Preset.mock |> Task.FromResult
+
   let removePlaylist =
     fun presetId playlistId ->
       presetId |> should equal Preset.mockId

@@ -8,8 +8,8 @@ open Microsoft.ApplicationInsights
 open MongoDB.Driver
 open Database
 open SpotifyAPI.Web
+open otsom.fs.Core
 open otsom.fs.Extensions
-open otsom.fs.Telegram.Bot.Core
 open Infrastructure.Mapping
 open System.Threading.Tasks
 

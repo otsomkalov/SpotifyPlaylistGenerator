@@ -2,7 +2,7 @@
 
 open System.Threading.Tasks
 open Domain.Core
-open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
 module PresetRepo =

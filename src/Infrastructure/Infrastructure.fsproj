@@ -13,7 +13,7 @@
     <PackageReference Include="StackExchange.Redis" Version="2.7.33"/>
     <PackageReference Include="MongoDB.ApplicationInsights.DependencyInjection" Version="1.0.34"/>
     <PackageReference Include="FSharp.SystemTextJson" Version="1.3.13"/>
-    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify.Mongo" Version="0.0.10"/>
+    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify" Version="0.0.22"/>
   </ItemGroup>
 
   <ItemGroup>
