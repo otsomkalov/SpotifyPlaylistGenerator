@@ -154,6 +154,7 @@ module Preset =
   type GenerateError =
     | NoIncludedTracks
     | NoPotentialTracks
+
   type Generate = PresetId -> Task<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
@@ -162,8 +163,8 @@ module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
-
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
+  type GenerateCurrentPreset = UserId -> Task<Result<unit, Preset.GenerateError>>
 
   let create userId =
     { Id = userId

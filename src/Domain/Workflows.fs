@@ -6,6 +6,7 @@ open Domain.Extensions
 open Domain.Repos
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
+open otsom.fs.Core
 open otsom.fs.Extensions
 open shortid
 open shortid.Configuration
@@ -81,6 +82,11 @@ module User =
       |> load
       |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
       |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
+
+  let generateCurrentPreset (loadUser: UserRepo.Load) (generatePreset: Preset.Generate) : User.GenerateCurrentPreset =
+    loadUser
+    >> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+    >> Task.bind generatePreset
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
@@ -263,9 +269,9 @@ module Preset =
     let getRecommendations (preset: Preset) =
       fun (tracks: Track list) ->
         match (tracks, preset.Settings.RecommendationsEnabled) with
-        | [], false -> Preset.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
+        | [], _ -> Preset.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
         | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.prepend tracks) |> Task.map Ok
-        | _ -> [] |> Ok |> Task.FromResult
+        | _ -> tracks |> Ok |> Task.FromResult
 
     let filterUniqueArtists (preset: Preset) =
       fun (tracks: Track list) ->

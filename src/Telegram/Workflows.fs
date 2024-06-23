@@ -536,6 +536,21 @@ module User =
       |> TaskResult.taskEither onSuccess onError
       |> Task.ignore
 
+  let generateCurrentPreset sendMessage (generateCurrentPreset: Domain.Core.User.GenerateCurrentPreset) : User.GenerateCurrentPreset =
+    let onSuccess () = sendMessage "Playlist generated!"
+
+    let onError =
+      function
+      | Preset.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
+      | Preset.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
+
+    fun userId ->
+      task {
+        do! sendMessage "Generating playlist..."
+
+        return! generateCurrentPreset userId |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
 [<RequireQualifiedAccess>]
 module PresetSettings =
   let enableUniqueArtists
