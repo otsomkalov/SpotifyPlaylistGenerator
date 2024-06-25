@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Mocks.fs" />
     <Compile Include="IncludedPlaylist.fs" />
     <Compile Include="ExcludedPlaylist.fs" />
     <Compile Include="TargetedPlaylist.fs" />
@@ -20,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FsUnit" Version="6.0.0"/>
+    <PackageReference Include="FsUnit.XUnit" Version="6.0.0"/>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0"/>
     <PackageReference Include="xunit" Version="2.8.1"/>
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1">

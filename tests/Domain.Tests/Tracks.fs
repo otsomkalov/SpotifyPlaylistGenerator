@@ -3,7 +3,7 @@
 open Domain.Core
 open Domain.Workflows
 open Xunit
-open FsUnit
+open FsUnit.Xunit
 
 [<Fact>]
 let ``uniqueByArtists returns tracks which have only unique artists`` () =
@@ -29,4 +29,4 @@ let ``uniqueByArtists returns tracks which have only unique artists`` () =
 
   // Assert
 
-  result |> should equivalent [ track1; track3 ]
+  result |> should equalSeq [ track3; track1 ]

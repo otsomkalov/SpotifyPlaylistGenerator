@@ -5,7 +5,7 @@ open System.Threading.Tasks
 open Domain.Core
 open Domain.Tests
 open Telegram.Bot.Types.ReplyMarkups
-open FsUnit
+open FsUnit.Xunit
 open Xunit
 open Telegram.Workflows
 
@@ -16,13 +16,13 @@ let ``sendCurrentPreset should send current preset and keyboard if current prese
       userId |> should equal User.mock.Id
 
       { User.mock with
-          CurrentPresetId = Some Preset.mockId }
+          CurrentPresetId = Some Mocks.presetMockId }
       |> Task.FromResult
 
   let getPreset =
     fun presetId ->
-      presetId |> should equal Preset.mockId
-      Preset.mock |> Task.FromResult
+      presetId |> should equal Mocks.presetMockId
+      Mocks.presetMock |> Task.FromResult
 
   let sendKeyboard =
     fun text (keyboard: ReplyKeyboardMarkup) ->

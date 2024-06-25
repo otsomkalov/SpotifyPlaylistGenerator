@@ -5,12 +5,12 @@ open System.Threading.Tasks
 open Xunit
 open Domain.Core
 open Domain.Workflows
-open FsUnit
+open FsUnit.Xunit
 open otsom.fs.Core
 open otsom.fs.Extensions
 
 let userPresetMock =
-  { Id = Preset.mockId
+  { Id = Mocks.presetMockId
     Name = "user-preset-name" }
 
 let mock =
