@@ -500,6 +500,30 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
+  let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let playlist = preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = enable }
+
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.except [ playlist ]
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let enable loadPreset updatePreset : TargetedPlaylist.Enable =
+    updatePresetPlaylist loadPreset updatePreset true
+
+  let disable loadPreset updatePreset : TargetedPlaylist.Disable =
+    updatePresetPlaylist loadPreset updatePreset false
+
   let private setPlaylistOverwriting (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) overwriting =
     fun presetId targetedPlaylistId ->
       task {
