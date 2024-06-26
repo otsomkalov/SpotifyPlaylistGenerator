@@ -29,9 +29,10 @@ type GeneratorFunctions
   [<Function("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: UserId; PresetId: PresetId |}, _: FunctionContext) =
     let loadPreset = PresetRepo.load _db
+    let loadUser = UserRepo.load _db
     let getPreset = Preset.get loadPreset
 
-    use logger =
+    use _ =
       _logger.BeginScope(
         "Running playlist generation for user %i{TelegramId} and preset %s{PresetId}",
         (command.UserId |> UserId.value),
@@ -48,7 +49,8 @@ type GeneratorFunctions
           (command.PresetId |> PresetId.value)
           (command.UserId |> UserId.value)
 
-      let listTracks = PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
+      let listTracks =
+        PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
       let listIncludedTracks = PresetRepo.listIncludedTracks _logger listTracks
 
@@ -60,8 +62,11 @@ type GeneratorFunctions
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
 
-      let appendTracks = TargetedPlaylistRepo.appendTracks telemetryClient client connectionMultiplexer
-      let replaceTracks = TargetedPlaylistRepo.replaceTracks telemetryClient client connectionMultiplexer
+      let appendTracks =
+        TargetedPlaylistRepo.appendTracks telemetryClient client connectionMultiplexer
+
+      let replaceTracks =
+        TargetedPlaylistRepo.replaceTracks telemetryClient client connectionMultiplexer
 
       do
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
@@ -75,10 +80,13 @@ type GeneratorFunctions
           ReplaceTracks = replaceTracks
           GetRecommendations = getRecommendations }
 
-      let generatePlaylist = Domain.Workflows.Preset.generate io
+      let generatePreset = Domain.Workflows.Preset.generate io
 
-      let generatePlaylist =
-        Telegram.Workflows.Playlist.generate sendMessage generatePlaylist
+      let generateCurrentPreset =
+        Domain.Workflows.User.generateCurrentPreset loadUser generatePreset
 
-      return! generatePlaylist command.PresetId
+      let generateCurrentPreset =
+        Telegram.Workflows.User.generateCurrentPreset sendMessage generateCurrentPreset
+
+      return! generateCurrentPreset command.UserId
     }

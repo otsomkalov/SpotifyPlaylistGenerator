@@ -115,21 +115,6 @@ module Playlist =
         return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
-  let generate sendMessage (generatePlaylist: Domain.Core.Preset.Generate) =
-    let onSuccess () = sendMessage "Playlist generated!"
-
-    let onError =
-      function
-      | Preset.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
-      | Preset.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
-
-    fun presetId ->
-      task {
-        do! sendMessage "Generating playlist..."
-
-        return! generatePlaylist presetId |> TaskResult.taskEither onSuccess onError |> Task.ignore
-      }
-
 let parseAction: ParseAction =
   fun (str: string) ->
     match str.Split("|") with

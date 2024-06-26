@@ -23,6 +23,7 @@ module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
   type QueueCurrentPresetGeneration = UserId -> Task<unit>
+  type GenerateCurrentPreset = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =
@@ -59,6 +60,7 @@ type UserActions =
   | ListPresets of unit
   | SendCurrentPresetSettings of userId: UserId
   | QueueCurrentPresetGeneration of userId: UserId
+  | GenerateCurrentPreset of presetId: PresetId
 
 [<RequireQualifiedAccess>]
 type PresetActions =
