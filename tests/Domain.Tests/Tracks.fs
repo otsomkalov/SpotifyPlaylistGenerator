@@ -4,24 +4,16 @@ open Domain.Core
 open Domain.Workflows
 open Xunit
 open FsUnit.Xunit
+open Domain.Tests.Extensions
 
 [<Fact>]
 let ``uniqueByArtists returns tracks which have only unique artists`` () =
   // Arrange
 
-  let track1 =
-    { Id = TrackId "1"
-      Artists = Set.ofList [ { Id = ArtistId "1" }; { Id = ArtistId "2" } ] }
-
-  let track3 =
-    { Id = TrackId "3"
-      Artists = Set.ofList [ { Id = ArtistId "3" }; { Id = ArtistId "4" } ] }
-
   let tracks: Track list =
-    [ track1
-      { Id = TrackId "2"
-        Artists = Set.ofList [ { Id = ArtistId "2" }; { Id = ArtistId "3" } ] }
-      track3 ]
+    [ Mocks.includedTrack
+      Mocks.excludedTrack
+      Mocks.likedTrack ]
 
   // Act
 
@@ -29,4 +21,4 @@ let ``uniqueByArtists returns tracks which have only unique artists`` () =
 
   // Assert
 
-  result |> should equalSeq [ track3; track1 ]
+  result |> should equivalent [ Mocks.includedTrack; Mocks.likedTrack ]

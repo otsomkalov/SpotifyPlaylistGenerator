@@ -10,11 +10,11 @@ open FsUnit.Xunit
 let ``enable should enable disabled playlist`` () =
   let loadPreset =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
-      { Mocks.presetMock with
+      { Mocks.preset with
           IncludedPlaylists =
-            [ { Mocks.includedPlaylistMock with
+            [ { Mocks.includedPlaylist with
                   Enabled = false } ] }
       |> Task.FromResult
 
@@ -24,27 +24,27 @@ let ``enable should enable disabled playlist`` () =
       preset
       |> should
         equal
-        { Mocks.presetMock with
+        { Mocks.preset with
             IncludedPlaylists =
-              [ { Mocks.includedPlaylistMock with
+              [ { Mocks.includedPlaylist with
                     Enabled = true } ] }
 
       Task.FromResult()
 
   let sut = IncludedPlaylist.enable loadPreset updatePreset
 
-  sut Mocks.presetMockId Mocks.includedPlaylistMock.Id
+  sut Mocks.presetId Mocks.includedPlaylist.Id
 
 
 [<Fact>]
 let ``disable should disable enabled playlist`` () =
   let loadPreset =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
-      { Mocks.presetMock with
+      { Mocks.preset with
           IncludedPlaylists =
-            [ { Mocks.includedPlaylistMock with
+            [ { Mocks.includedPlaylist with
                   Enabled = true } ] }
       |> Task.FromResult
 
@@ -54,24 +54,24 @@ let ``disable should disable enabled playlist`` () =
       preset
       |> should
         equal
-        { Mocks.presetMock with
+        { Mocks.preset with
             IncludedPlaylists =
-              [ { Mocks.includedPlaylistMock with
+              [ { Mocks.includedPlaylist with
                     Enabled = false } ] }
 
       Task.FromResult()
 
   let sut = IncludedPlaylist.disable loadPreset updatePreset
 
-  sut Mocks.presetMockId Mocks.includedPlaylistMock.Id
+  sut Mocks.presetId Mocks.includedPlaylist.Id
 
 [<Fact>]
 let ``remove should remove playlist from preset`` () =
   let loadPreset =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
-      Mocks.presetMock |> Task.FromResult
+      Mocks.preset |> Task.FromResult
 
   let updatePreset =
     fun preset ->
@@ -79,11 +79,11 @@ let ``remove should remove playlist from preset`` () =
       preset
       |> should
         equal
-        { Mocks.presetMock with
+        { Mocks.preset with
             IncludedPlaylists = [] }
 
       Task.FromResult()
 
   let sut = IncludedPlaylist.remove loadPreset updatePreset
 
-  sut Mocks.presetMockId Mocks.includedPlaylistMock.Id
+  sut Mocks.presetId Mocks.includedPlaylist.Id
