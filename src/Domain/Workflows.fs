@@ -234,9 +234,6 @@ module Preset =
         match tracks with
         | [] -> Preset.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
         | tracks ->
-          let tracks =
-              if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
-
           let tracksToImport =
             tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
@@ -254,7 +251,7 @@ module Preset =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (List.prepend tracks)
+          io.ListLikedTracks() |> Task.map (List.append tracks)
         | _ ->
           Task.FromResult tracks
 
@@ -290,7 +287,7 @@ module Preset =
         preset.ExcludedPlaylists
         |> io.ListExcludedTracks
         |> Task.bind (excludeLiked preset)
-        |> Task.map (List.except includedTracks))
+        |> Task.map (fun excludedTracks -> List.except excludedTracks includedTracks))
       |> TaskResult.map (filterUniqueArtists preset)
       |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
       |> TaskResult.bind (saveTracks preset))

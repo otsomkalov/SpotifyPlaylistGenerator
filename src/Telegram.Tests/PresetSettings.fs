@@ -10,7 +10,7 @@ open Telegram.Workflows
 let ``enableUniqueArtists should update preset and send show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
@@ -18,20 +18,20 @@ let ``enableUniqueArtists should update preset and send show updated`` () =
 
   let showPresetInfo =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
   let sut =
     PresetSettings.enableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
 
-  sut Mocks.presetMockId
+  sut Mocks.presetId
 
 [<Fact>]
 let ``disableUniqueArtists should update preset and send show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
@@ -39,11 +39,11 @@ let ``disableUniqueArtists should update preset and send show updated`` () =
 
   let showPresetInfo =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
   let sut =
     PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
 
-  sut Mocks.presetMockId
+  sut Mocks.presetId

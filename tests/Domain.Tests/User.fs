@@ -10,7 +10,7 @@ open otsom.fs.Core
 open otsom.fs.Extensions
 
 let userPresetMock =
-  { Id = Mocks.presetMockId
+  { Id = Mocks.presetId
     Name = "user-preset-name" }
 
 let mock =

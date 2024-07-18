@@ -16,13 +16,13 @@ let ``sendCurrentPreset should send current preset and keyboard if current prese
       userId |> should equal User.mock.Id
 
       { User.mock with
-          CurrentPresetId = Some Mocks.presetMockId }
+          CurrentPresetId = Some Mocks.presetId }
       |> Task.FromResult
 
   let getPreset =
     fun presetId ->
-      presetId |> should equal Mocks.presetMockId
-      Mocks.presetMock |> Task.FromResult
+      presetId |> should equal Mocks.presetId
+      Mocks.preset |> Task.FromResult
 
   let sendKeyboard =
     fun text (keyboard: ReplyKeyboardMarkup) ->
