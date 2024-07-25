@@ -43,7 +43,7 @@ module Tracks =
       else
         knownArtists, uniqueTracks
 
-    tracks |> Seq.fold addUniqueTrack (Set.empty, []) |> snd
+    tracks |> Seq.fold addUniqueTrack (Set.empty, []) |> snd |> List.rev
 
 [<RequireQualifiedAccess>]
 module User =
