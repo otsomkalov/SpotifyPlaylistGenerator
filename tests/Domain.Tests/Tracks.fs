@@ -21,4 +21,4 @@ let ``uniqueByArtists returns tracks which have only unique artists`` () =
 
   // Assert
 
-  result |> should equivalent [ Mocks.includedTrack; Mocks.likedTrack ]
+  result |> should equalSeq [ Mocks.includedTrack; Mocks.likedTrack ]
