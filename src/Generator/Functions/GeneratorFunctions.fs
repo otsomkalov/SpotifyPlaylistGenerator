@@ -1,5 +1,6 @@
 ﻿namespace Generator.Functions
 
+open Domain.Extensions
 open FSharp
 open Infrastructure.Repos
 open Infrastructure.Telegram.Services
@@ -78,7 +79,8 @@ type GeneratorFunctions
           LoadPreset = getPreset
           AppendTracks = appendTracks
           ReplaceTracks = replaceTracks
-          GetRecommendations = getRecommendations }
+          GetRecommendations = getRecommendations
+          Shuffler = List.shuffle }
 
       let generatePreset = Domain.Workflows.Preset.generate io
 

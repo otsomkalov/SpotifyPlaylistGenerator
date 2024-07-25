@@ -225,7 +225,8 @@ module Preset =
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
-      GetRecommendations: TrackRepo.GetRecommendations }
+      GetRecommendations: TrackRepo.GetRecommendations
+      Shuffler: Track list -> Track list }
 
   let generate (io: GenerateIO) : Preset.Generate =
 
@@ -281,7 +282,7 @@ module Preset =
       preset.IncludedPlaylists
       |> io.ListIncludedTracks
       |> Task.bind (includeLiked preset)
-      |> Task.map List.shuffle
+      |> Task.map io.Shuffler
       |> Task.bind (getRecommendations preset)
       |> TaskResult.taskMap (fun includedTracks ->
         preset.ExcludedPlaylists

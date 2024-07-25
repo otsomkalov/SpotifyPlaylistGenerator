@@ -29,7 +29,8 @@ let io: Preset.GenerateIO =
     GetRecommendations =
       fun tracks ->
         tracks |> should equivalent [ Mocks.includedTrack.Id ]
-        Task.FromResult [ Mocks.recommendedTrack ]}
+        Task.FromResult [ Mocks.recommendedTrack ]
+    Shuffler = id }
 
 [<Fact>]
 let ``generate should return error if no potential tracks`` () =
@@ -45,7 +46,8 @@ let ``generate should return error if no potential tracks`` () =
   task {
     let! result = sut Mocks.presetId
 
-    result |> should equal (Result<unit, Preset.GenerateError>.Error(Preset.GenerateError.NoPotentialTracks))
+    result
+    |> should equal (Result<unit, Preset.GenerateError>.Error(Preset.GenerateError.NoPotentialTracks))
   }
 
 [<Fact>]
@@ -61,11 +63,11 @@ let ``generate saves included tracks with liked`` () =
             |> Task.FromResult
         AppendTracks =
           fun _ tracks ->
-            tracks |> should equivalent [ Mocks.includedTrack; Mocks.likedTrack ]
+            tracks |> should equalSeq [ Mocks.includedTrack; Mocks.likedTrack ]
             Task.FromResult()
         ReplaceTracks =
           fun _ tracks ->
-            tracks |> should equivalent [ Mocks.includedTrack; Mocks.likedTrack ]
+            tracks |> should equalSeq [ Mocks.includedTrack; Mocks.likedTrack ]
             Task.FromResult() }
 
   let sut = Preset.generate io
@@ -135,11 +137,48 @@ let ``generate saves included tracks with recommendations`` () =
             |> Task.FromResult
         AppendTracks =
           fun _ tracks ->
-            tracks |> should equivalent [ Mocks.includedTrack; Mocks.recommendedTrack ]
+            tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.includedTrack ]
             Task.FromResult()
         ReplaceTracks =
           fun _ tracks ->
-            tracks |> should equivalent [ Mocks.includedTrack; Mocks.recommendedTrack ]
+            tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.includedTrack ]
+            Task.FromResult() }
+
+  let sut = Preset.generate io
+
+  task {
+    let! result = sut Mocks.presetId
+
+    result |> should equal (Result<unit, Preset.GenerateError>.Ok())
+  }
+
+[<Fact>]
+let ``generate saves liked tracks with recommendations`` () =
+  let io =
+    { io with
+        LoadPreset =
+          fun _ ->
+            { Mocks.preset with
+                Settings =
+                  { Mocks.preset.Settings with
+                      RecommendationsEnabled = true
+                      LikedTracksHandling = PresetSettings.LikedTracksHandling.Include } }
+            |> Task.FromResult
+        ListIncludedTracks =
+          fun playlists ->
+            playlists |> should equivalent [ Mocks.includedPlaylist ]
+            [] |> Task.FromResult
+        GetRecommendations =
+          fun tracks ->
+            tracks |> should equivalent [ Mocks.likedTrack.Id ]
+            Task.FromResult [ Mocks.recommendedTrack ]
+        AppendTracks =
+          fun _ tracks ->
+            tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.likedTrack ]
+            Task.FromResult()
+        ReplaceTracks =
+          fun _ tracks ->
+            tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.likedTrack ]
             Task.FromResult() }
 
   let sut = Preset.generate io
