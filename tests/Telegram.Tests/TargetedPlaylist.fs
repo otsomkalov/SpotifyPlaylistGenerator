@@ -32,7 +32,7 @@ let ``list should send targeted playlists`` () =
   sut Mocks.presetId (Page 0)
 
 [<Fact>]
-let ``show should send targeted playlist`` () =
+let ``show should send targeted playlist details`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal User.userPresetMock.Id
@@ -57,7 +57,7 @@ let ``show should send targeted playlist`` () =
   sut Mocks.presetId Mocks.targetedPlaylist.Id
 
 [<Fact>]
-let ``remove should remove playlist and show the list`` () =
+let ``remove should delete playlist and show targeted playlists`` () =
   let removePlaylist =
     fun presetId playlistId ->
       presetId |> should equal Mocks.presetId
@@ -73,6 +73,6 @@ let ``remove should remove playlist and show the list`` () =
       page |> should equal (Page 0)
       Task.FromResult()
 
-  let sut = Workflows.TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+  let sut = TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
 
   sut Mocks.presetId Mocks.targetedPlaylist.Id

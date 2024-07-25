@@ -20,7 +20,6 @@ let ``enable should enable disabled playlist`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
@@ -50,7 +49,6 @@ let ``disable should disable enabled playlist`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
@@ -79,7 +77,6 @@ let ``appendTracks should disable playlist overwriting`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
@@ -108,7 +105,6 @@ let ``overwriteTracks should enable playlist overwriting`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal

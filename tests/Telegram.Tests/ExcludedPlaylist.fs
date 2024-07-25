@@ -31,7 +31,7 @@ let ``list should send excluded playlists`` () =
   sut Mocks.preset.Id (Page 0)
 
 [<Fact>]
-let ``show should send excluded playlist`` () =
+let ``show should send excluded playlist details`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal Mocks.presetId
@@ -54,7 +54,7 @@ let ``show should send excluded playlist`` () =
   sut Mocks.presetId Mocks.excludedPlaylist.Id
 
 [<Fact>]
-let ``remove should remove playlist and show the list`` () =
+let ``remove should delete playlist and show excluded playlists`` () =
   let removePlaylist =
     fun presetId playlistId ->
       presetId |> should equal Mocks.presetId

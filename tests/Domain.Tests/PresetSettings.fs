@@ -1,3 +1,0 @@
-﻿module Domain.Tests.PresetSettings
-
-

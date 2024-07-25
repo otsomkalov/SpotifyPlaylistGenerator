@@ -7,14 +7,14 @@ open Xunit
 open Telegram.Workflows
 
 [<Fact>]
-let ``enableUniqueArtists should update preset and send show updated`` () =
+let ``enableUniqueArtists should update preset and show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
       presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun text -> Task.FromResult()
+  let answerCallbackQuery = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->
@@ -28,14 +28,14 @@ let ``enableUniqueArtists should update preset and send show updated`` () =
   sut Mocks.presetId
 
 [<Fact>]
-let ``disableUniqueArtists should update preset and send show updated`` () =
+let ``disableUniqueArtists should update preset and show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
       presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun text -> Task.FromResult()
+  let answerCallbackQuery = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->

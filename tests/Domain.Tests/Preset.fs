@@ -188,3 +188,35 @@ let ``generate saves liked tracks with recommendations`` () =
 
     result |> should equal (Result<unit, Preset.GenerateError>.Ok())
   }
+
+[<Fact>]
+let ``generate saves recommendations without excluded track`` () =
+  let io =
+    { io with
+        LoadPreset =
+          fun _ ->
+            { Mocks.preset with
+                Settings =
+                  { Mocks.preset.Settings with
+                      RecommendationsEnabled = true } }
+            |> Task.FromResult
+        GetRecommendations =
+          fun tracks ->
+            tracks |> should equivalent [ Mocks.includedTrack.Id ]
+            Task.FromResult [ Mocks.excludedTrack ]
+        AppendTracks =
+          fun _ tracks ->
+            tracks |> should equalSeq [ Mocks.includedTrack ]
+            Task.FromResult()
+        ReplaceTracks =
+          fun _ tracks ->
+            tracks |> should equalSeq [ Mocks.includedTrack ]
+            Task.FromResult() }
+
+  let sut = Preset.generate io
+
+  task {
+    let! result = sut Mocks.presetId
+
+    result |> should equal (Result<unit, Preset.GenerateError>.Ok())
+  }

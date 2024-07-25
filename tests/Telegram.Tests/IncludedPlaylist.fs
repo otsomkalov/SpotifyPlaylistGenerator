@@ -29,7 +29,7 @@ let ``list should send included playlists`` () =
   sut Mocks.preset.Id (Page 0)
 
 [<Fact>]
-let ``show should send included playlist`` () =
+let ``show should send included playlist details`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal Mocks.presetId
@@ -53,13 +53,7 @@ let ``show should send included playlist`` () =
   sut Mocks.presetId Mocks.includedPlaylist.Id
 
 [<Fact>]
-let ``remove should remove playlist and show the list`` () =
-  let getPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.preset.Id
-
-      Mocks.preset |> Task.FromResult
-
+let ``remove should delete playlist and show included playlists`` () =
   let removePlaylist =
     fun presetId playlistId ->
       presetId |> should equal Mocks.presetId

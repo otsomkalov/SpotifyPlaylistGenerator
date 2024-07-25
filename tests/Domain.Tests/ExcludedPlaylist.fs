@@ -20,7 +20,6 @@ let ``enable should enable disabled playlist`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
@@ -50,7 +49,6 @@ let ``disable should disable enabled playlist`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
@@ -75,16 +73,14 @@ let ``remove should remove playlist from preset`` () =
 
   let updatePreset =
     fun preset ->
-
       preset
       |> should
         equal
         { Mocks.preset with
-            ExcludedPlaylists =  [] }
+            ExcludedPlaylists = [] }
 
       Task.FromResult()
 
   let sut = ExcludedPlaylist.remove loadPreset updatePreset
 
   sut Mocks.presetId Mocks.excludedPlaylist.Id
-
