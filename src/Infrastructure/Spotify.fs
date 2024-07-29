@@ -1,9 +1,12 @@
 ﻿module Infrastructure.Spotify
 
 open System
+open System.Collections.Generic
 open System.Net
 open Domain.Core
+open Domain.Repos
 open Domain.Workflows
+open FSharp
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open SpotifyAPI.Web
@@ -12,38 +15,15 @@ open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 
 [<Literal>]
-let private recommendationsLimit = 100
-[<Literal>]
 let private playlistTracksLimit = 100
-[<Literal>]
-let private likedTacksLimit = 50
-
-let getRecommendations logRecommendedTracks (client: ISpotifyClient) : Preset.GetRecommendations =
-  fun tracks ->
-    task {
-      let request = RecommendationsRequest()
-
-      for track in tracks |> List.takeSafe 5 do
-        request.SeedTracks.Add(track |> TrackId.value)
-
-      request.Limit <- recommendationsLimit
-
-      let! recommendationsResponse = client.Browse.GetRecommendations(request)
-
-      logRecommendedTracks recommendationsResponse.Tracks.Count
-
-      return
-        recommendationsResponse.Tracks
-        |> Seq.map (_.Id >> TrackId)
-        |> Seq.toList
-    }
 
 let private getTracksIds (tracks: FullTrack seq) =
   tracks
   |> Seq.filter (isNull >> not)
-  |> Seq.map _.Id
-  |> Seq.filter (isNull >> not)
-  |> Seq.map TrackId
+  |> Seq.filter (_.Id >> isNull >> not)
+  |> Seq.map (fun st ->
+    { Id = TrackId st.Id
+      Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
   |> Seq.toList
 
 [<Literal>]
@@ -64,46 +44,50 @@ let private loadTracks' limit loadBatch =
       | None -> initialBatch |> async.Return
   }
 
-[<RequireQualifiedAccess>]
-module Playlist =
-  let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
-    async {
-      let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
+let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) =
+  async {
+    let! tracks = client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset)) |> Async.AwaitTask
 
-      return (tracks.Items |> Seq.map (fun x -> x.Track :?> FullTrack) |> getTracksIds, tracks.Total)
+    return
+        (tracks.Items
+         |> Seq.choose (fun x ->
+           match x.Track with
+           | :? FullTrack as t -> Some t
+           | _ -> None)
+         |> getTracksIds,
+         tracks.Total)
+  }
+
+let listPlaylistTracks (logger: ILogger) client : PlaylistRepo.ListTracks =
+  fun playlistId ->
+    let playlistId = playlistId |> PlaylistId.value
+    let listPlaylistTracks = listTracks' client playlistId
+    let loadTracks' = loadTracks' playlistTracksLimit
+
+    task {
+      try
+        return! loadTracks' listPlaylistTracks
+
+      with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+        Logf.logfw logger "Playlist with id %s{PlaylistId} not found in Spotify" playlistId
+
+        return []
     }
 
-  let listTracks (logger: ILogger) client : Playlist.ListTracks =
-    fun playlistId ->
-      let playlistId = playlistId |> ReadablePlaylistId.value |> PlaylistId.value
-      let listPlaylistTracks = listTracks' client playlistId
-      let loadTracks' = loadTracks' playlistTracksLimit
+let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
+  async {
+    let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50)) |> Async.AwaitTask
 
-      task {
-        try
-          return! loadTracks' listPlaylistTracks
+    return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
+  }
 
-        with Spotify.ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          logger.LogInformation("Playlist with id {PlaylistId} not found in Spotify", playlistId)
+let listSpotifyLikedTracks (client: ISpotifyClient) : UserRepo.ListLikedTracks =
+    let likedTacksLimit = 50
 
-          return []
-      }
-
-[<RequireQualifiedAccess>]
-module User =
-  let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) =
-    async {
-      let! tracks = client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50)) |> Async.AwaitTask
-
-      return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
-    }
-
-  let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks =
     let listLikedTracks' = listLikedTracks' client
     let loadTracks' = loadTracks' likedTacksLimit
 
     fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
-
 type CreateClientFromTokenResponse = AuthorizationCodeTokenResponse -> ISpotifyClient
 
 let createClientFromTokenResponse (spotifySettings: IOptions<SpotifySettings>) : CreateClientFromTokenResponse =
@@ -123,3 +107,19 @@ let createClientFromTokenResponse (spotifySettings: IOptions<SpotifySettings>) :
         .WithRetryHandler(retryHandler)
 
     config |> SpotifyClient :> ISpotifyClient
+
+[<RequireQualifiedAccess>]
+module internal Playlist =
+  let private getSpotifyIds =
+    fun tracksIds ->
+      tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+  let addTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.AddItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistAddItemsRequest)
+      |> Task.map ignore
+
+  let replaceTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
+      |> Task.ignore

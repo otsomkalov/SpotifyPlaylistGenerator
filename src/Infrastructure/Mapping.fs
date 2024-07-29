@@ -1,10 +1,10 @@
-﻿module Infrastructure.Mapping
+﻿module internal Infrastructure.Mapping
 
 open System
 open Database
 open Domain.Core
 open Domain.Workflows
-open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
@@ -14,16 +14,6 @@ module SimplePreset =
 
   let toDb (preset: SimplePreset) : Entities.SimplePreset =
     Entities.SimplePreset(Id = (preset.Id |> PresetId.value), Name = preset.Name)
-
-  let toFullDb (userId: UserId) (preset: SimplePreset) : Entities.Preset =
-    Entities.Preset(
-      Id = (preset.Id |> PresetId.value),
-      Name = preset.Name,
-      UserId = (userId |> UserId.value),
-      Settings = Entities.Settings(
-        PlaylistSize = 10,
-        IncludeLikedTracks = Nullable true,
-        RecommendationsEnabled = false))
 
 [<RequireQualifiedAccess>]
 module User =
@@ -98,7 +88,8 @@ module PresetSettings =
          | Some false -> PresetSettings.LikedTracksHandling.Exclude
          | None -> PresetSettings.LikedTracksHandling.Ignore)
       PlaylistSize = settings.PlaylistSize |> PresetSettings.PlaylistSize.create
-      RecommendationsEnabled = settings.RecommendationsEnabled }
+      RecommendationsEnabled = settings.RecommendationsEnabled
+      UniqueArtists = settings.UniqueArtists }
 
   let toDb (settings: PresetSettings.PresetSettings) : Entities.Settings =
     Entities.Settings(
@@ -108,7 +99,8 @@ module PresetSettings =
          | PresetSettings.LikedTracksHandling.Exclude -> Nullable false
          | PresetSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
       PlaylistSize = (settings.PlaylistSize |> PresetSettings.PlaylistSize.value),
-      RecommendationsEnabled = settings.RecommendationsEnabled
+      RecommendationsEnabled = settings.RecommendationsEnabled,
+      UniqueArtists = settings.UniqueArtists
     )
 
 [<RequireQualifiedAccess>]

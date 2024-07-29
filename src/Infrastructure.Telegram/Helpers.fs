@@ -1,9 +1,6 @@
 ﻿module Infrastructure.Telegram.Helpers
 
 open System
-open System.Text.Json
-open System.Text.Json.Serialization
-open otsom.fs.Extensions
 
 let (|CommandWithData|_|) (command: string) (input: string) =
   match input.Split(" ") with
@@ -32,11 +29,3 @@ let (|Bool|_|) (str: string) =
   match bool.TryParse(str) with
   | true, value -> Some(value)
   | _ -> None
-
-module JSON =
-  let options =
-    JsonFSharpOptions.Default()
-        .ToJsonSerializerOptions()
-
-  let serialize obj =
-    JsonSerializer.Serialize(obj, options)

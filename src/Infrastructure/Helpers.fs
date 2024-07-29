@@ -1,7 +1,8 @@
 ﻿module Infrastructure.Helpers
 
 open System
-open System.Threading.Tasks
+open System.Text.Json
+open System.Text.Json.Serialization
 open SpotifyAPI.Web
 
 module Spotify =
@@ -13,16 +14,12 @@ module Spotify =
     | :? APIException as e -> Some e
     | _ -> None
 
-module ValueTask =
-  let asTask (valueTask: ValueTask<'a>) = valueTask.AsTask()
+module JSON =
+  let options =
+    JsonFSharpOptions.Default().WithUnionExternalTag().WithUnionUnwrapRecordCases().ToJsonSerializerOptions()
 
-[<RequireQualifiedAccess>]
-module Task =
-  let tee f t =
-    task{
-      let! v = t
+  let serialize value =
+    JsonSerializer.Serialize(value, options)
 
-      do f v
-
-      return v
-    }
+  let deserialize<'a> (json: string) =
+    JsonSerializer.Deserialize<'a>(json, options)

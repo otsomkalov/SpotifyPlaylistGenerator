@@ -2,12 +2,18 @@
 
 open System
 open System.Threading.Tasks
-open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 
 type PlaylistId = PlaylistId of string
 type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
 type TrackId = TrackId of string
+
+type ArtistId = ArtistId of string
+
+type Artist = { Id: ArtistId; }
+
+type Track = { Id: TrackId; Artists: Set<Artist> }
 
 [<RequireQualifiedAccess>]
 module TrackId =
@@ -42,6 +48,8 @@ type TargetedPlaylist =
     Enabled: bool
     Overwrite: bool }
 
+type PresetId = PresetId of string
+
 [<RequireQualifiedAccess>]
 module PresetSettings =
   [<RequireQualifiedAccess>]
@@ -50,34 +58,44 @@ module PresetSettings =
     | Exclude
     | Ignore
 
+  type RawPlaylistSize = RawPlaylistSize of string
+
   type PlaylistSize = private PlaylistSize of int
 
   type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
       PlaylistSize: PlaylistSize
-      RecommendationsEnabled: bool }
+      RecommendationsEnabled: bool
+      UniqueArtists: bool }
 
   [<RequireQualifiedAccess>]
   module PlaylistSize =
-    type TryCreateError =
+    type ParsingError =
+      | NotANumber
       | TooSmall
       | TooBig
 
-    let tryCreate size =
-      match size with
-      | s when s <= 0 -> Error(TooSmall)
-      | s when s >= 10000 -> Error(TooBig)
-      | _ -> Ok(PlaylistSize(size))
+    let tryParse (RawPlaylistSize size) =
+      match Int32.TryParse size with
+      | true, s when s >= 10000 -> Error(TooBig)
+      | true, s when s <= 0 -> Error(TooSmall)
+      | true, s -> Ok(PlaylistSize(s))
+      | _ -> Error(NotANumber)
 
-    let create size =
-      match tryCreate size with
-      | Ok size -> size
-      | Error e ->
-        ArgumentException(e |> string, nameof size) |> raise
-
+    let create size = PlaylistSize(size)
     let value (PlaylistSize size) = size
 
-type PresetId = PresetId of string
+  type EnableUniqueArtists = PresetId -> Task<unit>
+  type DisableUniqueArtists = PresetId -> Task<unit>
+
+  type EnableRecommendations = PresetId -> Task<unit>
+  type DisableRecommendations = PresetId -> Task<unit>
+
+  type IncludeLikedTracks = PresetId -> Task<unit>
+  type ExcludeLikedTracks = PresetId -> Task<unit>
+  type IgnoreLikedTracks = PresetId -> Task<unit>
+
+  type SetTargetPlaylistSize = PresetId -> RawPlaylistSize -> Task<Result<unit, PlaylistSize.ParsingError>>
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -120,13 +138,9 @@ module Playlist =
   type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
   type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
-  type GenerateError =
-    | NoIncludedTracks
-    | NoPotentialTracks
-  type Generate = PresetId -> Task<Result<unit, GenerateError>>
-
 [<RequireQualifiedAccess>]
 module Preset =
+  type Get = PresetId -> Task<Preset>
 
   [<RequireQualifiedAccess>]
   type ValidationError =
@@ -134,22 +148,23 @@ module Preset =
     | NoTargetedPlaylists
 
   type Validate = Preset -> Result<Preset, ValidationError list>
-
-  type IncludeLikedTracks = PresetId -> Task<unit>
-  type ExcludeLikedTracks = PresetId -> Task<unit>
-  type IgnoreLikedTracks = PresetId -> Task<unit>
-  type SetPlaylistSize = PresetId -> PresetSettings.PlaylistSize -> Task<unit>
   type Create = string -> Task<PresetId>
   type Remove = PresetId -> Task<unit>
 
-  type EnableRecommendations = PresetId -> Task<unit>
-  type DisableRecommendations = PresetId -> Task<unit>
+  type GenerateError =
+    | NoIncludedTracks
+    | NoPotentialTracks
+
+  type Generate = PresetId -> Task<Result<unit, GenerateError>>
 
 [<RequireQualifiedAccess>]
 module User =
   type Get = UserId -> Task<User>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
+  type CreateIfNotExists = UserId -> Task<unit>
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
+  type GenerateCurrentPreset = UserId -> Task<Result<unit, Preset.GenerateError>>
 
   let create userId =
     { Id = userId

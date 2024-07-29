@@ -6,17 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IcedTasks" Version="0.11.6"/>
     <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
-    <PackageReference Include="otsom.fs.Telegram.Bot" Version="0.0.20"/>
-    <PackageReference Include="otsom.fs.Extensions" Version="0.0.25"/>
+    <PackageReference Include="otsom.fs.Extensions" Version="0.0.32"/>
+    <PackageReference Include="otsom.fs.Core" Version="0.0.2"/>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Extensions.fs"/>
     <Compile Include="Core.fs"/>
-    <Compile Include="Repos.fs" />
+    <Compile Include="Repos.fs"/>
     <Compile Include="Workflows.fs"/>
   </ItemGroup>
 

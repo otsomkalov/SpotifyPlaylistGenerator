@@ -2,7 +2,6 @@
 
 #nowarn "20"
 
-open Domain.Workflows
 open Azure.Storage.Queues
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
@@ -12,10 +11,8 @@ open MongoDB.ApplicationInsights
 open MongoDB.Driver
 open StackExchange.Redis
 open MongoDB.ApplicationInsights.DependencyInjection
-open Infrastructure.Workflows
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Extensions.DependencyInjection
-open Domain.Core
 
 let private configureRedisCache (options: IOptions<RedisSettings>) =
   let settings = options.Value
@@ -49,9 +46,5 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.AddMongoClientFactory()
   services.BuildSingleton<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)
   services.BuildSingleton<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
-
-  services.BuildScoped<Preset.Load, IMongoDatabase>(Preset.load)
-  services.BuildScoped<Preset.Update, IMongoDatabase>(Preset.update)
-  services.BuildScoped<User.Exists, IMongoDatabase>(User.exists)
 
   services.BuildSingleton<Spotify.CreateClientFromTokenResponse, IOptions<SpotifySettings>>(Spotify.createClientFromTokenResponse)

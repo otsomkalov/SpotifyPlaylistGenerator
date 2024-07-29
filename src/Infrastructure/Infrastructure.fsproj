@@ -13,14 +13,14 @@
     <PackageReference Include="StackExchange.Redis" Version="2.7.33"/>
     <PackageReference Include="MongoDB.ApplicationInsights.DependencyInjection" Version="1.0.34"/>
     <PackageReference Include="FSharp.SystemTextJson" Version="1.3.13"/>
-    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify.Mongo" Version="0.0.10"/>
-    <PackageReference Include="otsom.fs.Extensions" Version="0.0.20" />
+    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify" Version="0.0.22"/>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Core.fs"/>
     <Compile Include="Mapping.fs"/>
+    <Compile Include="Redis.fs" />
     <Compile Include="Cache.fs"/>
     <Compile Include="Settings.fs"/>
     <Compile Include="Spotify.fs"/>

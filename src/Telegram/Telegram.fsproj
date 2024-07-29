@@ -8,7 +8,12 @@
   <ItemGroup>
     <Compile Include="Constants.fs"/>
     <Compile Include="Core.fs"/>
+    <Compile Include="Repos.fs" />
     <Compile Include="Workflows.fs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="otsom.fs.Telegram.Bot" Version="0.0.25"/>
   </ItemGroup>
 
   <ItemGroup>

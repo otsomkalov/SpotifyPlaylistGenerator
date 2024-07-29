@@ -1,6 +1,8 @@
 ﻿module Infrastructure.Telegram.Services
 
 open System.Reflection
+open Infrastructure.Telegram.Repos
+open Microsoft.ApplicationInsights
 open Resources
 open Telegram
 open Infrastructure
@@ -27,6 +29,7 @@ open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 open otsom.fs.Telegram.Bot.Core
+open otsom.fs.Core
 open Infrastructure.Repos
 
 type SpotifyClientProvider(createClientFromTokenResponse: CreateClientFromTokenResponse, loadCompletedAuth: Completed.Load) =
@@ -69,8 +72,6 @@ type MessageService
   (
     _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
-    loadPreset: Preset.Load,
-    updatePreset: Preset.Update,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
     _spotifyOptions: IOptions<SpotifySettings>,
@@ -84,12 +85,12 @@ type MessageService
     askUserForReply: AskUserForReply
   ) =
 
-  let sendUserPresets sendMessage (message: Message) getUser =
-    let sendUserPresets = Telegram.Workflows.sendUserPresets sendMessage getUser
-    sendUserPresets (message.From.Id |> UserId)
-
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
+
+    let loadPreset = PresetRepo.load _database
+    let updatePreset = PresetRepo.update _database
+    let getPreset = Preset.get loadPreset
 
     let sendMessage = sendUserMessage userId
     let sendLink = Workflows.sendLink _bot userId
@@ -98,12 +99,12 @@ type MessageService
     let sendButtons = sendUserMessageButtons userId
     let askForReply = askUserForReply userId message.MessageId
     let savePreset = Preset.save _database
-    let updateUser = User.update _database
+    let updateUser = UserRepo.update _database
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
-    let sendCurrentPresetInfo = Telegram.Workflows.sendCurrentPresetInfo getUser loadPreset sendKeyboard
-    let sendSettingsMessage = Telegram.Workflows.sendSettingsMessage getUser loadPreset sendKeyboard
+    let sendCurrentPresetInfo = Telegram.Workflows.User.sendCurrentPreset getUser getPreset sendKeyboard
+    let sendSettingsMessage = Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendKeyboard
 
     let sendLoginMessage () =
       initAuth userId [ Scopes.PlaylistModifyPrivate; Scopes.PlaylistModifyPublic; Scopes.UserLibraryRead ]
@@ -124,16 +125,17 @@ type MessageService
       return!
         match message.Type with
         | MessageType.Text ->
-          let includePlaylist = Playlist.includePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let includePlaylist = Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
           let includePlaylist = Workflows.Playlist.includePlaylist replyToMessage getUser includePlaylist
 
-          let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let excludePlaylist = Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
           let excludePlaylist = Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
 
-          let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify loadPreset updatePreset
+          let targetPlaylist = Playlist.targetPlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
           let targetPlaylist = Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
 
-          let queueGeneration = Workflows.Playlist.queueGeneration _queueClient replyToMessage getUser loadPreset Preset.validate
+          let sendGenerationMessage = PresetRepo.queueGeneration _queueClient
+          let queueGeneration = Workflows.User.queueCurrentPresetGeneration sendGenerationMessage replyToMessage getUser getPreset Preset.validate
 
           match isNull message.ReplyToMessage with
           | false ->
@@ -143,15 +145,11 @@ type MessageService
             | Equals Messages.SendTargetedPlaylist, Unauthorized -> sendLoginMessage()
 
             | Equals Messages.SendPlaylistSize, _ ->
-              match message.Text with
-              | Int size ->
-                let setPlaylistSize = Preset.setPlaylistSize loadPreset updatePreset
-                let setPlaylistSize = Workflows.setPlaylistSize sendMessage sendSettingsMessage getUser setPlaylistSize
+              let setTargetPlaylistSize = PresetSettings.setTargetPlaylistSize getPreset updatePreset
+              let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
+              let setTargetPlaylistSize = Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
 
-                setPlaylistSize userId size
-              | _ ->
-                replyToMessage Messages.WrongPlaylistSize
-                |> Task.ignore
+              setTargetPlaylistSize userId (PresetSettings.RawPlaylistSize message.Text)
             | Equals Messages.SendIncludedPlaylist, Authorized ->
               includePlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendExcludedPlaylist, Authorized ->
@@ -160,7 +158,7 @@ type MessageService
               targetPlaylist userId (Playlist.RawPlaylistId message.Text)
             | Equals Messages.SendPresetName, _ ->
               let createPreset = Preset.create savePreset getUser updateUser userId
-              let sendPresetInfo = Telegram.Workflows.sendPresetInfo loadPreset sendButtons
+              let sendPresetInfo = Telegram.Workflows.Preset.show getPreset sendButtons
               let createPreset = Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
 
               createPreset message.Text
@@ -179,7 +177,9 @@ type MessageService
               sendCurrentPresetInfo userId
             | CommandWithData "/start" state, _ ->
               let processSuccessfulLogin =
-                let createUserIfNotExists = User.createIfNotExists _database
+                let create = UserRepo.create _database
+                let exists = UserRepo.exists _database
+                let createUserIfNotExists = User.createIfNotExists exists create
                 fun () ->
                   task{
                     do! createUserIfNotExists userId
@@ -225,7 +225,9 @@ type MessageService
             | Equals Buttons.SetPlaylistSize, _ -> askForReply Messages.SendPlaylistSize
             | Equals Buttons.CreatePreset, _ -> askForReply Messages.SendPresetName
             | Equals Buttons.GeneratePlaylist, Authorized -> queueGeneration userId
-            | Equals Buttons.MyPresets, _ -> sendUserPresets sendButtons message getUser
+            | Equals Buttons.MyPresets, _ ->
+              let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
+              sendUserPresets (message.From.Id |> UserId)
             | Equals Buttons.Settings, _ -> sendSettingsMessage userId
             | Equals Buttons.IncludePlaylist, Authorized -> askForReply Messages.SendIncludedPlaylist
             | Equals Buttons.ExcludePlaylist, Authorized -> askForReply Messages.SendExcludedPlaylist
@@ -243,122 +245,139 @@ type CallbackQueryService
     _bot: ITelegramBotClient,
     _queueClient: QueueClient,
     _connectionMultiplexer: IConnectionMultiplexer,
-    loadPreset: Preset.Load,
-    updatePreset: Preset.Update,
     _database: IMongoDatabase,
-    editBotMessageButtons: EditBotMessageButtons
+    editBotMessageButtons: EditBotMessageButtons,
+    telemetryClient: TelemetryClient
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
+    let updatePreset = PresetRepo.update _database
+
     let userId = callbackQuery.From.Id |> UserId
     let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
 
-    let updateUser = User.update _database
+    let updateUser = UserRepo.update _database
     let editMessageButtons = editBotMessageButtons userId botMessageId
     let answerCallbackQuery = Workflows.answerCallbackQuery _bot callbackQuery.Id
-    let countPlaylistTracks = Playlist.countTracks _connectionMultiplexer
+    let countPlaylistTracks = Playlist.countTracks telemetryClient _connectionMultiplexer
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
-    let showUserPresets = Workflows.sendUserPresets editMessageButtons getUser
+    let listUserPresets = Workflows.User.listPresets editMessageButtons getUser
 
-    let sendPresetInfo = Workflows.sendPresetInfo loadPreset editMessageButtons
+    let loadPreset = PresetRepo.load _database
+    let getPreset = Preset.get loadPreset
 
-    let showIncludedPlaylists = Workflows.showIncludedPlaylists loadPreset editMessageButtons
-    let showExcludedPlaylists = Workflows.showExcludedPlaylists loadPreset editMessageButtons
-    let showTargetedPlaylists = Workflows.showTargetedPlaylists loadPreset editMessageButtons
+    let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
 
-    let showIncludedPlaylist = Workflows.showIncludedPlaylist editMessageButtons loadPreset countPlaylistTracks
-    let showExcludedPlaylist = Workflows.showExcludedPlaylist editMessageButtons loadPreset countPlaylistTracks
-    let showTargetedPlaylist = Workflows.showTargetedPlaylist editMessageButtons loadPreset countPlaylistTracks
+    let listIncludedPlaylists = Workflows.IncludedPlaylist.list getPreset editMessageButtons
+    let listExcludedPlaylists = Workflows.ExcludedPlaylist.list getPreset editMessageButtons
+    let listTargetedPlaylists = Workflows.TargetedPlaylist.list getPreset editMessageButtons
+
+    let showIncludedPlaylist = Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+    let showExcludedPlaylist = Workflows.ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+    let showTargetedPlaylist = Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
-    | Action.ShowPresetInfo presetId -> sendPresetInfo presetId
+    | Action.Preset presetAction ->
+      match presetAction with
+      | PresetActions.Show presetId -> sendPresetInfo presetId
     | Action.SetCurrentPreset presetId ->
       let setCurrentPreset = Domain.Workflows.User.setCurrentPreset getUser updateUser
-      let setCurrentPreset = Workflows.setCurrentPreset answerCallbackQuery setCurrentPreset
+      let setCurrentPreset = Workflows.User.setCurrentPreset answerCallbackQuery setCurrentPreset
 
       setCurrentPreset userId presetId
     | Action.RemovePreset presetId ->
       let removePreset = PresetRepo.remove _database
       let removeUserPreset = Domain.Workflows.User.removePreset getUser removePreset updateUser
-      let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset showUserPresets
+      let removeUserPreset = Telegram.Workflows.User.removePreset removeUserPreset listUserPresets
       removeUserPreset userId presetId
-    | Action.ShowIncludedPlaylists(presetId, page) -> showIncludedPlaylists presetId page
-    | Action.ShowIncludedPlaylist(presetId, playlistId) -> showIncludedPlaylist presetId playlistId
+    | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId
+    | Action.IncludedPlaylist(IncludedPlaylistActions.List(presetId, page)) -> listIncludedPlaylists presetId page
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->
-      let enableIncludedPlaylist = IncludedPlaylist.enable loadPreset updatePreset
+      let enableIncludedPlaylist = IncludedPlaylist.enable getPreset updatePreset
       let enableIncludedPlaylist = Workflows.IncludedPlaylist.enable enableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
 
       enableIncludedPlaylist presetId playlistId
     | Action.DisableIncludedPlaylist(presetId, playlistId) ->
-      let disableIncludedPlaylist = IncludedPlaylist.disable loadPreset updatePreset
+      let disableIncludedPlaylist = IncludedPlaylist.disable getPreset updatePreset
       let disableIncludedPlaylist = Workflows.IncludedPlaylist.disable disableIncludedPlaylist answerCallbackQuery showIncludedPlaylist
 
       disableIncludedPlaylist presetId playlistId
-    | Action.RemoveIncludedPlaylist(presetId, playlistId) ->
-      let removeIncludedPlaylist = IncludedPlaylist.remove loadPreset updatePreset
-      let removeIncludedPlaylist = Workflows.removeIncludedPlaylist removeIncludedPlaylist answerCallbackQuery showIncludedPlaylists
+    | Action.IncludedPlaylist(IncludedPlaylistActions.Remove(presetId, playlistId)) ->
+      let removeIncludedPlaylist = IncludedPlaylist.remove getPreset updatePreset
+      let removeIncludedPlaylist = Workflows.IncludedPlaylist.remove removeIncludedPlaylist answerCallbackQuery listIncludedPlaylists
 
       removeIncludedPlaylist presetId playlistId
-    | Action.ShowExcludedPlaylists(presetId, page) -> showExcludedPlaylists presetId page
-    | Action.ShowExcludedPlaylist(presetId, playlistId) -> showExcludedPlaylist presetId playlistId
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) -> listExcludedPlaylists presetId page
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.Show(presetId, playlistId)) -> showExcludedPlaylist presetId playlistId
     | Action.EnableExcludedPlaylist(presetId, playlistId) ->
-      let enableExcludedPlaylist = ExcludedPlaylist.enable loadPreset updatePreset
+      let enableExcludedPlaylist = ExcludedPlaylist.enable getPreset updatePreset
       let enableExcludedPlaylist = Workflows.ExcludedPlaylist.enable enableExcludedPlaylist answerCallbackQuery showExcludedPlaylist
 
       enableExcludedPlaylist presetId playlistId
     | Action.DisableExcludedPlaylist(presetId, playlistId) ->
-      let disableExcludedPlaylist = ExcludedPlaylist.disable loadPreset updatePreset
+      let disableExcludedPlaylist = ExcludedPlaylist.disable getPreset updatePreset
       let disableExcludedPlaylist = Workflows.ExcludedPlaylist.disable disableExcludedPlaylist answerCallbackQuery showExcludedPlaylist
 
       disableExcludedPlaylist presetId playlistId
-    | Action.RemoveExcludedPlaylist(presetId, playlistId) ->
-      let removeExcludedPlaylist = ExcludedPlaylist.remove loadPreset updatePreset
-      let removeExcludedPlaylist = Workflows.removeExcludedPlaylist removeExcludedPlaylist answerCallbackQuery showExcludedPlaylists
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.Remove(presetId, playlistId)) ->
+      let removeExcludedPlaylist = ExcludedPlaylist.remove getPreset updatePreset
+      let removeExcludedPlaylist = Workflows.ExcludedPlaylist.remove removeExcludedPlaylist answerCallbackQuery listExcludedPlaylists
 
       removeExcludedPlaylist presetId playlistId
-    | Action.ShowTargetedPlaylists(presetId, page) -> showTargetedPlaylists presetId page
-    | Action.ShowTargetedPlaylist(presetId, playlistId) -> showTargetedPlaylist presetId playlistId
+    | Action.TargetedPlaylist(TargetedPlaylistActions.List(presetId, page)) -> listTargetedPlaylists presetId page
+    | Action.TargetedPlaylist(TargetedPlaylistActions.Show(presetId, playlistId)) -> showTargetedPlaylist presetId playlistId
     | Action.AppendToTargetedPlaylist(presetId, playlistId) ->
-      let appendToTargetedPlaylist = TargetedPlaylist.appendToTargetedPlaylist loadPreset updatePreset
-      let appendToTargetedPlaylist = Workflows.appendToTargetedPlaylist appendToTargetedPlaylist answerCallbackQuery showTargetedPlaylist
+      let appendToTargetedPlaylist = TargetedPlaylist.appendTracks getPreset updatePreset
+      let appendToTargetedPlaylist = Workflows.TargetedPlaylist.appendTracks appendToTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
       appendToTargetedPlaylist presetId playlistId
     | Action.OverwriteTargetedPlaylist(presetId, playlistId) ->
-      let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTargetedPlaylist loadPreset updatePreset
-      let overwriteTargetedPlaylist = Workflows.overwriteTargetedPlaylist overwriteTargetedPlaylist answerCallbackQuery showTargetedPlaylist
+      let overwriteTargetedPlaylist = TargetedPlaylist.overwriteTracks getPreset updatePreset
+      let overwriteTargetedPlaylist = Workflows.TargetedPlaylist.overwritePlaylist overwriteTargetedPlaylist answerCallbackQuery showTargetedPlaylist
 
       overwriteTargetedPlaylist presetId playlistId
-    | Action.RemoveTargetedPlaylist(presetId, playlistId) ->
-      let removeTargetedPlaylist = TargetedPlaylist.remove loadPreset updatePreset
-      let removeTargetedPlaylist = Workflows.removeTargetedPlaylist removeTargetedPlaylist answerCallbackQuery showTargetedPlaylists
+    | Action.TargetedPlaylist(TargetedPlaylistActions.Remove(presetId, playlistId)) ->
+      let removeTargetedPlaylist = TargetedPlaylist.remove getPreset updatePreset
+      let removeTargetedPlaylist = Workflows.TargetedPlaylist.remove removeTargetedPlaylist answerCallbackQuery listTargetedPlaylists
 
       removeTargetedPlaylist presetId playlistId
-    | Action.IncludeLikedTracks presetId ->
-      let includeLikedTracks = Preset.includeLikedTracks loadPreset updatePreset
-      let includeLikedTracks = Workflows.includeLikedTracks answerCallbackQuery sendPresetInfo includeLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.IncludeLikedTracks presetId) ->
+      let includeLikedTracks = PresetSettings.includeLikedTracks getPreset updatePreset
+      let includeLikedTracks = Workflows.PresetSettings.includeLikedTracks answerCallbackQuery sendPresetInfo includeLikedTracks
 
       includeLikedTracks presetId
-    | Action.ExcludeLikedTracks presetId ->
-      let excludeLikedTracks = Preset.excludeLikedTracks loadPreset updatePreset
-      let excludeLikedTracks = Workflows.excludeLikedTracks answerCallbackQuery sendPresetInfo excludeLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.ExcludeLikedTracks presetId) ->
+      let excludeLikedTracks = PresetSettings.excludeLikedTracks getPreset updatePreset
+      let excludeLikedTracks = Workflows.PresetSettings.excludeLikedTracks answerCallbackQuery sendPresetInfo excludeLikedTracks
 
       excludeLikedTracks presetId
-    | Action.IgnoreLikedTracks presetId ->
-      let ignoreLikedTracks = Preset.ignoreLikedTracks loadPreset updatePreset
-      let ignoreLikedTracks = Workflows.ignoreLikedTracks answerCallbackQuery sendPresetInfo ignoreLikedTracks
+    | Action.PresetSettings(PresetSettingsActions.IgnoreLikedTracks presetId) ->
+      let ignoreLikedTracks = PresetSettings.ignoreLikedTracks getPreset updatePreset
+      let ignoreLikedTracks = Workflows.PresetSettings.ignoreLikedTracks answerCallbackQuery sendPresetInfo ignoreLikedTracks
 
       ignoreLikedTracks presetId
-    | Action.EnableRecommendations presetId ->
-      let enableRecommendations = Preset.enableRecommendations loadPreset updatePreset
-      let enableRecommendations = Workflows.enableRecommendations enableRecommendations answerCallbackQuery sendPresetInfo
+    | Action.PresetSettings(PresetSettingsActions.EnableRecommendations presetId) ->
+      let enableRecommendations = PresetSettings.enableRecommendations getPreset updatePreset
+      let enableRecommendations = Workflows.PresetSettings.enableRecommendations enableRecommendations answerCallbackQuery sendPresetInfo
 
       enableRecommendations presetId
-    | Action.DisableRecommendations presetId ->
-      let disableRecommendations = Preset.disableRecommendations loadPreset updatePreset
+    | Action.PresetSettings(PresetSettingsActions.DisableRecommendations presetId) ->
+      let disableRecommendations = PresetSettings.disableRecommendations getPreset updatePreset
       let disableRecommendations =
-        Workflows.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
+        Workflows.PresetSettings.disableRecommendations disableRecommendations answerCallbackQuery sendPresetInfo
 
       disableRecommendations presetId
-    | Action.ShowUserPresets -> showUserPresets userId
+    | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
+      let enableUniqueArtists = PresetSettings.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = Workflows.PresetSettings.enableUniqueArtists enableUniqueArtists answerCallbackQuery sendPresetInfo
+
+      enableUniqueArtists presetId
+    | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
+      let disableUniqueArtists = PresetSettings.disableUniqueArtists loadPreset updatePreset
+      let disableUniqueArtists =
+        Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery sendPresetInfo
+
+      disableUniqueArtists presetId
+    | Action.User(UserActions.ListPresets()) -> listUserPresets userId

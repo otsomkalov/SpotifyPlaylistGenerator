@@ -8,8 +8,10 @@ open Resources
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
+open Telegram.Repos
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
+open System
 
 [<Literal>]
 let keyboardColumns = 4
@@ -18,20 +20,6 @@ let keyboardColumns = 4
 let buttonsPerPage = 20
 
 type SendLink = string -> string -> string -> Task<unit>
-
-let sendUserPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : SendUserPresets =
-  fun userId ->
-    task {
-      let! user = loadUser userId
-
-      let keyboardMarkup =
-        user.Presets
-        |> Seq.map (fun p -> InlineKeyboardButton.WithCallbackData(p.Name, $"p|{p.Id |> PresetId.value}|i"))
-        |> Seq.singleton
-        |> InlineKeyboardMarkup
-
-      do! sendButtons "Your presets" keyboardMarkup
-    }
 
 let private getPresetMessage =
   fun (preset: Preset) ->
@@ -58,59 +46,35 @@ let private getPresetMessage =
           Buttons.EnableRecommendations,
           sprintf "p|%s|%s" presetId CallbackQueryConstants.enableRecommendations
 
+      let uniqueArtistsText, uniqueArtistsButtonText, uniqueArtistsButtonData =
+        match preset.Settings.UniqueArtists with
+        | true ->
+          Messages.UniqueArtistsEnabled,
+          Buttons.DisableUniqueArtists,
+          sprintf "p|%s|%s" presetId CallbackQueryConstants.disableUniqueArtists
+        | false ->
+          Messages.UniqueArtistsDisabled,
+          Buttons.EnableUniqueArtists,
+          sprintf "p|%s|%s" presetId CallbackQueryConstants.enableUniqueArtists
+
       let text =
-        System.String.Format(
+        String.Format(
           Messages.PresetInfo,
           preset.Name,
           likedTracksHandlingText,
           recommendationsText,
+          uniqueArtistsText,
           (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
         )
 
       let keyboard =
         seq {
           InlineKeyboardButton.WithCallbackData(likedTracksButtonText, likedTracksButtonData)
+          InlineKeyboardButton.WithCallbackData(uniqueArtistsButtonText, uniqueArtistsButtonData)
           InlineKeyboardButton.WithCallbackData(recommendationsButtonText, recommendationsButtonData)
         }
 
       return (text, keyboard)
-    }
-
-let sendPresetInfo (loadPreset: Preset.Load) (editMessage: EditMessageButtons) : SendPresetInfo =
-  fun presetId ->
-    task {
-      let! preset = loadPreset presetId
-
-      let! text, keyboard = getPresetMessage preset
-
-      let presetId = presetId |> PresetId.value
-
-      let keyboardMarkup =
-        seq {
-          seq {
-            InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
-            InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
-            InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
-          }
-
-          keyboard
-
-          seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
-
-          seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
-
-          seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
-        }
-
-      do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
-    }
-
-let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: User.SetCurrentPreset) : SetCurrentPreset =
-  fun userId presetId ->
-    task {
-      do! setCurrentPreset userId presetId
-
-      return! answerCallbackQuery "Current preset is successfully set!"
     }
 
 let internal createPlaylistsPage page (playlists: 'a list) playlistToButton presetId =
@@ -148,220 +112,6 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
 
-let showIncludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowIncludedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: IncludedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = loadPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
-    }
-
-[<RequireQualifiedAccess>]
-module IncludedPlaylist =
-  let enable
-    (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable)
-    (answerCallbackQuery: AnswerCallbackQuery)
-    (showIncludedPlaylist: ShowIncludedPlaylist)
-    : IncludedPlaylist.Enable =
-    fun presetId playlistId ->
-      task {
-        do! enableIncludedPlaylist presetId playlistId
-
-        do! answerCallbackQuery "Enabled"
-
-        return! showIncludedPlaylist presetId playlistId
-      }
-
-  let disable
-    (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable)
-    (answerCallbackQuery: AnswerCallbackQuery)
-    (showIncludedPlaylist: ShowIncludedPlaylist)
-    : IncludedPlaylist.Disable =
-    fun presetId playlistId ->
-      task {
-        do! disableIncludedPlaylist presetId playlistId
-
-        do! answerCallbackQuery "Disabled"
-
-        return! showIncludedPlaylist presetId playlistId
-      }
-
-[<RequireQualifiedAccess>]
-module ExcludedPlaylist =
-  let enable
-    (enableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Enable)
-    (answerCallbackQuery: AnswerCallbackQuery)
-    (showExcludedPlaylist: ShowExcludedPlaylist)
-    : ExcludedPlaylist.Enable =
-    fun presetId playlistId ->
-      task {
-        do! enableExcludedPlaylist presetId playlistId
-
-        do! answerCallbackQuery "Enabled"
-
-        return! showExcludedPlaylist presetId playlistId
-      }
-
-  let disable
-    (disableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Disable)
-    (answerCallbackQuery: AnswerCallbackQuery)
-    (showExcludedPlaylist: ShowExcludedPlaylist)
-    : ExcludedPlaylist.Enable =
-    fun presetId playlistId ->
-      task {
-        do! disableExcludedPlaylist presetId playlistId
-
-        do! answerCallbackQuery "Disabled"
-
-        return! showExcludedPlaylist presetId playlistId
-      }
-
-let showExcludedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowExcludedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: ExcludedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = loadPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
-    }
-
-let showTargetedPlaylists (loadPreset: Preset.Load) (editMessageButtons: EditMessageButtons) : ShowTargetedPlaylists =
-  let createButtonFromPlaylist presetId =
-    fun (playlist: TargetedPlaylist) ->
-      InlineKeyboardButton.WithCallbackData(
-        playlist.Name,
-        sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
-      )
-
-  fun presetId page ->
-    let createButtonFromPlaylist = createButtonFromPlaylist presetId
-
-    task {
-      let! preset = loadPreset presetId
-
-      let replyMarkup =
-        createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
-
-      return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
-    }
-
-let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (sendPresetInfo: SendPresetInfo) =
-  fun presetId ->
-    task {
-      do! setLikedTracksHandling presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
-let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: Preset.IncludeLikedTracks) : Preset.IncludeLikedTracks =
-  setLikedTracksHandling answerCallbackQuery includeLikedTracks sendPresetInfo
-
-let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: Preset.ExcludeLikedTracks) : Preset.ExcludeLikedTracks =
-  setLikedTracksHandling answerCallbackQuery excludeLikedTracks sendPresetInfo
-
-let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: Preset.IgnoreLikedTracks) : Preset.IgnoreLikedTracks =
-  setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
-
-let enableRecommendations
-  (enableRecommendations: Preset.EnableRecommendations)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
-  : Preset.EnableRecommendations =
-  fun presetId ->
-    task {
-      do! enableRecommendations presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
-let disableRecommendations
-  (disableRecommendations: Preset.DisableRecommendations)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (sendPresetInfo: SendPresetInfo)
-  : Preset.DisableRecommendations =
-  fun presetId ->
-    task {
-      do! disableRecommendations presetId
-
-      do! answerCallbackQuery Messages.Updated
-
-      return! sendPresetInfo presetId
-    }
-
-let sendSettingsMessage (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendSettingsMessage =
-  fun userId ->
-    task {
-      let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      let! preset = loadPreset currentPresetId
-      let! text, _ = getPresetMessage preset
-
-      let buttons =
-        [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
-        |> ReplyKeyboardMarkup.op_Implicit
-
-      return! sendKeyboard text buttons
-    }
-
-let sendCurrentPresetInfo (loadUser: User.Get) (loadPreset: Preset.Load) (sendKeyboard: SendKeyboard) : SendCurrentPresetInfo =
-  fun userId ->
-    task {
-      let! currentPresetId = loadUser userId |> Task.map _.CurrentPresetId
-
-      return!
-        match currentPresetId with
-        | Some presetId ->
-          task {
-            let! preset = loadPreset presetId
-            let! text, _ = getPresetMessage preset
-
-            let buttons =
-              [| [| Buttons.GeneratePlaylist |]
-                 [| Buttons.MyPresets |]
-                 [| Buttons.CreatePreset |]
-
-                 [| Buttons.IncludePlaylist; Buttons.ExcludePlaylist; Buttons.TargetPlaylist |]
-
-                 [| Buttons.Settings |] |]
-              |> ReplyKeyboardMarkup.op_Implicit
-
-            return! sendKeyboard text buttons
-          }
-        | None ->
-          let buttons =
-            [| [| Buttons.MyPresets |]
-               [| Buttons.CreatePreset |] |]
-            |> ReplyKeyboardMarkup.op_Implicit
-
-          sendKeyboard "You did not select current preset" buttons
-    }
-
 let private getPlaylistButtons presetId playlistId playlistType enabled =
   let presetId = presetId |> PresetId.value
 
@@ -383,158 +133,280 @@ let private getPlaylistButtons presetId playlistId playlistType enabled =
   }
   |> InlineKeyboardMarkup
 
-let showIncludedPlaylist
-  (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
-  (countPlaylistTracks: Playlist.CountTracks)
-  : ShowIncludedPlaylist =
-  fun presetId playlistId ->
-    task {
-      let! preset = loadPreset presetId
+[<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : IncludedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: IncludedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        )
 
-      let includedPlaylist =
-        preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
-      let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
+      task {
+        let! preset = getPreset presetId
 
-      let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+        let replyMarkup =
+          createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
 
-      let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
+        return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
+      }
 
-      return! editMessageButtons messageText buttons
-    }
+  let show
+    (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get)
+    (countPlaylistTracks: Playlist.CountTracks)
+    : IncludedPlaylist.Show =
+    fun presetId playlistId ->
+      task {
+        let! preset = getPreset presetId
 
-let showExcludedPlaylist
-  (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
-  (countPlaylistTracks: Playlist.CountTracks)
-  : ShowExcludedPlaylist =
-  fun presetId playlistId ->
-    task {
-      let! preset = loadPreset presetId
+        let includedPlaylist =
+          preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
 
-      let excludedPlaylist =
-        preset.ExcludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
-      let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
 
-      let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
+        let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
 
-      let buttons = getPlaylistButtons presetId playlistId "ep" excludedPlaylist.Enabled
+        return! editMessageButtons messageText buttons
+      }
 
-      return! editMessageButtons messageText buttons
-    }
+  let enable
+    (enableIncludedPlaylist: Domain.Core.IncludedPlaylist.Enable)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showIncludedPlaylist: IncludedPlaylist.Show)
+    : IncludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! enableIncludedPlaylist presetId playlistId
 
-let showTargetedPlaylist
-  (editMessageButtons: EditMessageButtons)
-  (loadPreset: Preset.Load)
-  (countPlaylistTracks: Playlist.CountTracks)
-  : ShowTargetedPlaylist =
-  fun presetId playlistId ->
-    task {
-      let! preset = loadPreset presetId
+        do! answerCallbackQuery "Enabled"
 
-      let targetPlaylist =
-        preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        return! showIncludedPlaylist presetId playlistId
+      }
 
-      let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
+  let disable
+    (disableIncludedPlaylist: Domain.Core.IncludedPlaylist.Disable)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showIncludedPlaylist: IncludedPlaylist.Show)
+    : IncludedPlaylist.Disable =
+    fun presetId playlistId ->
+      task {
+        do! disableIncludedPlaylist presetId playlistId
 
-      let messageText =
-        sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
+        do! answerCallbackQuery "Disabled"
 
-      let presetId' = (presetId |> PresetId.value)
-      let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+        return! showIncludedPlaylist presetId playlistId
+      }
 
-      let buttonText, buttonDataBuilder =
-        if targetPlaylist.Overwrite then
-          ("Append", sprintf "p|%s|tp|%s|a")
-        else
-          ("Overwrite", sprintf "p|%s|tp|%s|o")
+  let remove
+    (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showIncludedPlaylists: IncludedPlaylist.List)
+    : IncludedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeIncludedPlaylist presetId playlistId
+        do! answerCallbackQuery "Included playlist successfully removed"
 
-      let buttonData = buttonDataBuilder presetId' playlistId'
+        return! showIncludedPlaylists presetId (Page 0)
+      }
 
-      let buttons =
-        seq {
-          seq { InlineKeyboardButton.WithCallbackData(buttonText, buttonData) }
-          seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
+[<RequireQualifiedAccess>]
+module ExcludedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ExcludedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: ExcludedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
+        )
 
-          seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
-        }
-        |> InlineKeyboardMarkup
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
 
-      return! editMessageButtons messageText buttons
-    }
+      task {
+        let! preset = getPreset presetId
 
-let removeIncludedPlaylist
-  (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showIncludedPlaylists: ShowIncludedPlaylists)
-  : IncludedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeIncludedPlaylist presetId playlistId
-      do! answerCallbackQuery "Included playlist successfully removed"
+        let replyMarkup =
+          createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
 
-      return! showIncludedPlaylists presetId (Page 0)
-    }
+        return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
+      }
 
-let removeExcludedPlaylist
-  (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showExcludedPlaylists: ShowExcludedPlaylists)
-  : ExcludedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeExcludedPlaylist presetId playlistId
-      do! answerCallbackQuery "Excluded playlist successfully removed"
+  let show
+    (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get)
+    (countPlaylistTracks: Playlist.CountTracks)
+    : ExcludedPlaylist.Show =
+    fun presetId playlistId ->
+      task {
+        let! preset = getPreset presetId
 
-      return! showExcludedPlaylists presetId (Page 0)
-    }
+        let excludedPlaylist =
+          preset.ExcludedPlaylists |> List.find (fun p -> p.Id = playlistId)
 
-let removeTargetedPlaylist
-  (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylists: ShowTargetedPlaylists)
-  : TargetedPlaylist.Remove =
-  fun presetId playlistId ->
-    task {
-      do! removeTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist successfully removed"
+        let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
-      return! showTargetedPlaylists presetId (Page 0)
-    }
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
 
-let appendToTargetedPlaylist
-  (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylist: ShowTargetedPlaylist)
-  : TargetedPlaylist.AppendTracks =
-  fun presetId playlistId ->
-    task {
-      do! appendToTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist will be appended with generated tracks"
+        let buttons = getPlaylistButtons presetId playlistId "ep" excludedPlaylist.Enabled
 
-      return! showTargetedPlaylist presetId playlistId
-    }
+        return! editMessageButtons messageText buttons
+      }
 
-let overwriteTargetedPlaylist
-  (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
-  (answerCallbackQuery: AnswerCallbackQuery)
-  (showTargetedPlaylist: ShowTargetedPlaylist)
-  : TargetedPlaylist.OverwriteTracks =
-  fun presetId playlistId ->
-    task {
-      do! overwriteTargetedPlaylist presetId playlistId
-      do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
+  let enable
+    (enableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Enable)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showExcludedPlaylist: ExcludedPlaylist.Show)
+    : ExcludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! enableExcludedPlaylist presetId playlistId
 
-      return! showTargetedPlaylist presetId playlistId
-    }
+        do! answerCallbackQuery "Enabled"
+
+        return! showExcludedPlaylist presetId playlistId
+      }
+
+  let disable
+    (disableExcludedPlaylist: Domain.Core.ExcludedPlaylist.Disable)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showExcludedPlaylist: ExcludedPlaylist.Show)
+    : ExcludedPlaylist.Enable =
+    fun presetId playlistId ->
+      task {
+        do! disableExcludedPlaylist presetId playlistId
+
+        do! answerCallbackQuery "Disabled"
+
+        return! showExcludedPlaylist presetId playlistId
+      }
+
+  let remove
+    (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (listExcludedPlaylists: ExcludedPlaylist.List)
+    : ExcludedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeExcludedPlaylist presetId playlistId
+        do! answerCallbackQuery "Excluded playlist successfully removed"
+
+        return! listExcludedPlaylists presetId (Page 0)
+      }
+
+[<RequireQualifiedAccess>]
+module TargetedPlaylist =
+  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
+    let createButtonFromPlaylist presetId =
+      fun (playlist: TargetedPlaylist) ->
+        InlineKeyboardButton.WithCallbackData(
+          playlist.Name,
+          sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
+        )
+
+    fun presetId page ->
+      let createButtonFromPlaylist = createButtonFromPlaylist presetId
+
+      task {
+        let! preset = getPreset presetId
+
+        let replyMarkup =
+          createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
+
+        return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
+      }
+
+  let show
+    (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get)
+    (countPlaylistTracks: Playlist.CountTracks)
+    : TargetedPlaylist.Show =
+    fun presetId playlistId ->
+      task {
+        let! preset = getPreset presetId
+
+        let targetPlaylist =
+          preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
+
+        let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
+
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
+
+        let presetId' = (presetId |> PresetId.value)
+        let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+
+        let buttonText, buttonDataBuilder =
+          if targetPlaylist.Overwrite then
+            ("Append", sprintf "p|%s|tp|%s|a")
+          else
+            ("Overwrite", sprintf "p|%s|tp|%s|o")
+
+        let buttonData = buttonDataBuilder presetId' playlistId'
+
+        let buttons =
+          seq {
+            seq { InlineKeyboardButton.WithCallbackData(buttonText, buttonData) }
+            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
+
+            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
+          }
+          |> InlineKeyboardMarkup
+
+        return! editMessageButtons messageText buttons
+      }
+
+  let appendTracks
+    (appendToTargetedPlaylist: TargetedPlaylist.AppendTracks)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylist: TargetedPlaylist.Show)
+    : TargetedPlaylist.AppendTracks =
+    fun presetId playlistId ->
+      task {
+        do! appendToTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist will be appended with generated tracks"
+
+        return! showTargetedPlaylist presetId playlistId
+      }
+
+  let overwritePlaylist
+    (overwriteTargetedPlaylist: TargetedPlaylist.OverwriteTracks)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylist: TargetedPlaylist.Show)
+    : TargetedPlaylist.OverwriteTracks =
+    fun presetId playlistId ->
+      task {
+        do! overwriteTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist will be overwritten with generated tracks"
+
+        return! showTargetedPlaylist presetId playlistId
+      }
+
+  let remove
+    (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showTargetedPlaylists: TargetedPlaylist.List)
+    : TargetedPlaylist.Remove =
+    fun presetId playlistId ->
+      task {
+        do! removeTargetedPlaylist presetId playlistId
+        do! answerCallbackQuery "Target playlist successfully removed"
+
+        return! showTargetedPlaylists presetId (Page 0)
+      }
 
 [<RequireQualifiedAccess>]
 module Message =
-  let createPreset (createPreset: Preset.Create) (sendPresetInfo: SendPresetInfo) : Message.CreatePreset =
+  let createPreset (createPreset: Preset.Create) (sendPresetInfo: Preset.Show) : Message.CreatePreset =
     fun name ->
       task {
         let! presetId = createPreset name
@@ -544,10 +416,245 @@ module Message =
 
 [<RequireQualifiedAccess>]
 module User =
-  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: SendUserPresets) : User.RemovePreset =
+  let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
+    fun userId ->
+      task {
+        let! user = loadUser userId
+
+        let keyboardMarkup =
+          user.Presets
+          |> Seq.map (fun p -> InlineKeyboardButton.WithCallbackData(p.Name, $"p|{p.Id |> PresetId.value}|i"))
+          |> Seq.singleton
+          |> InlineKeyboardMarkup
+
+        do! sendButtons "Your presets" keyboardMarkup
+      }
+
+  let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPreset =
+    loadUser
+    >> Task.map _.CurrentPresetId
+    >> Task.bind (function
+      | Some presetId ->
+        task {
+          let! preset = getPreset presetId
+          let! text, _ = getPresetMessage preset
+
+          let buttons =
+            [| [| Buttons.GeneratePlaylist |]
+               [| Buttons.MyPresets |]
+               [| Buttons.CreatePreset |]
+
+               [| Buttons.IncludePlaylist; Buttons.ExcludePlaylist; Buttons.TargetPlaylist |]
+
+               [| Buttons.Settings |] |]
+            |> ReplyKeyboardMarkup.op_Implicit
+
+          return! sendKeyboard text buttons
+        }
+      | None ->
+        let buttons =
+          [| [| Buttons.MyPresets |]; [| Buttons.CreatePreset |] |]
+          |> ReplyKeyboardMarkup.op_Implicit
+
+        sendKeyboard "You did not select current preset" buttons)
+
+  let sendCurrentPresetSettings (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPresetSettings =
+    fun userId ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+        let! preset = getPreset currentPresetId
+        let! text, _ = getPresetMessage preset
+
+        let buttons =
+          [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
+          |> ReplyKeyboardMarkup.op_Implicit
+
+        return! sendKeyboard text buttons
+      }
+
+  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: User.ListPresets) : User.RemovePreset =
     fun userId presetId ->
       task {
         do! removePreset userId presetId
 
         return! sendUserPresets userId
+      }
+
+  let setCurrentPresetSize
+    (sendMessage: SendMessage)
+    (sendSettingsMessage: User.SendCurrentPresetSettings)
+    (setPlaylistSize: Domain.Core.User.SetCurrentPresetSize)
+    : User.SetCurrentPresetSize
+    =
+    fun userId size ->
+      let onSuccess () = sendSettingsMessage userId
+
+      let onError =
+        function
+        | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
+        | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
+        | PresetSettings.PlaylistSize.NotANumber -> sendMessage Messages.PlaylistSizeNotANumber
+
+      setPlaylistSize userId size
+      |> TaskResult.taskEither onSuccess onError
+
+  let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: Domain.Core.User.SetCurrentPreset) : User.SetCurrentPreset =
+    fun userId presetId ->
+      task {
+        do! setCurrentPreset userId presetId
+
+        return! answerCallbackQuery "Current preset is successfully set!"
+      }
+
+  let queueCurrentPresetGeneration
+    (queueGeneration: PresetRepo.QueueGeneration)
+    (replyToMessage: ReplyToMessage)
+    (loadUser: User.Get)
+    (loadPreset: Preset.Get)
+    (validatePreset: Preset.Validate)
+    : User.QueueCurrentPresetGeneration =
+    let onSuccess () =
+      replyToMessage "Your playlist generation request is queued!"
+
+    let onError errors =
+      let errorsText =
+        errors
+        |> Seq.map (function
+          | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
+          | Preset.ValidationError.NoTargetedPlaylists -> "No targeted playlists!")
+        |> String.concat Environment.NewLine
+
+      replyToMessage errorsText
+
+    fun userId ->
+      userId
+      |> loadUser
+      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+      |> Task.bind loadPreset
+      |> Task.map validatePreset
+      |> TaskResult.taskMap (fun p -> queueGeneration userId p.Id)
+      |> TaskResult.taskEither onSuccess onError
+      |> Task.ignore
+
+  let generateCurrentPreset sendMessage (generateCurrentPreset: Domain.Core.User.GenerateCurrentPreset) : User.GenerateCurrentPreset =
+    let onSuccess () = sendMessage "Playlist generated!"
+
+    let onError =
+      function
+      | Preset.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
+      | Preset.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
+
+    fun userId ->
+      task {
+        do! sendMessage "Generating playlist..."
+
+        return! generateCurrentPreset userId |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
+[<RequireQualifiedAccess>]
+module PresetSettings =
+  let enableUniqueArtists
+    (enableUniqueArtists: PresetSettings.EnableUniqueArtists)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (sendPresetInfo: Preset.Show)
+    : PresetSettings.EnableUniqueArtists =
+    fun presetId ->
+      task {
+        do! enableUniqueArtists presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! sendPresetInfo presetId
+      }
+
+  let disableUniqueArtists
+    (disableUniqueArtists: PresetSettings.DisableUniqueArtists)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (sendPresetInfo: Preset.Show)
+    : PresetSettings.DisableUniqueArtists =
+    fun presetId ->
+      task {
+        do! disableUniqueArtists presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! sendPresetInfo presetId
+      }
+
+  let enableRecommendations
+    (enableRecommendations: PresetSettings.EnableRecommendations)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showPreset: Preset.Show)
+    : PresetSettings.EnableRecommendations =
+    fun presetId ->
+      task {
+        do! enableRecommendations presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! showPreset presetId
+      }
+
+  let disableRecommendations
+    (disableRecommendations: PresetSettings.DisableRecommendations)
+    (answerCallbackQuery: AnswerCallbackQuery)
+    (showPreset: Preset.Show)
+    : PresetSettings.DisableRecommendations =
+    fun presetId ->
+      task {
+        do! disableRecommendations presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! showPreset presetId
+      }
+
+  let private setLikedTracksHandling (answerCallbackQuery: AnswerCallbackQuery) setLikedTracksHandling (shorPreset: Preset.Show) =
+    fun presetId ->
+      task {
+        do! setLikedTracksHandling presetId
+
+        do! answerCallbackQuery Messages.Updated
+
+        return! shorPreset presetId
+      }
+
+  let includeLikedTracks answerCallbackQuery sendPresetInfo (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
+    setLikedTracksHandling answerCallbackQuery includeLikedTracks sendPresetInfo
+
+  let excludeLikedTracks answerCallbackQuery sendPresetInfo (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
+    setLikedTracksHandling answerCallbackQuery excludeLikedTracks sendPresetInfo
+
+  let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
+    setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
+
+[<RequireQualifiedAccess>]
+module Preset =
+  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+    fun presetId ->
+      task {
+        let! preset = getPreset presetId
+
+        let! text, keyboard = getPresetMessage preset
+
+        let presetId = presetId |> PresetId.value
+
+        let keyboardMarkup =
+          seq {
+            seq {
+              InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
+              InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
+              InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
+            }
+
+            keyboard
+
+            seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
+
+            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
+
+            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
+          }
+
+        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
       }

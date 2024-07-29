@@ -23,7 +23,8 @@
 Preset settings:
 *Include liked tracks* - {1}
 *Recommendations* - {2}
-*Playlist size* - {3}</value>
+*Unique artists* - {3}
+*Playlist size* - {4}</value>
     </data>
     <data name="Updated" xml:space="preserve">
         <value>Updated</value>
@@ -45,6 +46,9 @@ Preset settings:
     </data>
     <data name="PlaylistSizeTooBig" xml:space="preserve">
         <value>Playlist size should be lower than 10000!</value>
+    </data>
+    <data name="PlaylistSizeNotANumber" xml:space="preserve">
+        <value>Playlist size should be a number!</value>
     </data>
     <data name="LikedTracksIncluded" xml:space="preserve">
         <value>➕ Liked tracks are included</value>
@@ -81,6 +85,12 @@ Preset settings:
     </data>
     <data name="RecommendationsDisabled" xml:space="preserve">
         <value>➖ Recommendations are disabled</value>
+    </data>
+    <data name="UniqueArtistsEnabled" xml:space="preserve">
+        <value>👤 Unique artists</value>
+    </data>
+    <data name="UniqueArtistsDisabled" xml:space="preserve">
+        <value>👥 Non-unique artists</value>
     </data>
     <data name="Welcome" xml:space="preserve">
         <value>
