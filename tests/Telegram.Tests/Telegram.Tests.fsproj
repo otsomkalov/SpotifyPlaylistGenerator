@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\tests\Domain.Tests\Domain.Tests.fsproj" />
-    <ProjectReference Include="..\Telegram\Telegram.fsproj" />
+    <ProjectReference Include="..\Domain.Tests\Domain.Tests.fsproj" />
+    <ProjectReference Include="..\..\src\Telegram\Telegram.fsproj" />
   </ItemGroup>
 
 </Project>

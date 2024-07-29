@@ -6,7 +6,7 @@ open Domain.Tests
 open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
-open FsUnit
+open FsUnit.Xunit
 open Xunit
 open Domain.Workflows
 open Telegram.Workflows
@@ -15,9 +15,9 @@ open Telegram.Workflows
 let ``list should send targeted playlists`` () =
   let getPreset =
     fun presetId ->
-      presetId |> should equal Preset.mock.Id
+      presetId |> should equal Mocks.preset.Id
 
-      Preset.mock |> Task.FromResult
+      Mocks.preset |> Task.FromResult
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
@@ -29,15 +29,15 @@ let ``list should send targeted playlists`` () =
 
   let sut = TargetedPlaylist.list getPreset editMessageButtons
 
-  sut Preset.mockId (Page 0)
+  sut Mocks.presetId (Page 0)
 
 [<Fact>]
-let ``show should send targeted playlist`` () =
+let ``show should send targeted playlist details`` () =
   let getPreset =
     fun presetId ->
       presetId |> should equal User.userPresetMock.Id
 
-      Preset.mock |> Task.FromResult
+      Mocks.preset |> Task.FromResult
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
@@ -48,20 +48,20 @@ let ``show should send targeted playlist`` () =
   let countPlaylistTracks =
     fun playlistId ->
       playlistId
-      |> should equal (TargetedPlaylist.mock.Id |> WritablePlaylistId.value)
+      |> should equal (Mocks.targetedPlaylist.Id |> WritablePlaylistId.value)
 
       0L |> Task.FromResult
 
   let sut = TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
-  sut Preset.mockId TargetedPlaylist.mock.Id
+  sut Mocks.presetId Mocks.targetedPlaylist.Id
 
 [<Fact>]
-let ``remove should remove playlist and show the list`` () =
+let ``remove should delete playlist and show targeted playlists`` () =
   let removePlaylist =
     fun presetId playlistId ->
-      presetId |> should equal Preset.mockId
-      playlistId |> should equal TargetedPlaylist.mock.Id
+      presetId |> should equal Mocks.presetId
+      playlistId |> should equal Mocks.targetedPlaylist.Id
       Task.FromResult()
 
   let answerCallbackQuery =
@@ -69,10 +69,10 @@ let ``remove should remove playlist and show the list`` () =
 
   let listTargetedPlaylists =
     fun presetId  page ->
-      presetId |> should equal Preset.mockId
+      presetId |> should equal Mocks.presetId
       page |> should equal (Page 0)
       Task.FromResult()
 
-  let sut = Workflows.TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+  let sut = TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
 
-  sut Preset.mockId TargetedPlaylist.mock.Id
+  sut Mocks.presetId Mocks.targetedPlaylist.Id

@@ -2,48 +2,48 @@
 
 open System.Threading.Tasks
 open Domain.Tests
-open FsUnit
+open FsUnit.Xunit
 open Xunit
 open Telegram.Workflows
 
 [<Fact>]
-let ``enableUniqueArtists should update preset and send show updated`` () =
+let ``enableUniqueArtists should update preset and show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
-      presetId |> should equal Preset.mockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun text -> Task.FromResult()
+  let answerCallbackQuery = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->
-      presetId |> should equal Preset.mockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
   let sut =
     PresetSettings.enableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
 
-  sut Preset.mockId
+  sut Mocks.presetId
 
 [<Fact>]
-let ``disableUniqueArtists should update preset and send show updated`` () =
+let ``disableUniqueArtists should update preset and show updated`` () =
   let disableUniqueArtists =
     fun presetId ->
-      presetId |> should equal Preset.mockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun text -> Task.FromResult()
+  let answerCallbackQuery = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->
-      presetId |> should equal Preset.mockId
+      presetId |> should equal Mocks.presetId
 
       Task.FromResult()
 
   let sut =
     PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
 
-  sut Preset.mockId
+  sut Mocks.presetId
