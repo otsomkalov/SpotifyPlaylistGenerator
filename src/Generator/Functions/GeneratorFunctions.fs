@@ -1,5 +1,6 @@
 ﻿namespace Generator.Functions
 
+open Domain.Extensions
 open System.Diagnostics
 open FSharp
 open Infrastructure.Queue
@@ -14,7 +15,6 @@ open Microsoft.Extensions.Logging
 open MongoDB.Driver
 open StackExchange.Redis
 open Domain.Workflows
-open Domain.Core
 open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
@@ -83,7 +83,7 @@ type GeneratorFunctions
       do
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (request.UserId |> UserId.value)
 
-      let io: Domain.Workflows.Preset.GenerateIO =
+      let io: Preset.GenerateIO =
         { ListIncludedTracks = listIncludedTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
@@ -93,10 +93,10 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations
           Shuffler = List.shuffle }
 
-      let generatePreset = Domain.Workflows.Preset.generate io
+      let generatePreset = Preset.generate io
 
       let generateCurrentPreset =
-        Domain.Workflows.User.generateCurrentPreset loadUser generatePreset
+        User.generateCurrentPreset loadUser generatePreset
 
       let generateCurrentPreset =
         Telegram.Workflows.User.generateCurrentPreset sendMessage generateCurrentPreset
