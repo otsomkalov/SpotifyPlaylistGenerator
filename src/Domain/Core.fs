@@ -207,8 +207,8 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-  type Enable = PresetId -> ReadablePlaylistId -> Task<unit>
-  type Disable = PresetId -> ReadablePlaylistId -> Task<unit>
+  type Enable = PresetId -> TargetedPlaylistId -> Task<unit>
+  type Disable = PresetId -> TargetedPlaylistId -> Task<unit>
   type Remove = PresetId -> TargetedPlaylistId -> Task<unit>
   type AppendTracks = PresetId -> TargetedPlaylistId -> Task<unit>
   type OverwriteTracks = PresetId -> TargetedPlaylistId -> Task<unit>

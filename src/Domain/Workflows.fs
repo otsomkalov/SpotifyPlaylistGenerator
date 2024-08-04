@@ -43,7 +43,7 @@ module Tracks =
       else
         knownArtists, uniqueTracks
 
-    tracks |> Seq.fold addUniqueTrack (Set.empty, []) |> snd
+    tracks |> Seq.fold addUniqueTrack (Set.empty, []) |> snd |> List.rev
 
 [<RequireQualifiedAccess>]
 module User =
@@ -225,7 +225,8 @@ module Preset =
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
-      GetRecommendations: TrackRepo.GetRecommendations }
+      GetRecommendations: TrackRepo.GetRecommendations
+      Shuffler: Track list -> Track list }
 
   let generate (io: GenerateIO) : Preset.Generate =
 
@@ -234,9 +235,6 @@ module Preset =
         match tracks with
         | [] -> Preset.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
         | tracks ->
-          let tracks =
-              if preset.Settings.UniqueArtists then tracks |> Tracks.uniqueByArtists else tracks
-
           let tracksToImport =
             tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
 
@@ -254,7 +252,7 @@ module Preset =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (List.prepend tracks)
+          io.ListLikedTracks() |> Task.map (List.append tracks)
         | _ ->
           Task.FromResult tracks
 
@@ -284,7 +282,7 @@ module Preset =
       preset.IncludedPlaylists
       |> io.ListIncludedTracks
       |> Task.bind (includeLiked preset)
-      |> Task.map List.shuffle
+      |> Task.map io.Shuffler
       |> Task.bind (getRecommendations preset)
       |> TaskResult.taskMap (fun includedTracks ->
         preset.ExcludedPlaylists
@@ -500,6 +498,30 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
+  let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let playlist = preset.TargetedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = enable }
+
+        let updatedPreset =
+          { preset with
+              TargetedPlaylists =
+                preset.TargetedPlaylists
+                |> List.except [ playlist ]
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let enable loadPreset updatePreset : TargetedPlaylist.Enable =
+    updatePresetPlaylist loadPreset updatePreset true
+
+  let disable loadPreset updatePreset : TargetedPlaylist.Disable =
+    updatePresetPlaylist loadPreset updatePreset false
+
   let private setPlaylistOverwriting (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) overwriting =
     fun presetId targetedPlaylistId ->
       task {

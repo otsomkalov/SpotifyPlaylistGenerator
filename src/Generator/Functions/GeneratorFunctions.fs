@@ -14,6 +14,7 @@ open Microsoft.Extensions.Logging
 open MongoDB.Driver
 open StackExchange.Redis
 open Domain.Workflows
+open Domain.Core
 open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
@@ -89,7 +90,8 @@ type GeneratorFunctions
           LoadPreset = getPreset
           AppendTracks = appendTracks
           ReplaceTracks = replaceTracks
-          GetRecommendations = getRecommendations }
+          GetRecommendations = getRecommendations
+          Shuffler = List.shuffle }
 
       let generatePreset = Domain.Workflows.Preset.generate io
 

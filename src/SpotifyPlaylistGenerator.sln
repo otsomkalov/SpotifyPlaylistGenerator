@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EC4A53AE
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain.Tests", "..\tests\Domain.Tests\Domain.Tests.fsproj", "{F3C040BA-4CF9-4055-A10E-18F1AA822B21}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Telegram.Tests", "Telegram.Tests\Telegram.Tests.fsproj", "{15F1A95E-9180-4886-A334-EC5240CCA937}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Telegram.Tests", "..\tests\Telegram.Tests\Telegram.Tests.fsproj", "{15F1A95E-9180-4886-A334-EC5240CCA937}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
