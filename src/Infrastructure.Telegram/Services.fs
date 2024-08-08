@@ -1,5 +1,6 @@
 ﻿module Infrastructure.Telegram.Services
 
+open System.Diagnostics
 open System.Reflection
 open Infrastructure.Telegram.Repos
 open Microsoft.ApplicationInsights
