@@ -1,6 +1,7 @@
 ﻿namespace Generator.Functions
 
 open Domain.Extensions
+open System.Diagnostics
 open FSharp
 open Infrastructure.Queue
 open Infrastructure.Repos
@@ -8,6 +9,7 @@ open Infrastructure.Telegram.Repos
 open Infrastructure.Telegram.Services
 open Infrastructure
 open Microsoft.ApplicationInsights
+open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
 open MongoDB.Driver
@@ -16,7 +18,6 @@ open Domain.Workflows
 open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
-open Generator.Extensions
 
 type GeneratorFunctions
   (
@@ -46,7 +47,10 @@ type GeneratorFunctions
 
     task {
 
-      use _ = Activity.getCurrentParentmost().SetParentId(message.OperationId)
+      use activity =
+        (new Activity("GeneratePreset")).SetParentId(message.OperationId)
+
+      use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
 
       let! client = _spotifyClientProvider.GetAsync request.UserId
 
@@ -98,6 +102,8 @@ type GeneratorFunctions
         Telegram.Workflows.User.generateCurrentPreset sendMessage generateCurrentPreset
 
       do! generateCurrentPreset request.UserId
+
+      operation.Telemetry.Success <- true
 
       return ()
     }
