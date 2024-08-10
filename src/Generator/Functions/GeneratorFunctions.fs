@@ -38,6 +38,11 @@ type GeneratorFunctions
 
     let request = message.Data
 
+    use activity =
+      (new Activity("GeneratePreset")).SetParentId(message.OperationId)
+
+    use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
+
     use _ =
       _logger.BeginScope(
         "Running playlist generation for user %i{TelegramId} and preset %s{PresetId}",
@@ -46,12 +51,6 @@ type GeneratorFunctions
       )
 
     task {
-
-      use activity =
-        (new Activity("GeneratePreset")).SetParentId(message.OperationId)
-
-      use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
-
       let! client = _spotifyClientProvider.GetAsync request.UserId
 
       let logRecommendedTracks =
