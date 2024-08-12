@@ -3,7 +3,6 @@
 open Domain.Extensions
 open FSharp
 open Infrastructure.Repos
-open Infrastructure.Telegram.Services
 open Infrastructure
 open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
@@ -19,12 +18,12 @@ open otsom.fs.Telegram.Bot.Core
 type GeneratorFunctions
   (
     _db: IMongoDatabase,
-    _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer,
     sendUserMessage: SendUserMessage,
-    telemetryClient: TelemetryClient
+    telemetryClient: TelemetryClient,
+    getSpotifyClient: Spotify.GetClient
   ) =
 
   [<Function("GenerateAsync")>]
@@ -41,7 +40,7 @@ type GeneratorFunctions
       )
 
     task {
-      let! client = _spotifyClientProvider.GetAsync command.UserId
+      let! client = getSpotifyClient command.UserId
 
       let logRecommendedTracks =
         Logf.logfi

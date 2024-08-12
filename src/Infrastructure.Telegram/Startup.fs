@@ -3,6 +3,7 @@
 #nowarn "20"
 
 open Generator.Settings
+open Infrastructure
 open Infrastructure.Telegram.Services
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -10,6 +11,8 @@ open Microsoft.Extensions.Options
 open Telegram.Bot
 open otsom.fs.Extensions.DependencyInjection
 open otsom.fs.Telegram.Bot
+open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
+open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 
 let private configureTelegramBotClient (options: IOptions<TelegramSettings>) =
   let settings = options.Value
@@ -26,4 +29,4 @@ let addTelegram (configuration: IConfiguration) (services: IServiceCollection) =
 
   services.AddScoped<MessageService>().AddScoped<CallbackQueryService>()
 
-  services.AddSingleton<SpotifyClientProvider>()
+  services.BuildSingleton<Spotify.GetClient, Completed.Load, IOptions<SpotifySettings>>(Spotify.getClient)
