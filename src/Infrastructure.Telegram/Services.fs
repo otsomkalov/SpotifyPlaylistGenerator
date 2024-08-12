@@ -76,7 +76,7 @@ type MessageService
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task {
-      let! spotifyClient = _spotifyClientProvider.GetAsync userId
+      let! spotifyClient = getSpotifyClient userId
 
       let authState =
         if spotifyClient = null then
