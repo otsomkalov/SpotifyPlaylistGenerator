@@ -8,12 +8,10 @@ open Telegram
 open Infrastructure
 open Infrastructure.Telegram.Helpers
 open Infrastructure.Workflows
-open System.Collections.Generic
 open System.Threading.Tasks
 open Azure.Storage.Queues
 open Domain.Core
 open Domain.Workflows
-open Infrastructure.Spotify
 open Microsoft.Extensions.Options
 open MongoDB.Driver
 open SpotifyAPI.Web
@@ -27,42 +25,9 @@ open otsom.fs.Extensions
 open otsom.fs.Extensions.String
 open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
-open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 open otsom.fs.Telegram.Bot.Core
 open otsom.fs.Core
 open Infrastructure.Repos
-
-type SpotifyClientProvider(createClientFromTokenResponse: CreateClientFromTokenResponse, loadCompletedAuth: Completed.Load) =
-  let _clientsByTelegramId =
-    Dictionary<int64, ISpotifyClient>()
-
-  member this.GetAsync userId : Task<ISpotifyClient> =
-    let userId' = userId |> UserId.value
-
-    if _clientsByTelegramId.ContainsKey(userId') then
-      _clientsByTelegramId[userId'] |> Task.FromResult
-    else
-      task {
-        let! auth = loadCompletedAuth userId
-
-        return!
-          match auth with
-          | None -> Task.FromResult null
-          | Some auth ->
-            let client =
-              AuthorizationCodeTokenResponse(RefreshToken = auth.Token)
-              |> createClientFromTokenResponse
-
-            this.SetClient(userId', client)
-
-            client |> Task.FromResult
-      }
-
-  member this.SetClient(telegramId: int64, client: ISpotifyClient) =
-    if _clientsByTelegramId.ContainsKey(telegramId) then
-      ()
-    else
-      (telegramId, client) |> _clientsByTelegramId.Add
 
 type AuthState =
   | Authorized
@@ -70,7 +35,6 @@ type AuthState =
 
 type MessageService
   (
-    _spotifyClientProvider: SpotifyClientProvider,
     _bot: ITelegramBotClient,
     _database: IMongoDatabase,
     _connectionMultiplexer: IConnectionMultiplexer,
@@ -82,7 +46,8 @@ type MessageService
     replyToUserMessage: ReplyToUserMessage,
     sendUserKeyboard: SendUserKeyboard,
     sendUserMessageButtons: SendUserMessageButtons,
-    askUserForReply: AskUserForReply
+    askUserForReply: AskUserForReply,
+    getSpotifyClient: Spotify.GetClient
   ) =
 
   member this.ProcessAsync(message: Message) =
@@ -111,7 +76,7 @@ type MessageService
       |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     task {
-      let! spotifyClient = _spotifyClientProvider.GetAsync userId
+      let! spotifyClient = getSpotifyClient userId
 
       let authState =
         if spotifyClient = null then

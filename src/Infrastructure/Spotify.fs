@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open System.Net
+open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
@@ -11,8 +12,10 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open SpotifyAPI.Web
 open Infrastructure.Helpers
+open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
+open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
 
 [<Literal>]
 let private playlistTracksLimit = 100
@@ -88,25 +91,38 @@ let listSpotifyLikedTracks (client: ISpotifyClient) : UserRepo.ListLikedTracks =
     let loadTracks' = loadTracks' likedTacksLimit
 
     fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
-type CreateClientFromTokenResponse = AuthorizationCodeTokenResponse -> ISpotifyClient
 
-let createClientFromTokenResponse (spotifySettings: IOptions<SpotifySettings>) : CreateClientFromTokenResponse =
-  fun response ->
-    let spotifySettings = spotifySettings.Value
+type GetClient = UserId -> Task<ISpotifyClient>
 
-    let authenticator =
-      AuthorizationCodeAuthenticator(spotifySettings.ClientId, spotifySettings.ClientSecret, response)
+let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<SpotifySettings>) : GetClient =
+  let spotifySettings = spotifyOptions.Value
+  let clients = Dictionary<UserId, ISpotifyClient>()
 
-    let retryHandler =
-      SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
+  fun userId ->
+    match clients.TryGetValue(userId) with
+    | true, client -> client |> Task.FromResult
+    | false, _ ->
+      userId
+      |> loadCompletedAuth
+      |> TaskOption.taskMap (fun auth ->
+        task {
+          let! tokenResponse =
+            AuthorizationCodeRefreshRequest(spotifySettings.ClientId, spotifySettings.ClientSecret, auth.Token)
+            |> OAuthClient().RequestToken
 
-    let config =
-      SpotifyClientConfig
-        .CreateDefault()
-        .WithAuthenticator(authenticator)
-        .WithRetryHandler(retryHandler)
+          let retryHandler =
+            SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
 
-    config |> SpotifyClient :> ISpotifyClient
+          let config =
+            SpotifyClientConfig
+              .CreateDefault()
+              .WithRetryHandler(retryHandler)
+              .WithToken(tokenResponse.AccessToken)
+
+          return config |> SpotifyClient :> ISpotifyClient
+        })
+      |> TaskOption.tap (fun client -> clients.TryAdd(userId, client) |> ignore)
+      |> Task.map Option.get
 
 [<RequireQualifiedAccess>]
 module internal Playlist =
