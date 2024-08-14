@@ -23,12 +23,9 @@ type SpotifyPlaylistData =
   { Id: PlaylistId
     Name: string }
 
-type ReadableSpotifyPlaylist = ReadableSpotifyPlaylist of SpotifyPlaylistData
-type WriteableSpotifyPlaylist = WriteableSpotifyPlaylist of SpotifyPlaylistData
-
 type SpotifyPlaylist =
-  | Readable of ReadableSpotifyPlaylist
-  | Writable of WriteableSpotifyPlaylist
+  | Readable of SpotifyPlaylistData
+  | Writable of SpotifyPlaylistData
 
 type IncludedPlaylist =
   { Id: ReadablePlaylistId
@@ -179,11 +176,11 @@ module IncludedPlaylist =
 
   let fromSpotifyPlaylist =
     function
-    | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
+    | Readable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
         Enabled = true } : IncludedPlaylist
-    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+    | Writable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
         Enabled = true }
@@ -196,11 +193,11 @@ module ExcludedPlaylist =
 
   let fromSpotifyPlaylist =
     function
-    | Readable(ReadableSpotifyPlaylist { Id = id; Name = name }) ->
+    | Readable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
         Enabled = true }
-    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+    | Writable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
         Enabled = true }
@@ -216,7 +213,7 @@ module TargetedPlaylist =
   let fromSpotifyPlaylist =
     function
     | Readable _ -> None
-    | Writable(WriteableSpotifyPlaylist { Id = id; Name = name }) ->
+    | Writable({ Id = id; Name = name }) ->
       { Id = (id |> WritablePlaylistId)
         Name = name
         Enabled = true
