@@ -2,11 +2,9 @@
 
 open System.Threading.Tasks
 open Domain.Core
-open Domain.Extensions
 open Domain.Repos
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
-open otsom.fs.Core
 open otsom.fs.Extensions
 open shortid
 open shortid.Configuration
@@ -377,11 +375,9 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ParsedPlaylistId = ParsedPlaylistId of string
+  type ParseId = Playlist.RawPlaylistId -> Result<PlaylistId, Playlist.IdParsingError>
 
-  type ParseId = Playlist.RawPlaylistId -> Result<ParsedPlaylistId, Playlist.IdParsingError>
-
-  type LoadFromSpotify = ParsedPlaylistId -> Task<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
+  type LoadFromSpotify = PlaylistId -> Task<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
 
   type IncludeInStorage = IncludedPlaylist -> Async<IncludedPlaylist>
   type ExcludeInStorage = ExcludedPlaylist -> Async<ExcludedPlaylist>

@@ -35,14 +35,14 @@ module Playlist =
         | _ -> None
 
       match rawPlaylistId |> RawPlaylistId.value with
-      | SpotifyUri id -> id |> Playlist.ParsedPlaylistId |> Ok
-      | Uri uri -> uri |> getPlaylistIdFromUri |> Playlist.ParsedPlaylistId |> Ok
-      | PlaylistId id -> id |> Playlist.ParsedPlaylistId |> Ok
+      | SpotifyUri id -> id |> PlaylistId |> Ok
+      | Uri uri -> uri |> getPlaylistIdFromUri |> PlaylistId |> Ok
+      | PlaylistId id -> id |> PlaylistId |> Ok
       | _ -> Playlist.IdParsingError() |> Error
 
   let loadFromSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
     fun playlistId ->
-      let rawPlaylistId = playlistId |> ParsedPlaylistId.value
+      let rawPlaylistId = playlistId |> PlaylistId.value
 
       task {
         try
