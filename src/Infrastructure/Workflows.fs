@@ -52,23 +52,20 @@ module Playlist =
 
           let playlist =
             if playlist.Owner.Id = currentUser.Id then
-              WriteableSpotifyPlaylist(
+              SpotifyPlaylist.Writable(
                 { Id = playlist.Id |> PlaylistId
                   Name = playlist.Name }
               )
-              |> SpotifyPlaylist.Writable
             else
-              ReadableSpotifyPlaylist(
+              SpotifyPlaylist.Readable(
                 { Id = playlist.Id |> PlaylistId
                   Name = playlist.Name }
               )
-              |> SpotifyPlaylist.Readable
 
           return playlist |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
       }
-
   let countTracks telemetryClient multiplexer : Playlist.CountTracks =
     Cache.Playlist.countTracks telemetryClient multiplexer
 
