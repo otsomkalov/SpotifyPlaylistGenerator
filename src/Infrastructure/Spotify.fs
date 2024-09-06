@@ -92,7 +92,7 @@ let listSpotifyLikedTracks (client: ISpotifyClient) : UserRepo.ListLikedTracks =
 
     fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
 
-type GetClient = UserId -> Task<ISpotifyClient>
+type GetClient = UserId -> Task<ISpotifyClient option>
 
 let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<SpotifySettings>) : GetClient =
   let spotifySettings = spotifyOptions.Value
@@ -100,7 +100,7 @@ let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<Spot
 
   fun userId ->
     match clients.TryGetValue(userId) with
-    | true, client -> client |> Task.FromResult
+    | true, client -> client |> Some |> Task.FromResult
     | false, _ ->
       userId
       |> loadCompletedAuth
@@ -122,7 +122,6 @@ let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<Spot
           return config |> SpotifyClient :> ISpotifyClient
         })
       |> TaskOption.tap (fun client -> clients.TryAdd(userId, client) |> ignore)
-      |> Task.map Option.get
 
 [<RequireQualifiedAccess>]
 module internal Playlist =

@@ -13,6 +13,7 @@ open Domain.Workflows
 open Domain.Core
 open Telegram.Bot
 open otsom.fs.Core
+open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 
 type GeneratorFunctions
@@ -40,7 +41,7 @@ type GeneratorFunctions
       )
 
     task {
-      let! client = getSpotifyClient command.UserId
+      let! client = getSpotifyClient command.UserId |> Task.map Option.get
 
       let logRecommendedTracks =
         Logf.logfi
