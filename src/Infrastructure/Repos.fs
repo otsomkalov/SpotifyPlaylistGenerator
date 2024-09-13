@@ -1,9 +1,11 @@
 ﻿module Infrastructure.Repos
 
+open Azure.Storage.Queues
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
 open FSharp
+open Infrastructure.Helpers
 open Microsoft.ApplicationInsights
 open MongoDB.Driver
 open Database
@@ -78,6 +80,15 @@ module PresetRepo =
 
         return playlistsTracks
       }
+
+  let queueRun (queueClient: QueueClient) : UserId -> PresetRepo.QueueRun =
+    fun userId ->
+      fun presetId ->
+        {| UserId = userId
+           PresetId = presetId |}
+        |> JSON.serialize
+        |> queueClient.SendMessageAsync
+        |> Task.map ignore
 
 [<RequireQualifiedAccess>]
 module UserRepo =

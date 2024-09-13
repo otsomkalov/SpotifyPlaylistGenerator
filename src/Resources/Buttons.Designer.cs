@@ -123,15 +123,6 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 🎵 Generate playlist.
-        /// </summary>
-        public static string GeneratePlaylist {
-            get {
-                return ResourceManager.GetString("GeneratePlaylist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to ❌ Ignore liked.
         /// </summary>
         public static string IgnoreLikedTracks {
@@ -173,6 +164,15 @@ namespace Resources {
         public static string MyPresets {
             get {
                 return ResourceManager.GetString("MyPresets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 🚀 Run preset.
+        /// </summary>
+        public static string RunPreset {
+            get {
+                return ResourceManager.GetString("RunPreset", resourceCulture);
             }
         }
         

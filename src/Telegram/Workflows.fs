@@ -415,6 +415,60 @@ module Message =
       }
 
 [<RequireQualifiedAccess>]
+module Preset =
+  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+    fun presetId ->
+      task {
+        let! preset = getPreset presetId
+
+        let! text, keyboard = getPresetMessage preset
+
+        let presetId = presetId |> PresetId.value
+
+        let keyboardMarkup =
+          seq {
+            seq {
+              InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
+              InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
+              InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
+            }
+
+            keyboard
+
+            seq { InlineKeyboardButton.WithCallbackData("Run", $"p|%s{presetId}|r") }
+
+            seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
+
+            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
+
+            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
+          }
+
+        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
+      }
+
+  let queueRun
+    (queueRun': Domain.Core.Preset.QueueRun)
+    (sendMessage: SendMessage)
+    : Preset.Run =
+    let onSuccess () =
+      sendMessage "Preset run is queued!"
+
+    let onError errors =
+      let errorsText =
+        errors
+        |> Seq.map (function
+          | Preset.ValidationError.NoIncludedPlaylists -> "No included playlists!"
+          | Preset.ValidationError.NoTargetedPlaylists -> "No targeted playlists!")
+        |> String.concat Environment.NewLine
+
+      sendMessage errorsText
+
+    queueRun'
+    >> TaskResult.taskEither onSuccess onError
+    >> Task.ignore
+
+[<RequireQualifiedAccess>]
 module User =
   let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
     fun userId ->
@@ -440,7 +494,7 @@ module User =
           let! text, _ = getPresetMessage preset
 
           let buttons =
-            [| [| Buttons.GeneratePlaylist |]
+            [| [| Buttons.RunPreset |]
                [| Buttons.MyPresets |]
                [| Buttons.CreatePreset |]
 
@@ -496,7 +550,7 @@ module User =
         | PresetSettings.PlaylistSize.NotANumber -> sendMessage Messages.PlaylistSizeNotANumber
 
       setPlaylistSize userId size
-      |> TaskResult.taskEither onSuccess onError
+      |> TaskResult.taskEither onSuccess (onError >> Task.ignore)
 
   let setCurrentPreset (answerCallbackQuery: AnswerCallbackQuery) (setCurrentPreset: Domain.Core.User.SetCurrentPreset) : User.SetCurrentPreset =
     fun userId presetId ->
@@ -506,15 +560,13 @@ module User =
         return! answerCallbackQuery "Current preset is successfully set!"
       }
 
-  let queueCurrentPresetGeneration
-    (queueGeneration: PresetRepo.QueueGeneration)
+  let queueCurrentPresetRun
+    (queueRun: Domain.Core.Preset.QueueRun)
     (replyToMessage: ReplyToMessage)
     (loadUser: User.Get)
-    (loadPreset: Preset.Get)
-    (validatePreset: Preset.Validate)
-    : User.QueueCurrentPresetGeneration =
+    : User.QueueCurrentPresetRun =
     let onSuccess () =
-      replyToMessage "Your playlist generation request is queued!"
+      replyToMessage "Current preset run is queued!"
 
     let onError errors =
       let errorsText =
@@ -530,25 +582,23 @@ module User =
       userId
       |> loadUser
       |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      |> Task.bind loadPreset
-      |> Task.map validatePreset
-      |> TaskResult.taskMap (fun p -> queueGeneration userId p.Id)
+      |> Task.bind queueRun
       |> TaskResult.taskEither onSuccess onError
       |> Task.ignore
 
-  let generateCurrentPreset sendMessage (generateCurrentPreset: Domain.Core.User.GenerateCurrentPreset) : User.GenerateCurrentPreset =
-    let onSuccess () = sendMessage "Playlist generated!"
+  let runCurrentPreset (sendMessage: SendMessage) (runCurrentPreset': Domain.Core.User.RunCurrentPreset) : User.RunCurrentPreset =
+    let onSuccess () = sendMessage "Playlist generated!" |> Task.ignore
 
     let onError =
       function
-      | Preset.GenerateError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks"
-      | Preset.GenerateError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks"
+      | Preset.RunError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks" |> Task.ignore
+      | Preset.RunError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks" |> Task.ignore
 
     fun userId ->
       task {
-        do! sendMessage "Generating playlist..."
+        do! sendMessage "Generating playlist..." |> Task.ignore
 
-        return! generateCurrentPreset userId |> TaskResult.taskEither onSuccess onError |> Task.ignore
+        return! runCurrentPreset' userId |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
 [<RequireQualifiedAccess>]
@@ -627,34 +677,3 @@ module PresetSettings =
 
   let ignoreLikedTracks answerCallbackQuery sendPresetInfo (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
     setLikedTracksHandling answerCallbackQuery ignoreLikedTracks sendPresetInfo
-
-[<RequireQualifiedAccess>]
-module Preset =
-  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
-    fun presetId ->
-      task {
-        let! preset = getPreset presetId
-
-        let! text, keyboard = getPresetMessage preset
-
-        let presetId = presetId |> PresetId.value
-
-        let keyboardMarkup =
-          seq {
-            seq {
-              InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
-              InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
-              InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
-            }
-
-            keyboard
-
-            seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
-
-            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
-
-            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
-          }
-
-        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
-      }
