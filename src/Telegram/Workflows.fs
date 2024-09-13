@@ -468,6 +468,21 @@ module Preset =
     >> TaskResult.taskEither onSuccess onError
     >> Task.ignore
 
+  let run (sendMessage: SendMessage) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
+    fun presetId ->
+      let onSuccess () = sendMessage "Preset executed!" |> Task.ignore
+
+      let onError =
+        function
+        | Preset.RunError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks" |> Task.ignore
+        | Preset.RunError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks" |> Task.ignore
+
+      task {
+        do! sendMessage "Running preset..." |> Task.ignore
+
+        return! runPreset presetId |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
 [<RequireQualifiedAccess>]
 module User =
   let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
@@ -587,7 +602,7 @@ module User =
       |> Task.ignore
 
   let runCurrentPreset (sendMessage: SendMessage) (runCurrentPreset': Domain.Core.User.RunCurrentPreset) : User.RunCurrentPreset =
-    let onSuccess () = sendMessage "Playlist generated!" |> Task.ignore
+    let onSuccess () = sendMessage "Preset executed!" |> Task.ignore
 
     let onError =
       function
@@ -596,7 +611,7 @@ module User =
 
     fun userId ->
       task {
-        do! sendMessage "Generating playlist..." |> Task.ignore
+        do! sendMessage "Running preset..." |> Task.ignore
 
         return! runCurrentPreset' userId |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }

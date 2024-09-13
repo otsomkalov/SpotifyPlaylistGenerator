@@ -83,12 +83,7 @@ type GeneratorFunctions
           Shuffler = List.shuffle }
 
       let runPreset = Domain.Workflows.Preset.run io
+      let runPreset = Telegram.Workflows.Preset.run sendMessage runPreset
 
-      let runCurrentPreset =
-        Domain.Workflows.User.runCurrentPreset loadUser runPreset
-
-      let runCurrentPreset =
-        Telegram.Workflows.User.runCurrentPreset sendMessage runCurrentPreset
-
-      return! runCurrentPreset command.UserId
+      do! runPreset command.PresetId
     }
