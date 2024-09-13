@@ -5,7 +5,8 @@ open Domain.Core
 open Microsoft.FSharp.Core
 open otsom.fs.Core
 
-type AnswerCallbackQuery = string -> Task<unit>
+type AnswerCallbackQuery = unit -> Task<unit>
+type ShowNotification = string -> Task<unit>
 type Page = Page of int
 
 [<RequireQualifiedAccess>]

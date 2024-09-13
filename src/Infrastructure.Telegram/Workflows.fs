@@ -23,6 +23,14 @@ let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
 
 let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallbackQuery =
+  fun () ->
+    task {
+      do! bot.AnswerCallbackQueryAsync(callbackQueryId)
+
+      return ()
+    }
+
+let showNotification (bot: ITelegramBotClient) callbackQueryId : ShowNotification =
   fun text ->
     task {
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, text)

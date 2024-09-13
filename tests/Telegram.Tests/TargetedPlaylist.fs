@@ -64,7 +64,7 @@ let ``remove should delete playlist and show targeted playlists`` () =
       playlistId |> should equal Mocks.targetedPlaylist.Id
       Task.FromResult()
 
-  let answerCallbackQuery =
+  let showNotification =
     fun _ -> Task.FromResult()
 
   let listTargetedPlaylists =
@@ -73,6 +73,6 @@ let ``remove should delete playlist and show targeted playlists`` () =
       page |> should equal (Page 0)
       Task.FromResult()
 
-  let sut = TargetedPlaylist.remove removePlaylist answerCallbackQuery listTargetedPlaylists
+  let sut = TargetedPlaylist.remove removePlaylist showNotification listTargetedPlaylists
 
   sut Mocks.presetId Mocks.targetedPlaylist.Id

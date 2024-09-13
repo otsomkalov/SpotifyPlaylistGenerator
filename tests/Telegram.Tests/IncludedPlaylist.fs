@@ -60,7 +60,7 @@ let ``remove should delete playlist and show included playlists`` () =
       playlistId |> should equal Mocks.includedPlaylist.Id
       Task.FromResult()
 
-  let answerCallbackQuery = fun _ -> Task.FromResult()
+  let showNotification = fun _ -> Task.FromResult()
 
   let listExcludedPlaylists =
     fun presetId page ->
@@ -69,6 +69,6 @@ let ``remove should delete playlist and show included playlists`` () =
       Task.FromResult()
 
   let sut =
-    IncludedPlaylist.remove removePlaylist answerCallbackQuery listExcludedPlaylists
+    IncludedPlaylist.remove removePlaylist showNotification listExcludedPlaylists
 
   sut Mocks.presetId Mocks.includedPlaylist.Id
