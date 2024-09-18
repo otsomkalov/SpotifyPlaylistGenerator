@@ -465,10 +465,10 @@ module Preset =
 
       sendMessage errorsText
       |> Task.ignore
-      |> Task.taskTap answerCallbackQuery
 
     queueRun'
     >> TaskResult.taskEither onSuccess onError
+    >> Task.taskTap answerCallbackQuery
 
   let run (sendMessage: SendMessage) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
