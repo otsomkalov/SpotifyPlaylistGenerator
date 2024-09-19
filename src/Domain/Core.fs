@@ -152,9 +152,9 @@ module Preset =
     | NoIncludedTracks
     | NoPotentialTracks
 
-  type Run = PresetId -> Task<Result<unit, RunError>>
+  type Run = PresetId -> Task<Result<Preset, RunError>>
 
-  type QueueRun = PresetId -> Task<Result<unit, ValidationError list>>
+  type QueueRun = PresetId -> Task<Result<Preset, ValidationError list>>
 
 [<RequireQualifiedAccess>]
 module User =

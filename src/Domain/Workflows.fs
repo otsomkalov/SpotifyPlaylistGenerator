@@ -289,7 +289,8 @@ module Preset =
         |> Task.map (fun excludedTracks -> List.except excludedTracks includedTracks))
       |> TaskResult.map (filterUniqueArtists preset)
       |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
-      |> TaskResult.bind (saveTracks preset))
+      |> TaskResult.bind (saveTracks preset)
+      |> TaskResult.map (fun _ -> preset))
 
   let queueRun
     (loadPreset: Preset.Get)
@@ -298,7 +299,7 @@ module Preset =
     : Preset.QueueRun =
     loadPreset
     >> Task.map validatePreset
-    >> TaskResult.taskMap (fun p -> queueRun' p.Id)
+    >> TaskResult.taskTap (fun p -> queueRun' p.Id)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

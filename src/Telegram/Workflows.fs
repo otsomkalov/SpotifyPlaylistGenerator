@@ -451,8 +451,8 @@ module Preset =
     (sendMessage: SendMessage)
     (answerCallbackQuery: AnswerCallbackQuery)
     : Preset.Run =
-    let onSuccess () =
-      sendMessage "Preset run is queued!"
+    let onSuccess (preset: Preset) =
+      sendMessage $"Preset *{preset.Name}* run is queued!"
       |> Task.ignore
 
     let onError errors =
@@ -473,7 +473,7 @@ module Preset =
   let run (sendMessage: SendMessage) (editBotMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
       let onSuccess editMessage =
-        fun () -> editMessage "Preset executed!"
+        fun preset -> editMessage $"Preset *{preset.Name}* executed!"
 
       let onError editMessage =
         function
