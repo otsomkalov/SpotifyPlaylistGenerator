@@ -24,13 +24,13 @@ type GeneratorFunctions
     connectionMultiplexer: IConnectionMultiplexer,
     sendUserMessage: SendUserMessage,
     telemetryClient: TelemetryClient,
-    getSpotifyClient: Spotify.GetClient
+    getSpotifyClient: Spotify.GetClient,
+    editBotMessage: EditBotMessage
   ) =
 
   [<Function("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: UserId; PresetId: PresetId |}, _: FunctionContext) =
     let loadPreset = PresetRepo.load _db
-    let loadUser = UserRepo.load _db
     let getPreset = Preset.get loadPreset
 
     use _ =
@@ -82,8 +82,10 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations
           Shuffler = List.shuffle }
 
+      let editMessage = editBotMessage command.UserId
+
       let runPreset = Domain.Workflows.Preset.run io
-      let runPreset = Telegram.Workflows.Preset.run sendMessage runPreset
+      let runPreset = Telegram.Workflows.Preset.run sendMessage editMessage runPreset
 
       do! runPreset command.PresetId
     }

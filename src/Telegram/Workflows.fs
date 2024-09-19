@@ -465,24 +465,27 @@ module Preset =
 
       sendMessage errorsText
       |> Task.ignore
+      |> Task.taskTap answerCallbackQuery
 
     queueRun'
     >> TaskResult.taskEither onSuccess onError
-    >> Task.taskTap answerCallbackQuery
 
-  let run (sendMessage: SendMessage) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
+  let run (sendMessage: SendMessage) (editMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
-      let onSuccess () = sendMessage "Preset executed!" |> Task.ignore
+      let onSuccess editMessage =
+        fun () -> editMessage "Preset executed!"
 
-      let onError =
+      let onError editMessage =
         function
-        | Preset.RunError.NoIncludedTracks -> sendMessage "Your preset has 0 included tracks" |> Task.ignore
-        | Preset.RunError.NoPotentialTracks -> sendMessage "Playlists combination in your preset produced 0 potential tracks" |> Task.ignore
+        | Preset.RunError.NoIncludedTracks -> editMessage "Your preset has 0 included tracks"
+        | Preset.RunError.NoPotentialTracks -> editMessage "Playlists combination in your preset produced 0 potential tracks"
 
       task {
-        do! sendMessage "Running preset..." |> Task.ignore
+        let! sentMessageId = sendMessage "Running preset..."
 
-        return! runPreset presetId |> TaskResult.taskEither onSuccess onError |> Task.ignore
+        let editMessage = editMessage sentMessageId
+
+        return! runPreset presetId |> TaskResult.taskEither (onSuccess editMessage) (onError editMessage) |> Task.ignore
       }
 
 [<RequireQualifiedAccess>]
