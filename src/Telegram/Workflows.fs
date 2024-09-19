@@ -470,7 +470,7 @@ module Preset =
     queueRun'
     >> TaskResult.taskEither onSuccess onError
 
-  let run (sendMessage: SendMessage) (editMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
+  let run (sendMessage: SendMessage) (editBotMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
       let onSuccess editMessage =
         fun () -> editMessage "Preset executed!"
@@ -483,9 +483,9 @@ module Preset =
       task {
         let! sentMessageId = sendMessage "Running preset..."
 
-        let editMessage = editMessage sentMessageId
+        let editMessage = editBotMessage sentMessageId
 
-        return! runPreset presetId |> TaskResult.taskEither (onSuccess editMessage) (onError editMessage) |> Task.ignore
+        return! runPreset presetId |> TaskResult.taskEither (onSuccess editMessage) (onError editMessage)
       }
 
 [<RequireQualifiedAccess>]
