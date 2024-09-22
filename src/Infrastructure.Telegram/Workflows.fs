@@ -23,6 +23,14 @@ let escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
 
 let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallbackQuery =
+  fun () ->
+    task {
+      do! bot.AnswerCallbackQueryAsync(callbackQueryId)
+
+      return ()
+    }
+
+let showNotification (bot: ITelegramBotClient) callbackQueryId : ShowNotification =
   fun text ->
     task {
       do! bot.AnswerCallbackQueryAsync(callbackQueryId, text)
@@ -121,6 +129,7 @@ let parseAction: ParseAction =
     | [| "p"; id; "i" |] -> PresetId id |> PresetActions.Show |> Action.Preset
     | [| "p"; id; "c" |] -> PresetId id |> Action.SetCurrentPreset
     | [| "p"; id; "rm" |] -> PresetId id |> Action.RemovePreset
+    | [| "p"; id; "r" |] -> PresetId id |> PresetActions.Run |> Action.Preset
 
     | [| "p"; id; "ip"; Int page |] ->
       IncludedPlaylistActions.List(PresetId id, (Page page)) |> Action.IncludedPlaylist

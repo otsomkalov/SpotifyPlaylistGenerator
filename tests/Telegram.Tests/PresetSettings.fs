@@ -14,7 +14,7 @@ let ``enableUniqueArtists should update preset and show updated`` () =
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun _ -> Task.FromResult()
+  let showNotification = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->
@@ -23,7 +23,7 @@ let ``enableUniqueArtists should update preset and show updated`` () =
       Task.FromResult()
 
   let sut =
-    PresetSettings.enableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
+    PresetSettings.enableUniqueArtists disableUniqueArtists showNotification showPresetInfo
 
   sut Mocks.presetId
 
@@ -35,7 +35,7 @@ let ``disableUniqueArtists should update preset and show updated`` () =
 
       Task.FromResult()
 
-  let answerCallbackQuery = fun _ -> Task.FromResult()
+  let showNotification = fun _ -> Task.FromResult()
 
   let showPresetInfo =
     fun presetId ->
@@ -44,6 +44,6 @@ let ``disableUniqueArtists should update preset and show updated`` () =
       Task.FromResult()
 
   let sut =
-    PresetSettings.disableUniqueArtists disableUniqueArtists answerCallbackQuery showPresetInfo
+    PresetSettings.disableUniqueArtists disableUniqueArtists showNotification showPresetInfo
 
   sut Mocks.presetId

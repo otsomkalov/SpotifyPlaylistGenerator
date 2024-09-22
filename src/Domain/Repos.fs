@@ -14,6 +14,8 @@ module PresetRepo =
   type ListIncludedTracks = IncludedPlaylist list -> Task<Track list>
   type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
 
+  type QueueRun = PresetId -> Task<unit>
+
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
   type AppendTracks = TargetedPlaylistId -> Track list -> Task<unit>

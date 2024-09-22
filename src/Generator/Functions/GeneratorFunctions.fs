@@ -72,7 +72,7 @@ type GeneratorFunctions
       do
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
 
-      let io: Domain.Workflows.Preset.GenerateIO =
+      let io: Domain.Workflows.Preset.RunIO =
         { ListIncludedTracks = listIncludedTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
@@ -82,13 +82,8 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations
           Shuffler = List.shuffle }
 
-      let generatePreset = Domain.Workflows.Preset.generate io
+      let runPreset = Domain.Workflows.Preset.run io
+      let runPreset = Telegram.Workflows.Preset.run sendMessage runPreset
 
-      let generateCurrentPreset =
-        Domain.Workflows.User.generateCurrentPreset loadUser generatePreset
-
-      let generateCurrentPreset =
-        Telegram.Workflows.User.generateCurrentPreset sendMessage generateCurrentPreset
-
-      return! generateCurrentPreset command.UserId
+      do! runPreset command.PresetId
     }

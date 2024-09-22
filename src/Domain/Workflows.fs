@@ -81,7 +81,7 @@ module User =
       |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
       |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
 
-  let generateCurrentPreset (loadUser: UserRepo.Load) (generatePreset: Preset.Generate) : User.GenerateCurrentPreset =
+  let runCurrentPreset (loadUser: UserRepo.Load) (generatePreset: Preset.Run) : User.RunCurrentPreset =
     loadUser
     >> Task.map (fun u -> u.CurrentPresetId |> Option.get)
     >> Task.bind generatePreset
@@ -216,7 +216,7 @@ module Preset =
     fun presetId ->
       removePreset presetId
 
-  type GenerateIO =
+  type RunIO =
     { ListIncludedTracks: PresetRepo.ListIncludedTracks
       ListExcludedTracks: PresetRepo.ListExcludedTracks
       ListLikedTracks: UserRepo.ListLikedTracks
@@ -226,12 +226,12 @@ module Preset =
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
 
-  let generate (io: GenerateIO) : Preset.Generate =
+  let run (io: RunIO) : Preset.Run =
 
     let saveTracks preset =
       fun (tracks: Track list) ->
         match tracks with
-        | [] -> Preset.GenerateError.NoPotentialTracks |> Error |> Task.FromResult
+        | [] -> Preset.RunError.NoPotentialTracks |> Error |> Task.FromResult
         | tracks ->
           let tracksToImport =
             tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
@@ -265,7 +265,7 @@ module Preset =
     let getRecommendations (preset: Preset) =
       fun (tracks: Track list) ->
         match (tracks, preset.Settings.RecommendationsEnabled) with
-        | [], _ -> Preset.GenerateError.NoIncludedTracks |> Error |> Task.FromResult
+        | [], _ -> Preset.RunError.NoIncludedTracks |> Error |> Task.FromResult
         | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.prepend tracks) |> Task.map Ok
         | _ -> tracks |> Ok |> Task.FromResult
 
@@ -290,6 +290,15 @@ module Preset =
       |> TaskResult.map (filterUniqueArtists preset)
       |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
       |> TaskResult.bind (saveTracks preset))
+
+  let queueRun
+    (loadPreset: Preset.Get)
+    (validatePreset: Preset.Validate)
+    (queueRun': PresetRepo.QueueRun)
+    : Preset.QueueRun =
+    loadPreset
+    >> Task.map validatePreset
+    >> TaskResult.taskMap (fun p -> queueRun' p.Id)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
