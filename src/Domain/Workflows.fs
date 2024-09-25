@@ -81,11 +81,6 @@ module User =
       |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
       |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
 
-  let runCurrentPreset (loadUser: UserRepo.Load) (generatePreset: Preset.Run) : User.RunCurrentPreset =
-    loadUser
-    >> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-    >> Task.bind generatePreset
-
 [<RequireQualifiedAccess>]
 module SimplePreset =
   let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
@@ -300,15 +295,6 @@ module Preset =
     loadPreset
     >> Task.map validatePreset
     >> TaskResult.taskTap (fun p -> queueRun' p.Id)
-
-  let queueRun
-    (loadPreset: Preset.Get)
-    (validatePreset: Preset.Validate)
-    (queueRun': PresetRepo.QueueRun)
-    : Preset.QueueRun =
-    loadPreset
-    >> Task.map validatePreset
-    >> TaskResult.taskMap (fun p -> queueRun' p.Id)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

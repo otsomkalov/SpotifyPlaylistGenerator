@@ -163,7 +163,6 @@ module User =
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
-  type RunCurrentPreset = UserId -> Task<Result<unit, Preset.RunError>>
 
   let create userId =
     { Id = userId
