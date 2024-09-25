@@ -301,6 +301,15 @@ module Preset =
     >> Task.map validatePreset
     >> TaskResult.taskTap (fun p -> queueRun' p.Id)
 
+  let queueRun
+    (loadPreset: Preset.Get)
+    (validatePreset: Preset.Validate)
+    (queueRun': PresetRepo.QueueRun)
+    : Preset.QueueRun =
+    loadPreset
+    >> Task.map validatePreset
+    >> TaskResult.taskMap (fun p -> queueRun' p.Id)
+
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
   let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
