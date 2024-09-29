@@ -48,20 +48,20 @@ module Run =
       let! result = sut Mocks.presetId
 
       result
-      |> should equal (Result<unit, Preset.RunError>.Error(Preset.RunError.NoPotentialTracks))
+      |> should equal (Result<Preset, _>.Error(Preset.RunError.NoPotentialTracks))
     }
 
   [<Fact>]
   let ``saves included tracks with liked`` () =
+    let preset =
+      { Mocks.preset with
+          Settings =
+            { Mocks.preset.Settings with
+                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include } }
+
     let io =
       { io with
-          LoadPreset =
-            fun _ ->
-              { Mocks.preset with
-                  Settings =
-                    { Mocks.preset.Settings with
-                        LikedTracksHandling = PresetSettings.LikedTracksHandling.Include } }
-              |> Task.FromResult
+          LoadPreset = fun _ -> preset |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
               tracks |> should equalSeq [ Mocks.includedTrack; Mocks.likedTrack ]
@@ -76,7 +76,7 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(preset))
     }
 
   [<Fact>]
@@ -97,7 +97,7 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(Mocks.preset))
     }
 
   [<Fact>]
@@ -122,20 +122,20 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(Mocks.preset))
     }
 
   [<Fact>]
   let ``saves included tracks with recommendations`` () =
+    let preset =
+      { Mocks.preset with
+          Settings =
+            { Mocks.preset.Settings with
+                RecommendationsEnabled = true } }
+
     let io =
       { io with
-          LoadPreset =
-            fun _ ->
-              { Mocks.preset with
-                  Settings =
-                    { Mocks.preset.Settings with
-                        RecommendationsEnabled = true } }
-              |> Task.FromResult
+          LoadPreset = fun _ -> preset |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
               tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.includedTrack ]
@@ -150,21 +150,21 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(preset))
     }
 
   [<Fact>]
   let ``saves liked tracks with recommendations`` () =
+    let preset =
+      { Mocks.preset with
+          Settings =
+            { Mocks.preset.Settings with
+                RecommendationsEnabled = true
+                LikedTracksHandling = PresetSettings.LikedTracksHandling.Include } }
+
     let io =
       { io with
-          LoadPreset =
-            fun _ ->
-              { Mocks.preset with
-                  Settings =
-                    { Mocks.preset.Settings with
-                        RecommendationsEnabled = true
-                        LikedTracksHandling = PresetSettings.LikedTracksHandling.Include } }
-              |> Task.FromResult
+          LoadPreset = fun _ -> preset |> Task.FromResult
           ListIncludedTracks =
             fun playlists ->
               playlists |> should equivalent [ Mocks.includedPlaylist ]
@@ -187,20 +187,20 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(preset))
     }
 
   [<Fact>]
   let ``saves recommendations without excluded track`` () =
+    let preset =
+      { Mocks.preset with
+          Settings =
+            { Mocks.preset.Settings with
+                RecommendationsEnabled = true } }
+
     let io =
       { io with
-          LoadPreset =
-            fun _ ->
-              { Mocks.preset with
-                  Settings =
-                    { Mocks.preset.Settings with
-                        RecommendationsEnabled = true } }
-              |> Task.FromResult
+          LoadPreset = fun _ -> preset |> Task.FromResult
           GetRecommendations =
             fun tracks ->
               tracks |> should equivalent [ Mocks.includedTrack.Id ]
@@ -219,5 +219,5 @@ module Run =
     task {
       let! result = sut Mocks.presetId
 
-      result |> should equal (Result<unit, Preset.RunError>.Ok())
+      result |> should equal (Result<_, Preset.RunError>.Ok(preset))
     }
