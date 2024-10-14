@@ -29,9 +29,6 @@ let private getTracksIds (tracks: FullTrack seq) =
       Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
   |> Seq.toList
 
-[<Literal>]
-let private mapParallelBatches = 15
-
 let private loadTracks' limit loadBatch =
   async {
     let! initialBatch, totalCount = loadBatch 0
@@ -41,8 +38,7 @@ let private loadTracks' limit loadBatch =
       | Some count ->
         [ limit..limit..count ]
         |> List.map (loadBatch >> Async.map fst)
-        |> (fun batches -> (batches, mapParallelBatches))
-        |> Async.Parallel
+        |> Async.Sequential
         |> Async.map (List.concat >> (List.append initialBatch))
       | None -> initialBatch |> async.Return
   }
