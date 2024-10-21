@@ -31,8 +31,10 @@ let excludedPlaylist: ExcludedPlaylist =
     Name = "excluded-playlist-name"
     Enabled = true }
 
+let targetedPlaylistId = PlaylistId("targeted-playlist-id")
+
 let targetedPlaylist: TargetedPlaylist =
-  { Id = WritablePlaylistId(PlaylistId("targeted-playlist-id"))
+  { Id = WritablePlaylistId(targetedPlaylistId)
     Enabled = true
     Name = "targeted-playlist-name"
     Overwrite = true }
