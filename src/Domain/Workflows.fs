@@ -81,11 +81,6 @@ module User =
       |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
       |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
 
-  let runCurrentPreset (loadUser: UserRepo.Load) (generatePreset: Preset.Run) : User.RunCurrentPreset =
-    loadUser
-    >> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-    >> Task.bind generatePreset
-
 [<RequireQualifiedAccess>]
 module SimplePreset =
   let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
@@ -289,7 +284,8 @@ module Preset =
         |> Task.map (fun excludedTracks -> List.except excludedTracks includedTracks))
       |> TaskResult.map (filterUniqueArtists preset)
       |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
-      |> TaskResult.bind (saveTracks preset))
+      |> TaskResult.bind (saveTracks preset)
+      |> TaskResult.map (fun _ -> preset))
 
   let queueRun
     (loadPreset: Preset.Get)
@@ -298,7 +294,7 @@ module Preset =
     : Preset.QueueRun =
     loadPreset
     >> Task.map validatePreset
-    >> TaskResult.taskMap (fun p -> queueRun' p.Id)
+    >> TaskResult.taskTap (fun p -> queueRun' p.Id)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
