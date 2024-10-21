@@ -1,13 +1,15 @@
-﻿module internal Infrastructure.Cache
+﻿module internal Infrastructure.Cache.Redis
 
 open Domain.Core
 open Domain.Repos
 open Domain.Workflows
+open Infrastructure
 open Microsoft.ApplicationInsights
 open StackExchange.Redis
 open Infrastructure.Helpers
 open otsom.fs.Core
 open otsom.fs.Extensions
+open System.Threading.Tasks
 
 let private listCachedTracks telemetryClient cache =
   fun key ->
@@ -18,23 +20,26 @@ let private serializeTracks tracks =
   tracks |> List.map (JSON.serialize >> RedisValue)
 
 [<RequireQualifiedAccess>]
-module User =
+module UserRepo =
   let usersTracksDatabase = 1
 
-  let private getUsersTracksDatabase (multiplexer: IConnectionMultiplexer) =
-    multiplexer.GetDatabase usersTracksDatabase
-
-  let listLikedTracks telemetryClient multiplexer userId =
-    let listCachedTracks = listCachedTracks telemetryClient (getUsersTracksDatabase multiplexer)
+  let listLikedTracks telemetryClient (multiplexer: IConnectionMultiplexer) (listLikedTracks: UserRepo.ListLikedTracks) userId : UserRepo.ListLikedTracks =
+    let database = multiplexer.GetDatabase(usersTracksDatabase)
+    let listCachedTracks = listCachedTracks telemetryClient database
+    let key = userId |> UserId.value |> string
 
     fun () ->
-      userId |> UserId.value |> string |> listCachedTracks
+      listCachedTracks key
+      |> Task.bind (function
+        | [] ->
+          task {
+            let! likedTracks = listLikedTracks ()
 
-  let cacheLikedTracks telemetryClient multiplexer =
-    fun userId tracks ->
-      let key = userId |> UserId.value |> string
+            do! Redis.replaceList telemetryClient database key (serializeTracks likedTracks)
 
-      Redis.replaceList telemetryClient (getUsersTracksDatabase multiplexer) key (serializeTracks tracks)
+            return likedTracks
+          }
+        | tracks -> Task.FromResult tracks)
 
 [<RequireQualifiedAccess>]
 module Playlist =
