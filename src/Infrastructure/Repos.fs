@@ -14,6 +14,7 @@ open otsom.fs.Core
 open otsom.fs.Extensions
 open Infrastructure.Mapping
 open System.Threading.Tasks
+open Infrastructure.Cache
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
@@ -128,20 +129,11 @@ module UserRepo =
 
       task { do! collection.InsertOneAsync(dbUser) }
 
-  let listLikedTracks telemetryClient multiplexer client logger userId : UserRepo.ListLikedTracks =
-    let listCachedTracks = Cache.User.listLikedTracks telemetryClient multiplexer userId
+  let listLikedTracks telemetryClient multiplexer client userId : UserRepo.ListLikedTracks =
     let listSpotifyTracks = Spotify.listSpotifyLikedTracks client
-    let cacheUserTracks = Cache.User.cacheLikedTracks telemetryClient multiplexer userId
+    let listRedisTracks = Redis.UserRepo.listLikedTracks telemetryClient multiplexer listSpotifyTracks userId
 
-    fun () ->
-      listCachedTracks ()
-      |> Task.bind (function
-        | [] ->
-          listSpotifyTracks ()
-          |> Task.taskTap cacheUserTracks
-        | tracks -> Task.FromResult tracks)
-      |> Task.tap (fun tracks ->
-        Logf.logfi logger "User %i{TelegramId} has %i{LikedTracksCount} liked tracks" (userId |> UserId.value) tracks.Length)
+    Memory.UserRepo.listLikedTracks listRedisTracks
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
@@ -157,13 +149,13 @@ module TargetedPlaylistRepo =
 
   let appendTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.AppendTracks =
     let addInSpotify = Spotify.Playlist.addTracks spotifyClient
-    let addInCache = Cache.Playlist.appendTracks telemetryClient multiplexer
+    let addInCache = Redis.Playlist.appendTracks telemetryClient multiplexer
 
     applyTracks addInSpotify addInCache
 
   let replaceTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.ReplaceTracks =
     let replaceInSpotify = Spotify.Playlist.replaceTracks spotifyClient
-    let replaceInCache = Cache.Playlist.replaceTracks telemetryClient multiplexer
+    let replaceInCache = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
     applyTracks replaceInSpotify replaceInCache
 
@@ -194,9 +186,9 @@ module TrackRepo =
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
   let listTracks telemetryClient multiplexer logger client : PlaylistRepo.ListTracks =
-    let listCachedPlaylistTracks = Cache.Playlist.listTracks telemetryClient multiplexer
+    let listCachedPlaylistTracks = Redis.Playlist.listTracks telemetryClient multiplexer
     let listSpotifyPlaylistTracks = Spotify.listPlaylistTracks logger client
-    let cachePlaylistTracks = Cache.Playlist.replaceTracks telemetryClient multiplexer
+    let cachePlaylistTracks = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
     fun playlistId ->
       listCachedPlaylistTracks playlistId

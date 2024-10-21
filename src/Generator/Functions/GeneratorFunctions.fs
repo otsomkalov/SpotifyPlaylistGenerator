@@ -58,7 +58,7 @@ type GeneratorFunctions
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let listLikedTracks =
-        UserRepo.listLikedTracks telemetryClient connectionMultiplexer client _logger command.UserId
+        UserRepo.listLikedTracks telemetryClient connectionMultiplexer client command.UserId
 
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client

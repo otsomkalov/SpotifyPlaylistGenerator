@@ -67,7 +67,7 @@ module Playlist =
           return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
       }
   let countTracks telemetryClient multiplexer : Playlist.CountTracks =
-    Cache.Playlist.countTracks telemetryClient multiplexer
+    Infrastructure.Cache.Redis.Playlist.countTracks telemetryClient multiplexer
 
 [<RequireQualifiedAccess>]
 module Preset =
