@@ -211,8 +211,16 @@ module Preset =
     fun presetId ->
       removePreset presetId
 
+  let private listIncludedTracks (loadPlaylistTracks: PlaylistRepo.ListTracks) =
+    fun (playlists: IncludedPlaylist list) ->
+      playlists
+      |> List.filter _.Enabled
+      |> List.map (_.Id >> ReadablePlaylistId.value >> loadPlaylistTracks)
+      |> Task.WhenAll
+      |> Task.map List.concat
+
   type RunIO =
-    { ListIncludedTracks: PresetRepo.ListIncludedTracks
+    { ListPlaylistTracks: PlaylistRepo.ListTracks
       ListExcludedTracks: PresetRepo.ListExcludedTracks
       ListLikedTracks: UserRepo.ListLikedTracks
       LoadPreset: PresetRepo.Load
@@ -272,8 +280,7 @@ module Preset =
 
     io.LoadPreset
     >> Task.bind (fun preset ->
-      preset.IncludedPlaylists
-      |> io.ListIncludedTracks
+      listIncludedTracks io.ListPlaylistTracks preset.IncludedPlaylists
       |> Task.bind (includeLiked preset)
       |> Task.map io.Shuffler
       |> Task.bind (getRecommendations preset)

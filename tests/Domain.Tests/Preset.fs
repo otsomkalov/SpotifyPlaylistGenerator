@@ -9,9 +9,9 @@ open Domain.Tests.Extensions
 
 module Run =
   let io: Preset.RunIO =
-    { ListIncludedTracks =
-        fun playlists ->
-          playlists |> should equivalent [ Mocks.includedPlaylist ]
+    { ListPlaylistTracks =
+        fun playlistId ->
+          playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
           [ Mocks.includedTrack ] |> Task.FromResult
 
       ListExcludedTracks =
@@ -104,9 +104,9 @@ module Run =
   let ``saves included tracks excluding the excluded`` () =
     let io =
       { io with
-          ListIncludedTracks =
-            fun playlists ->
-              playlists |> should equivalent [ Mocks.includedPlaylist ]
+          ListPlaylistTracks =
+            fun playlistId ->
+              playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
               [ Mocks.includedTrack; Mocks.excludedTrack ] |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
@@ -165,9 +165,9 @@ module Run =
     let io =
       { io with
           LoadPreset = fun _ -> preset |> Task.FromResult
-          ListIncludedTracks =
-            fun playlists ->
-              playlists |> should equivalent [ Mocks.includedPlaylist ]
+          ListPlaylistTracks =
+            fun playlistId ->
+              playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
               [] |> Task.FromResult
           GetRecommendations =
             fun tracks ->

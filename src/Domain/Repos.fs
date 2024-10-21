@@ -11,7 +11,6 @@ module PresetRepo =
   type Update = Preset -> Task<unit>
   type Remove = PresetId -> Task<unit>
 
-  type ListIncludedTracks = IncludedPlaylist list -> Task<Track list>
   type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
 
   type QueueRun = PresetId -> Task<unit>

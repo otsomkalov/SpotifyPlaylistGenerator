@@ -53,8 +53,6 @@ type GeneratorFunctions
       let listTracks =
         PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
-      let listIncludedTracks = PresetRepo.listIncludedTracks _logger listTracks
-
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let listLikedTracks =
@@ -73,7 +71,7 @@ type GeneratorFunctions
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
 
       let io: Domain.Workflows.Preset.RunIO =
-        { ListIncludedTracks = listIncludedTracks
+        { ListPlaylistTracks = listTracks
           ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
           LoadPreset = getPreset

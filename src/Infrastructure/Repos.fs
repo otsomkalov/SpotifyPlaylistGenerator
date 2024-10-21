@@ -58,18 +58,6 @@ module PresetRepo =
   let private listPlaylistsTracks (listTracks: PlaylistRepo.ListTracks) =
     List.map listTracks >> Task.WhenAll >> Task.map List.concat
 
-  let listIncludedTracks logger (listTracks: PlaylistRepo.ListTracks) : PresetRepo.ListIncludedTracks =
-    let listTracks = listPlaylistsTracks listTracks
-
-    fun playlists ->
-      task {
-        let! playlistsTracks = playlists |> List.filter _.Enabled |> List.map (_.Id >> ReadablePlaylistId.value) |> listTracks
-
-        Logf.logfi logger "Preset has %i{IncludedTracksCount} included tracks" playlistsTracks.Length
-
-        return playlistsTracks
-      }
-
   let listExcludedTracks logger (listTracks: PlaylistRepo.ListTracks) : PresetRepo.ListExcludedTracks =
     let listTracks = listPlaylistsTracks listTracks
 
