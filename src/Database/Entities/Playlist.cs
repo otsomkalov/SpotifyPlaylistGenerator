@@ -12,15 +12,18 @@ public abstract class Playlist
     public bool Disabled { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class IncludedPlaylist : Playlist
 {
     public bool LikedOnly { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class ExcludedPlaylist : Playlist
 {
 }
 
+[BsonIgnoreExtraElements]
 public class TargetedPlaylist : Playlist
 {
     public bool Overwrite { get; set; }

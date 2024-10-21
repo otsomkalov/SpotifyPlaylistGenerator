@@ -199,7 +199,6 @@ module Run =
             fun playlistId ->
               playlistId
               |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
-
               [] |> Task.FromResult
           GetRecommendations =
             fun tracks ->
