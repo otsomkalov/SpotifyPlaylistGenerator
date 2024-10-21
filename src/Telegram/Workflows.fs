@@ -117,15 +117,15 @@ let private getPlaylistButtons presetId playlistId playlistType enabled =
   let buttonDataTemplate =
     sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
 
-  let enableDisableButtonText, enableDisableButtonData =
-    match enabled with
-    | true -> "Disable", buttonDataTemplate "d"
-    | false -> "Enable", buttonDataTemplate "e"
-
   seq {
     seq {
-      InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
-      InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
+      let enableDisableButtonText, enableDisableButtonData =
+        match enabled with
+        | true -> "Disable", buttonDataTemplate "d"
+        | false -> "Enable", buttonDataTemplate "e"
+
+      yield InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
+      yield InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
     }
 
     seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
@@ -154,6 +154,9 @@ module IncludedPlaylist =
         return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
       }
 
+  let private getIncludedPlaylistButtons =
+    getPlaylistButtons
+
   let show
     (editMessageButtons: EditMessageButtons)
     (getPreset: Preset.Get)
@@ -169,7 +172,7 @@ module IncludedPlaylist =
         let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
         let messageText =
-          sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+          String.Format(Messages.IncludedPlaylistDetails, includedPlaylist.Name, playlistTracksCount, includedPlaylist.LikedOnly)
 
         let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
 

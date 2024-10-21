@@ -6,10 +6,10 @@ open Domain.Core
 open Domain.Repos
 
 module UserRepo =
-  let mutable tracks : Track list option = None
-  let semaphore = new SemaphoreSlim(1,1)
+  let listLikedTracks (listLikedTracks: UserRepo.ListLikedTracks): UserRepo.ListLikedTracks =
+    let mutable tracks : Track list option = None
+    let semaphore = new SemaphoreSlim(1,1)
 
-  let listLikedTracks (listLikedTracks: UserRepo.ListLikedTracks) userId: UserRepo.ListLikedTracks =
     fun () ->
       match tracks with
       | None ->
