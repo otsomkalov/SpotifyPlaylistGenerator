@@ -1,36 +1,10 @@
 ﻿module internal Infrastructure.Cache.Memory
 
-open System.Threading
-open System.Threading.Tasks
-open Domain.Core
 open Domain.Repos
 
 module UserRepo =
-  let mutable tracks : Track list option = None
-  let semaphore = new SemaphoreSlim(1,1)
+  let listLikedTracks (listLikedTracks: UserRepo.ListLikedTracks) : UserRepo.ListLikedTracks =
+    let listLikedTracksLazy = lazy listLikedTracks()
 
-  let listLikedTracks (listLikedTracks: UserRepo.ListLikedTracks) userId: UserRepo.ListLikedTracks =
     fun () ->
-      match tracks with
-      | None ->
-        task {
-          do! semaphore.WaitAsync()
-
-          return!
-            match tracks with
-            | Some t ->
-              semaphore.Release() |> ignore
-
-              t |> Task.FromResult
-            | None ->
-              task {
-                let! likedTracks = listLikedTracks()
-
-                tracks <- Some likedTracks
-
-                semaphore.Release() |> ignore
-
-                return likedTracks
-              }
-        }
-      | Some t -> Task.FromResult t
+      listLikedTracksLazy.Value

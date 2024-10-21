@@ -121,7 +121,7 @@ module UserRepo =
     let listSpotifyTracks = Spotify.listSpotifyLikedTracks client
     let listRedisTracks = Redis.UserRepo.listLikedTracks telemetryClient multiplexer listSpotifyTracks userId
 
-    Memory.UserRepo.listLikedTracks listRedisTracks userId
+    Memory.UserRepo.listLikedTracks listRedisTracks
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
