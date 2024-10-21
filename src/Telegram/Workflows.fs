@@ -111,11 +111,11 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
 
-let private getPlaylistButtons presetId playlistId playlistType enabled =
+let private getPlaylistButtons presetId playlistId playlistType enabled specificButtons =
   let presetId = presetId |> PresetId.value
 
   let buttonDataTemplate =
-    sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> ReadablePlaylistId.value |> PlaylistId.value)
+    sprintf "p|%s|%s|%s|%s" presetId playlistType (playlistId |> PlaylistId.value)
 
   let enableDisableButtonText, enableDisableButtonData =
     match enabled with
@@ -123,12 +123,14 @@ let private getPlaylistButtons presetId playlistId playlistType enabled =
     | false -> "Enable", buttonDataTemplate "e"
 
   seq {
-    seq {
+    yield specificButtons
+
+    yield seq {
       InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
       InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
     }
 
-    seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
+    yield seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
   }
   |> InlineKeyboardMarkup
 
@@ -171,7 +173,7 @@ module IncludedPlaylist =
         let messageText =
           sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
 
-        let buttons = getPlaylistButtons presetId playlistId "ip" includedPlaylist.Enabled
+        let buttons = getPlaylistButtons presetId (playlistId |> ReadablePlaylistId.value) "ip" includedPlaylist.Enabled Seq.empty
 
         return! editMessageButtons messageText buttons
       }
@@ -256,7 +258,7 @@ module ExcludedPlaylist =
         let messageText =
           sprintf "*Name:* %s\n*Tracks count:* %i" excludedPlaylist.Name playlistTracksCount
 
-        let buttons = getPlaylistButtons presetId playlistId "ep" excludedPlaylist.Enabled
+        let buttons = getPlaylistButtons presetId (playlistId |> ReadablePlaylistId.value) "ep" excludedPlaylist.Enabled Seq.empty
 
         return! editMessageButtons messageText buttons
       }
@@ -338,28 +340,23 @@ module TargetedPlaylist =
 
         let! playlistTracksCount = countPlaylistTracks (playlistId |> WritablePlaylistId.value)
 
-        let messageText =
-          sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
-
-        let presetId' = (presetId |> PresetId.value)
-        let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
-
         let buttonText, buttonDataBuilder =
           if targetPlaylist.Overwrite then
             ("Append", sprintf "p|%s|tp|%s|a")
           else
             ("Overwrite", sprintf "p|%s|tp|%s|o")
 
+        let presetId' = (presetId |> PresetId.value)
+        let playlistId' = (playlistId |> WritablePlaylistId.value |> PlaylistId.value)
+
         let buttonData = buttonDataBuilder presetId' playlistId'
 
-        let buttons =
-          seq {
-            seq { InlineKeyboardButton.WithCallbackData(buttonText, buttonData) }
-            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|tp|%s|rm" presetId' playlistId') }
+        let additionalButtons = Seq.singleton (InlineKeyboardButton.WithCallbackData(buttonText, buttonData))
 
-            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|tp|%i" presetId' 0) }
-          }
-          |> InlineKeyboardMarkup
+        let buttons = getPlaylistButtons presetId (playlistId |> WritablePlaylistId.value) "tp" targetPlaylist.Enabled additionalButtons
+
+        let messageText =
+          sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
 
         return! editMessageButtons messageText buttons
       }
