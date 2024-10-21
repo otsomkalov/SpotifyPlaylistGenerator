@@ -149,13 +149,24 @@ module PresetSettings =
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
-  let internal listTracks (env: #IListPlaylistTracks) =
+  let internal listTracks (env: #IListPlaylistTracks & #IListLikedTracks) =
     fun (playlists: IncludedPlaylist list) ->
       playlists
       |> List.filter _.Enabled
-      |> List.map (_.Id >> ReadablePlaylistId.value >> env.ListPlaylistTracks)
+      |> List.map (fun playlist ->
+        task {
+          let! tracks = playlist.Id |> ReadablePlaylistId.value |> env.ListPlaylistTracks |> Task.map Set.ofSeq
+
+          if playlist.LikedOnly then
+            let v = env.ListLikedTracks() |> Task.map (Set.ofList >> Set.intersect tracks)
+
+            return! v
+          else
+            return tracks
+          })
       |> Task.WhenAll
-      |> Task.map List.concat
+      |> Task.map Seq.concat
+      |> Task.map List.ofSeq
 
   let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
     fun presetId playlistId ->
@@ -262,14 +273,13 @@ module Preset =
 
   type RunIO =
     { ListExcludedTracks: PresetRepo.ListExcludedTracks
-      ListLikedTracks: UserRepo.ListLikedTracks
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
 
-  let run env (io: RunIO) : Preset.Run =
+  let run (env: #IListLikedTracks) (io: RunIO) : Preset.Run =
 
     let saveTracks preset =
       fun (tracks: Track list) ->
@@ -293,7 +303,7 @@ module Preset =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (List.append tracks)
+          env.ListLikedTracks() |> Task.map (List.append tracks)
         | _ ->
           Task.FromResult tracks
 
@@ -301,7 +311,7 @@ module Preset =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
         | PresetSettings.LikedTracksHandling.Exclude ->
-          io.ListLikedTracks() |> Task.map (List.append tracks)
+          env.ListLikedTracks() |> Task.map (List.append tracks)
         | _ ->
           Task.FromResult tracks
 

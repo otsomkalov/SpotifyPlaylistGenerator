@@ -12,12 +12,16 @@ open Domain.Tests.Extensions
 module Run =
   type IRunEnv =
     inherit IListPlaylistTracks
+    inherit IListLikedTracks
 
   let getEnv () =
     let envMock = Mock<IRunEnv>()
 
-    envMock.Setup(fun m -> m.ListPlaylistTracks(It.Is(fun id -> id = (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value))))
+    envMock.Setup(fun m -> m.ListPlaylistTracks(It.IsAny()))
       .ReturnsAsync([Mocks.includedTrack])
+
+    envMock.Setup(fun m -> m.ListLikedTracks())
+      .ReturnsAsync([Mocks.likedTrack])
 
     envMock
 
@@ -27,7 +31,6 @@ module Run =
           playlists |> should equivalent [ Mocks.excludedPlaylist ]
           [ Mocks.excludedTrack ] |> Task.FromResult
 
-      ListLikedTracks = fun _ -> [ Mocks.likedTrack ] |> Task.FromResult
       LoadPreset =
         fun presetId ->
           presetId |> should equal Mocks.presetId
@@ -59,8 +62,6 @@ module Run =
 
       result
       |> should equal (Result<Preset, _>.Error(Preset.RunError.NoPotentialTracks))
-
-      env.VerifyAll()
     }
 
   [<Fact>]
@@ -117,7 +118,7 @@ module Run =
 
       result |> should equal (Result<_, Preset.RunError>.Ok(Mocks.preset))
 
-      env.VerifyAll()
+      env.Verify(fun m -> m.ListPlaylistTracks(Mocks.includedPlaylistId))
     }
 
   [<Fact>]
@@ -142,7 +143,7 @@ module Run =
 
       result |> should equal (Result<_, Preset.RunError>.Ok(Mocks.preset))
 
-      env.VerifyAll()
+      env.Verify(fun m -> m.ListPlaylistTracks(Mocks.includedPlaylistId))
     }
 
   [<Fact>]
@@ -174,7 +175,7 @@ module Run =
 
       result |> should equal (Result<_, Preset.RunError>.Ok(preset))
 
-      env.VerifyAll()
+      env.Verify(fun m -> m.ListPlaylistTracks(Mocks.includedPlaylistId))
     }
 
   [<Fact>]
@@ -215,6 +216,7 @@ module Run =
       result |> should equal (Result<_, Preset.RunError>.Ok(preset))
 
       env.Verify(fun m -> m.ListPlaylistTracks(It.Is(fun id -> id = (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value))))
+      env.Verify(fun m -> m.ListLikedTracks())
     }
 
   [<Fact>]
@@ -250,5 +252,5 @@ module Run =
 
       result |> should equal (Result<_, Preset.RunError>.Ok(preset))
 
-      env.VerifyAll()
+      env.Verify(fun m -> m.ListPlaylistTracks(Mocks.includedPlaylistId))
     }

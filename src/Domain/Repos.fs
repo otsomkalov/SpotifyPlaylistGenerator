@@ -39,3 +39,6 @@ module PlaylistRepo =
 
 type IListPlaylistTracks =
   abstract member ListPlaylistTracks: PlaylistId -> Task<Track list>
+
+type IListLikedTracks =
+  abstract member ListLikedTracks : unit -> Task<Track list>

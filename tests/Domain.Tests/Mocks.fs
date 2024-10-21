@@ -18,8 +18,10 @@ let recommendedTrack =
   { Id = TrackId "recommended-track-id"
     Artists = Set.ofList [ { Id = ArtistId "3" }; { Id = ArtistId "4" } ] }
 
+let includedPlaylistId = PlaylistId("included-playlist-id")
+
 let includedPlaylist: IncludedPlaylist =
-  { Id = ReadablePlaylistId(PlaylistId("included-playlist-id"))
+  { Id = ReadablePlaylistId(includedPlaylistId)
     Name = "included-playlist-name"
     Enabled = true
     LikedOnly = false }
