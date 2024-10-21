@@ -1,6 +1,7 @@
 ﻿namespace Generator.Functions
 
 open Domain.Extensions
+open Domain.Repos
 open FSharp
 open Infrastructure.Repos
 open Infrastructure
@@ -8,6 +9,7 @@ open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
 open MongoDB.Driver
+open SpotifyAPI.Web
 open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
@@ -15,6 +17,11 @@ open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
+
+type RunEnv(telemetryClient: TelemetryClient, connectionMultiplexer: IConnectionMultiplexer, client: ISpotifyClient, logger: ILogger) =
+  interface IListPlaylistTracks with
+    member this.ListPlaylistTracks(playlistId) =
+      PlaylistRepo.listTracks telemetryClient connectionMultiplexer logger client playlistId
 
 type GeneratorFunctions
   (
@@ -53,8 +60,6 @@ type GeneratorFunctions
       let listTracks =
         PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
-      let listIncludedTracks = PresetRepo.listIncludedTracks _logger listTracks
-
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let listLikedTracks =
@@ -73,8 +78,7 @@ type GeneratorFunctions
         Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
 
       let io: Domain.Workflows.Preset.RunIO =
-        { ListIncludedTracks = listIncludedTracks
-          ListExcludedTracks = listExcludedTracks
+        { ListExcludedTracks = listExcludedTracks
           ListLikedTracks = listLikedTracks
           LoadPreset = getPreset
           AppendTracks = appendTracks
@@ -84,7 +88,9 @@ type GeneratorFunctions
 
       let editMessage = editBotMessage command.UserId
 
-      let runPreset = Domain.Workflows.Preset.run io
+      let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger)
+
+      let runPreset = Domain.Workflows.Preset.run env io
       let runPreset = Telegram.Workflows.Preset.run sendMessage editMessage runPreset
 
       do! runPreset command.PresetId

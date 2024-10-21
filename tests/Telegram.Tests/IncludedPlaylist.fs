@@ -37,7 +37,7 @@ let ``show should send included playlist details`` () =
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
+      replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
 
       Task.FromResult()
 

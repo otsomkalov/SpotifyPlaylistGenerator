@@ -148,6 +148,55 @@ module PresetSettings =
         |> Task.bind update)
 
 [<RequireQualifiedAccess>]
+module IncludedPlaylist =
+  let internal listTracks (env: #IListPlaylistTracks) =
+    fun (playlists: IncludedPlaylist list) ->
+      playlists
+      |> List.filter _.Enabled
+      |> List.map (_.Id >> ReadablePlaylistId.value >> env.ListPlaylistTracks)
+      |> Task.WhenAll
+      |> Task.map List.concat
+
+  let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
+    fun presetId playlistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
+        let updatedPlaylist = { playlist with Enabled = enable }
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists =
+                preset.IncludedPlaylists
+                |> List.except [ playlist ]
+                |> List.append [ updatedPlaylist ] }
+
+        return! updatePreset updatedPreset
+      }
+
+  let enable loadPreset updatePreset : IncludedPlaylist.Enable =
+    updatePresetPlaylist loadPreset updatePreset true
+
+  let disable loadPreset updatePreset : IncludedPlaylist.Disable =
+    updatePresetPlaylist loadPreset updatePreset false
+
+  let remove (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) : IncludedPlaylist.Remove =
+    fun presetId includedPlaylistId ->
+      task {
+        let! preset = loadPreset presetId
+
+        let includedPlaylists =
+          preset.IncludedPlaylists |> List.filter (fun p -> p.Id <> includedPlaylistId)
+
+        let updatedPreset =
+          { preset with
+              IncludedPlaylists = includedPlaylists }
+
+        return! updatePreset updatedPreset
+      }
+
+[<RequireQualifiedAccess>]
 module Preset =
   type Save = Preset -> Task<unit>
   type UpdateSettings = PresetId -> PresetSettings.PresetSettings -> Task<unit>
@@ -212,8 +261,7 @@ module Preset =
       removePreset presetId
 
   type RunIO =
-    { ListIncludedTracks: PresetRepo.ListIncludedTracks
-      ListExcludedTracks: PresetRepo.ListExcludedTracks
+    { ListExcludedTracks: PresetRepo.ListExcludedTracks
       ListLikedTracks: UserRepo.ListLikedTracks
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
@@ -221,7 +269,7 @@ module Preset =
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
 
-  let run (io: RunIO) : Preset.Run =
+  let run env (io: RunIO) : Preset.Run =
 
     let saveTracks preset =
       fun (tracks: Track list) ->
@@ -272,8 +320,7 @@ module Preset =
 
     io.LoadPreset
     >> Task.bind (fun preset ->
-      preset.IncludedPlaylists
-      |> io.ListIncludedTracks
+      IncludedPlaylist.listTracks env preset.IncludedPlaylists
       |> Task.bind (includeLiked preset)
       |> Task.map io.Shuffler
       |> Task.bind (getRecommendations preset)
@@ -295,47 +342,6 @@ module Preset =
     loadPreset
     >> Task.map validatePreset
     >> TaskResult.taskTap (fun p -> queueRun' p.Id)
-
-[<RequireQualifiedAccess>]
-module IncludedPlaylist =
-  let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
-    fun presetId playlistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let playlist = preset.IncludedPlaylists |> List.find (fun p -> p.Id = playlistId)
-        let updatedPlaylist = { playlist with Enabled = enable }
-
-        let updatedPreset =
-          { preset with
-              IncludedPlaylists =
-                preset.IncludedPlaylists
-                |> List.except [ playlist ]
-                |> List.append [ updatedPlaylist ] }
-
-        return! updatePreset updatedPreset
-      }
-
-  let enable loadPreset updatePreset : IncludedPlaylist.Enable =
-    updatePresetPlaylist loadPreset updatePreset true
-
-  let disable loadPreset updatePreset : IncludedPlaylist.Disable =
-    updatePresetPlaylist loadPreset updatePreset false
-
-  let remove (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) : IncludedPlaylist.Remove =
-    fun presetId includedPlaylistId ->
-      task {
-        let! preset = loadPreset presetId
-
-        let includedPlaylists =
-          preset.IncludedPlaylists |> List.filter (fun p -> p.Id <> includedPlaylistId)
-
-        let updatedPreset =
-          { preset with
-              IncludedPlaylists = includedPlaylists }
-
-        return! updatePreset updatedPreset
-      }
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
