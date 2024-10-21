@@ -39,7 +39,7 @@ let ``show should send excluded playlist details`` () =
 
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
+      replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
       Task.FromResult()
 
   let countPlaylistTracks =

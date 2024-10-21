@@ -36,3 +36,6 @@ module TrackRepo =
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
   type ListTracks = PlaylistId -> Task<Track list>
+
+type IListPlaylistTracks =
+  abstract member ListPlaylistTracks: PlaylistId -> Task<Track list>
