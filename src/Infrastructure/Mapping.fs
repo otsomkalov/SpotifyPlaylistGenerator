@@ -38,7 +38,8 @@ module IncludedPlaylist =
   let fromDb (playlist: Entities.IncludedPlaylist) : IncludedPlaylist =
     { Id = playlist.Id |> PlaylistId |> ReadablePlaylistId
       Name = playlist.Name
-      Enabled = not playlist.Disabled }
+      Enabled = not playlist.Disabled
+      LikedOnly = playlist.LikedOnly }
 
   let toDb (playlist: IncludedPlaylist) : Entities.IncludedPlaylist =
     Entities.IncludedPlaylist(

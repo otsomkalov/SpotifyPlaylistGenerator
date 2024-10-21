@@ -11,7 +11,9 @@ module Run =
   let io: Preset.RunIO =
     { ListPlaylistTracks =
         fun playlistId ->
-          playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+          playlistId
+          |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+
           [ Mocks.includedTrack ] |> Task.FromResult
 
       ListExcludedTracks =
@@ -32,6 +34,32 @@ module Run =
           tracks |> should equivalent [ Mocks.includedTrack.Id ]
           Task.FromResult [ Mocks.recommendedTrack ]
       Shuffler = id }
+
+  [<Fact>]
+  let ``returns NoIncludedTracks if included playlist tracks are not liked`` () =
+    let includedPlaylist =
+      { Mocks.includedPlaylist with
+          LikedOnly = true }
+
+    let preset =
+      { Mocks.preset with
+          IncludedPlaylists = [ includedPlaylist ] }
+
+    let io =
+      { io with
+          LoadPreset =
+            fun presetId ->
+              presetId |> should equal preset.Id
+              preset |> Task.FromResult }
+
+    let sut = Preset.run io
+
+    task {
+      let! result = sut Mocks.presetId
+
+      result
+      |> should equal (Result<Preset, _>.Error(Preset.RunError.NoIncludedTracks))
+    }
 
   [<Fact>]
   let ``returns error if no potential tracks`` () =
@@ -106,7 +134,9 @@ module Run =
       { io with
           ListPlaylistTracks =
             fun playlistId ->
-              playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+              playlistId
+              |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+
               [ Mocks.includedTrack; Mocks.excludedTrack ] |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
@@ -167,7 +197,9 @@ module Run =
           LoadPreset = fun _ -> preset |> Task.FromResult
           ListPlaylistTracks =
             fun playlistId ->
-              playlistId |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+              playlistId
+              |> should equal (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value)
+
               [] |> Task.FromResult
           GetRecommendations =
             fun tracks ->

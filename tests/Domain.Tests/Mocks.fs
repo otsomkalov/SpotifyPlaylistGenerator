@@ -21,7 +21,8 @@ let recommendedTrack =
 let includedPlaylist: IncludedPlaylist =
   { Id = ReadablePlaylistId(PlaylistId("included-playlist-id"))
     Name = "included-playlist-name"
-    Enabled = true }
+    Enabled = true
+    LikedOnly = false }
 
 let excludedPlaylist: ExcludedPlaylist =
   { Id = ReadablePlaylistId(PlaylistId("excluded-playlist-id"))

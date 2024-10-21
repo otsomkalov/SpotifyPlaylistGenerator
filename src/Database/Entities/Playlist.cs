@@ -14,6 +14,7 @@ public abstract class Playlist
 
 public class IncludedPlaylist : Playlist
 {
+    public bool LikedOnly { get; set; }
 }
 
 public class ExcludedPlaylist : Playlist
