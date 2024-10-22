@@ -13,3 +13,8 @@ module List =
     function
     | [] -> Error error
     | v -> Ok v
+
+[<RequireQualifiedAccess>]
+module Result =
+  let errorIf condition (error: 'e) =
+    fun arg -> if (condition arg) then Error error else Ok arg

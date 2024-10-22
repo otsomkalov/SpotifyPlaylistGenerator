@@ -298,7 +298,6 @@ module Preset =
           | false -> io.AppendTracks p.Id tracks)
         |> Task.WhenAll
         |> Task.ignore
-        |> Task.map Ok
 
     let includeLiked (preset: Preset) =
       fun tracks ->
@@ -325,25 +324,24 @@ module Preset =
     io.LoadPreset
     >> Task.bind (fun preset ->
       IncludedPlaylist.listTracks env preset.IncludedPlaylists
-      |> Task.bind (includeLiked preset)
-      |> Task.map (List.errorIfEmpty Preset.RunError.NoIncludedTracks)
-      |> TaskResult.map io.Shuffler
-      |> Task.bind (Result.taskMap (getRecommendations preset))
-      |> Task.bind (
-        Result.taskMap (fun includedTracks ->
+      &|&> includeLiked preset
+      &|> Result.errorIf List.isEmpty Preset.RunError.NoIncludedTracks
+      &=|> io.Shuffler
+      &=|&> getRecommendations preset
+      &=|&> (fun includedTracks ->
           preset.ExcludedPlaylists
           |> io.ListExcludedTracks
-          |> Task.bind (excludeLiked preset)
-          |> Task.map (fun excludedTracks -> List.except excludedTracks includedTracks))
+          &|&> (excludeLiked preset)
+          &|> (fun excludedTracks -> List.except excludedTracks includedTracks)
       )
-      |> Task.map (Result.bind (List.errorIfEmpty Preset.RunError.NoPotentialTracks))
-      |> TaskResult.map (fun (tracks: Track list) ->
+      &|> (Result.bind (Result.errorIf List.isEmpty Preset.RunError.NoPotentialTracks))
+      &=|> (fun (tracks: Track list) ->
         match preset.Settings.UniqueArtists with
         | true -> tracks |> Tracks.uniqueByArtists
         | false -> tracks)
-      |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
-      |> TaskResult.bind (saveTracks preset)
-      |> TaskResult.map (fun _ -> preset))
+      &=|> (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
+      &=|&> (saveTracks preset)
+      &=|> (fun _ -> preset))
 
   let queueRun
     (loadPreset: Preset.Get)
