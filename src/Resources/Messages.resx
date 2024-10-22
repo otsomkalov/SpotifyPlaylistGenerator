@@ -169,4 +169,11 @@ Steps would be the next:
 Click "Generate" keyboard button or send "/generate" command. After a few seconds enjoy your playlist!
         </value>
     </data>
+    <data name="IncludedPlaylistDetails" xml:space="preserve">
+        <value>
+*Name*: {0}
+*Tracks*: {1}
+*Only liked*: {2}
+        </value>
+    </data>
 </root>

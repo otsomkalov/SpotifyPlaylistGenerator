@@ -8,6 +8,7 @@ open Microsoft.FSharp.Core
 open otsom.fs.Extensions
 open shortid
 open shortid.Configuration
+open Domain.Extensions
 
 [<RequireQualifiedAccess>]
 module PresetId =
@@ -78,7 +79,7 @@ module User =
     fun userId size ->
       userId
       |> load
-      |> Task.map (fun u -> u.CurrentPresetId |>Option.get)
+      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
       |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
 
 [<RequireQualifiedAccess>]
@@ -149,13 +150,30 @@ module PresetSettings =
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
-  let internal listTracks (env: #IListPlaylistTracks) =
+  let private listPlaylistTracks (env: #IListPlaylistTracks & #IListLikedTracks) =
+    fun (playlist: IncludedPlaylist) -> task {
+      let! tracks =
+        playlist.Id
+        |> ReadablePlaylistId.value
+        |> env.ListPlaylistTracks
+        |> Task.map Set.ofSeq
+
+      if playlist.LikedOnly then
+        let v = env.ListLikedTracks() |> Task.map (Set.ofList >> Set.intersect tracks)
+
+        return! v
+      else
+        return tracks
+    }
+
+  let internal listTracks env =
     fun (playlists: IncludedPlaylist list) ->
       playlists
       |> List.filter _.Enabled
-      |> List.map (_.Id >> ReadablePlaylistId.value >> env.ListPlaylistTracks)
+      |> List.map (listPlaylistTracks env)
       |> Task.WhenAll
-      |> Task.map List.concat
+      |> Task.map Seq.concat
+      |> Task.map List.ofSeq
 
   let private updatePresetPlaylist (loadPreset: PresetRepo.Load) (updatePreset: PresetRepo.Update) enable =
     fun presetId playlistId ->
@@ -262,77 +280,68 @@ module Preset =
 
   type RunIO =
     { ListExcludedTracks: PresetRepo.ListExcludedTracks
-      ListLikedTracks: UserRepo.ListLikedTracks
       LoadPreset: PresetRepo.Load
       AppendTracks: TargetedPlaylistRepo.AppendTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
 
-  let run env (io: RunIO) : Preset.Run =
+  let run (env: #IListLikedTracks) (io: RunIO) : Preset.Run =
 
     let saveTracks preset =
       fun (tracks: Track list) ->
-        match tracks with
-        | [] -> Preset.RunError.NoPotentialTracks |> Error |> Task.FromResult
-        | tracks ->
-          let tracksToImport =
-            tracks |> List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
-
-          preset.TargetedPlaylists
-          |> Seq.filter _.Enabled
-          |> Seq.map (fun p ->
-            match p.Overwrite with
-            | true -> io.ReplaceTracks p.Id tracksToImport
-            | false -> io.AppendTracks p.Id tracksToImport)
-          |> Task.WhenAll
-          |> Task.ignore
-          |> Task.map Ok
+        preset.TargetedPlaylists
+        |> Seq.filter _.Enabled
+        |> Seq.map (fun p ->
+          match p.Overwrite with
+          | true -> io.ReplaceTracks p.Id tracks
+          | false -> io.AppendTracks p.Id tracks)
+        |> Task.WhenAll
+        |> Task.ignore
 
     let includeLiked (preset: Preset) =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
-        | PresetSettings.LikedTracksHandling.Include ->
-          io.ListLikedTracks() |> Task.map (List.append tracks)
-        | _ ->
-          Task.FromResult tracks
+        | PresetSettings.LikedTracksHandling.Include -> env.ListLikedTracks() |> Task.map (List.append tracks)
+        | _ -> Task.FromResult tracks
 
     let excludeLiked (preset: Preset) =
       fun tracks ->
         match preset.Settings.LikedTracksHandling with
-        | PresetSettings.LikedTracksHandling.Exclude ->
-          io.ListLikedTracks() |> Task.map (List.append tracks)
-        | _ ->
-          Task.FromResult tracks
+        | PresetSettings.LikedTracksHandling.Exclude -> env.ListLikedTracks() |> Task.map (List.append tracks)
+        | _ -> Task.FromResult tracks
 
     let getRecommendations (preset: Preset) =
       fun (tracks: Track list) ->
-        match (tracks, preset.Settings.RecommendationsEnabled) with
-        | [], _ -> Preset.RunError.NoIncludedTracks |> Error |> Task.FromResult
-        | tracks, true -> io.GetRecommendations (tracks |> List.map (_.Id)) |> Task.map (List.prepend tracks) |> Task.map Ok
-        | _ -> tracks |> Ok |> Task.FromResult
-
-    let filterUniqueArtists (preset: Preset) =
-      fun (tracks: Track list) ->
-        match preset.Settings.UniqueArtists with
-        | true -> tracks |> Tracks.uniqueByArtists
-        | false -> tracks
+        match preset.Settings.RecommendationsEnabled with
+        | true ->
+          tracks
+          |> List.map (_.Id)
+          |> io.GetRecommendations
+          |> Task.map (List.prepend tracks)
+        | false -> tracks |> Task.FromResult
 
     io.LoadPreset
     >> Task.bind (fun preset ->
       IncludedPlaylist.listTracks env preset.IncludedPlaylists
-      |> Task.bind (includeLiked preset)
-      |> Task.map io.Shuffler
-      |> Task.bind (getRecommendations preset)
-      |> TaskResult.taskMap (fun includedTracks ->
-        preset.ExcludedPlaylists
-        |> io.ListExcludedTracks
-        |> Task.bind (excludeLiked preset)
-        |> Task.map (fun excludedTracks -> List.except excludedTracks includedTracks))
-      |> TaskResult.map (filterUniqueArtists preset)
-      |> TaskResult.map (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
-      |> TaskResult.bind (saveTracks preset)
-      |> TaskResult.map (fun _ -> preset))
+      &|&> includeLiked preset
+      &|> Result.errorIf List.isEmpty Preset.RunError.NoIncludedTracks
+      &=|> io.Shuffler
+      &=|&> getRecommendations preset
+      &=|&> (fun includedTracks ->
+          preset.ExcludedPlaylists
+          |> io.ListExcludedTracks
+          &|&> (excludeLiked preset)
+          &|> (fun excludedTracks -> List.except excludedTracks includedTracks)
+      )
+      &|> (Result.bind (Result.errorIf List.isEmpty Preset.RunError.NoPotentialTracks))
+      &=|> (fun (tracks: Track list) ->
+        match preset.Settings.UniqueArtists with
+        | true -> tracks |> Tracks.uniqueByArtists
+        | false -> tracks)
+      &=|> (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
+      &=|&> (saveTracks preset)
+      &=|> (fun _ -> preset))
 
   let queueRun
     (loadPreset: Preset.Get)

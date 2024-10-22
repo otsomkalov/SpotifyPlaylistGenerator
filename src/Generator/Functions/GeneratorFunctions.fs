@@ -18,10 +18,13 @@ open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
 
-type RunEnv(telemetryClient: TelemetryClient, connectionMultiplexer: IConnectionMultiplexer, client: ISpotifyClient, logger: ILogger) =
+type RunEnv(telemetryClient, connectionMultiplexer, client, logger, userId) =
   interface IListPlaylistTracks with
     member this.ListPlaylistTracks(playlistId) =
       PlaylistRepo.listTracks telemetryClient connectionMultiplexer logger client playlistId
+
+  interface IListLikedTracks with
+    member this.ListLikedTracks() = UserRepo.listLikedTracks telemetryClient connectionMultiplexer client userId ()
 
 type GeneratorFunctions
   (
@@ -62,9 +65,6 @@ type GeneratorFunctions
 
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
-      let listLikedTracks =
-        UserRepo.listLikedTracks telemetryClient connectionMultiplexer client command.UserId
-
       let sendMessage = sendUserMessage command.UserId
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
 
@@ -79,7 +79,6 @@ type GeneratorFunctions
 
       let io: Domain.Workflows.Preset.RunIO =
         { ListExcludedTracks = listExcludedTracks
-          ListLikedTracks = listLikedTracks
           LoadPreset = getPreset
           AppendTracks = appendTracks
           ReplaceTracks = replaceTracks
@@ -88,7 +87,7 @@ type GeneratorFunctions
 
       let editMessage = editBotMessage command.UserId
 
-      let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger)
+      let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger, command.UserId)
 
       let runPreset = Domain.Workflows.Preset.run env io
       let runPreset = Telegram.Workflows.Preset.run sendMessage editMessage runPreset

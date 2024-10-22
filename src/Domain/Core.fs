@@ -30,7 +30,8 @@ type SpotifyPlaylist =
 type IncludedPlaylist =
   { Id: ReadablePlaylistId
     Name: string
-    Enabled: bool }
+    Enabled: bool
+    LikedOnly: bool }
 
 type ExcludedPlaylist =
   { Id: ReadablePlaylistId
@@ -180,11 +181,13 @@ module IncludedPlaylist =
     | Readable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
-        Enabled = true } : IncludedPlaylist
+        Enabled = true
+        LikedOnly = false } : IncludedPlaylist
     | Writable({ Id = id; Name = name }) ->
       { Id = (id |> ReadablePlaylistId)
         Name = name
-        Enabled = true }
+        Enabled = true
+        LikedOnly = false }
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =

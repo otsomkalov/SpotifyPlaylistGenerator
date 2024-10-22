@@ -15,6 +15,7 @@ public abstract class Playlist
 [BsonIgnoreExtraElements]
 public class IncludedPlaylist : Playlist
 {
+    public bool LikedOnly { get; set; }
 }
 
 [BsonIgnoreExtraElements]
