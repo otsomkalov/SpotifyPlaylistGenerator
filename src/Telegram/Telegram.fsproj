@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="otsom.fs.Telegram.Bot" Version="0.0.29"/>
+    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify" Version="0.0.22" />
   </ItemGroup>
 
   <ItemGroup>
