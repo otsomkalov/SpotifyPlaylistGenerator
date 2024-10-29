@@ -113,6 +113,19 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 
+        ///*Name*: {0}
+        ///*Tracks*: {1}
+        ///*Only liked*: {2}
+        ///        .
+        /// </summary>
+        public static string IncludedPlaylistDetails {
+            get {
+                return ResourceManager.GetString("IncludedPlaylistDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➖ Liked tracks are excluded.
         /// </summary>
         public static string LikedTracksExcluded {

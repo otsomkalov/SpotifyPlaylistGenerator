@@ -171,7 +171,7 @@ module IncludedPlaylist =
         let! playlistTracksCount = countPlaylistTracks (playlistId |> ReadablePlaylistId.value)
 
         let messageText =
-          sprintf "*Name:* %s\n*Tracks count:* %i" includedPlaylist.Name playlistTracksCount
+          String.Format(Messages.IncludedPlaylistDetails, includedPlaylist.Name, playlistTracksCount, includedPlaylist.LikedOnly)
 
         let buttons = getPlaylistButtons presetId (playlistId |> ReadablePlaylistId.value) "ip" includedPlaylist.Enabled Seq.empty
 

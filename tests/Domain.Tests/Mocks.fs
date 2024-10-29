@@ -18,18 +18,23 @@ let recommendedTrack =
   { Id = TrackId "recommended-track-id"
     Artists = Set.ofList [ { Id = ArtistId "3" }; { Id = ArtistId "4" } ] }
 
+let includedPlaylistId = PlaylistId("included-playlist-id")
+
 let includedPlaylist: IncludedPlaylist =
-  { Id = ReadablePlaylistId(PlaylistId("included-playlist-id"))
+  { Id = ReadablePlaylistId(includedPlaylistId)
     Name = "included-playlist-name"
-    Enabled = true }
+    Enabled = true
+    LikedOnly = false }
 
 let excludedPlaylist: ExcludedPlaylist =
   { Id = ReadablePlaylistId(PlaylistId("excluded-playlist-id"))
     Name = "excluded-playlist-name"
     Enabled = true }
 
+let targetedPlaylistId = PlaylistId("targeted-playlist-id")
+
 let targetedPlaylist: TargetedPlaylist =
-  { Id = WritablePlaylistId(PlaylistId("targeted-playlist-id"))
+  { Id = WritablePlaylistId(targetedPlaylistId)
     Enabled = true
     Name = "targeted-playlist-name"
     Overwrite = true }
