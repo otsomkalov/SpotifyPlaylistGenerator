@@ -114,7 +114,7 @@ type User = {
 [<RequireQualifiedAccess>]
 module Playlist =
   type RawPlaylistId = RawPlaylistId of string
-  type IdParsingError = IdParsingError of unit
+  type IdParsingError = IdParsingError of string
   type MissingFromSpotifyError = MissingFromSpotifyError of string
 
   type IncludePlaylistError =

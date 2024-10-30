@@ -55,29 +55,6 @@ let sendLink (bot: ITelegramBotClient) userId : SendLink =
 [<RequireQualifiedAccess>]
 module Playlist =
 
-  let includePlaylist
-    (replyToMessage: ReplyToMessage)
-    (loadUser: User.Get)
-    (includePlaylist: Playlist.IncludePlaylist)
-    : Playlist.Include =
-    fun userId rawPlaylistId ->
-      task {
-        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-        let includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId
-
-        let onSuccess (playlist: IncludedPlaylist) =
-          replyToMessage $"*{playlist.Name}* successfully included into current preset!"
-
-        let onError =
-          function
-          | Playlist.IncludePlaylistError.IdParsing _ ->
-            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-          | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
-
-        return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
-      }
-
   let excludePlaylist
     (replyToMessage: ReplyToMessage)
     (loadUser: User.Get)
