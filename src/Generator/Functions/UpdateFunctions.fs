@@ -19,7 +19,7 @@ type UpdateFunctions(_messageService: MessageService, _logger: ILogger<UpdateFun
       try
         let handleUpdateTask =
           match update.Type with
-          | UpdateType.Message -> _messageService.ProcessAsync update.Message
+          | UpdateType.Message when update.Message.Type = MessageType.Text -> _messageService.ProcessAsync update.Message
           | UpdateType.CallbackQuery -> _callbackQueryService.ProcessAsync update.CallbackQuery
           | _ -> () |> Task.FromResult
 
