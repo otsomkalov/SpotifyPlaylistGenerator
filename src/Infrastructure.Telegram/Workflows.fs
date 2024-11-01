@@ -3,24 +3,16 @@ module Infrastructure.Telegram.Workflows
 
 open Resources
 open System
-open System.Text.RegularExpressions
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
 open Telegram.Bot
-open Telegram.Bot.Types
-open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
 open Telegram.Workflows
 open Infrastructure.Telegram.Helpers
-open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
-
-let escapeMarkdownString (str: string) =
-  Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
 
 let answerCallbackQuery (bot: ITelegramBotClient) callbackQueryId : AnswerCallbackQuery =
   fun () ->
@@ -37,20 +29,6 @@ let showNotification (bot: ITelegramBotClient) callbackQueryId : ShowNotificatio
 
       return ()
     }
-
-let sendLink (bot: ITelegramBotClient) userId : SendLink =
-  fun text linkText link ->
-    bot.SendTextMessageAsync(
-      (userId |> UserId.value |> ChatId),
-      text |> escapeMarkdownString,
-      parseMode = ParseMode.MarkdownV2,
-      replyMarkup =
-        (InlineKeyboardButton(linkText, Url = link)
-         |> Seq.singleton
-         |> Seq.singleton
-         |> InlineKeyboardMarkup)
-    )
-    |> Task.map ignore
 
 [<RequireQualifiedAccess>]
 module Playlist =

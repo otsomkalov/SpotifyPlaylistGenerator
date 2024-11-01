@@ -5,10 +5,13 @@ open Domain.Core
 open Domain.Workflows
 open Microsoft.FSharp.Core
 open Resources
+open SpotifyAPI.Web
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
+open Telegram.Repos
 open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Core
 open System
 
@@ -17,8 +20,6 @@ let keyboardColumns = 4
 
 [<Literal>]
 let buttonsPerPage = 20
-
-type SendLink = string -> string -> string -> Task<unit>
 
 let private getPresetMessage =
   fun (preset: Preset) ->
@@ -133,6 +134,15 @@ let private getPlaylistButtons presetId playlistId playlistType enabled specific
     yield seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
   }
   |> InlineKeyboardMarkup
+
+let sendLoginMessage (initAuth: Auth.Init) (sendLink: SendLink) : SendLoginMessage =
+  fun userId ->
+    initAuth
+      userId
+      [ Scopes.PlaylistModifyPrivate
+        Scopes.PlaylistModifyPublic
+        Scopes.UserLibraryRead ]
+    |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

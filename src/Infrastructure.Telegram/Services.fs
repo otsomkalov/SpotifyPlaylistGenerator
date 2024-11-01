@@ -57,7 +57,6 @@ type MessageService
     let getPreset = Preset.get loadPreset
 
     let sendMessage = sendUserMessage userId
-    let sendLink = Workflows.sendLink _bot userId
     let sendKeyboard = sendUserKeyboard userId
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
@@ -66,20 +65,14 @@ type MessageService
     let updateUser = UserRepo.update _database
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
+    let sendLink = Repos.sendLink _bot userId
+    let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
 
     let sendCurrentPresetInfo =
       Telegram.Workflows.User.sendCurrentPreset getUser getPreset sendKeyboard
 
     let sendSettingsMessage =
       Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendKeyboard
-
-    let sendLoginMessage () =
-      initAuth
-        userId
-        [ Scopes.PlaylistModifyPrivate
-          Scopes.PlaylistModifyPublic
-          Scopes.UserLibraryRead ]
-      |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
     getSpotifyClient userId
     |> Task.bind (function
@@ -204,7 +197,7 @@ type MessageService
           match (message.ReplyToMessage.Text) with
           | Equals Messages.SendIncludedPlaylist
           | Equals Messages.SendExcludedPlaylist
-          | Equals Messages.SendTargetedPlaylist -> sendLoginMessage ()
+          | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId
 
           | Equals Messages.SendPlaylistSize ->
             let setTargetPlaylistSize =
@@ -236,7 +229,7 @@ type MessageService
           | Equals Buttons.TargetPlaylist
           | Equals Buttons.RunPreset
           | StartsWith "/generate"
-          | Equals "/start" -> sendLoginMessage ()
+          | Equals "/start" -> sendLoginMessage userId
 
           | CommandWithData "/start" state ->
             let processSuccessfulLogin =

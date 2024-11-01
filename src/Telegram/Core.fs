@@ -9,6 +9,8 @@ type AnswerCallbackQuery = unit -> Task<unit>
 type ShowNotification = string -> Task<unit>
 type Page = Page of int
 
+type SendLoginMessage = UserId -> Task<unit>
+
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
