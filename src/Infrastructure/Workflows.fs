@@ -68,15 +68,3 @@ module Playlist =
       }
   let countTracks telemetryClient multiplexer : Playlist.CountTracks =
     Infrastructure.Cache.Redis.Playlist.countTracks telemetryClient multiplexer
-
-[<RequireQualifiedAccess>]
-module Preset =
-  let save (db: IMongoDatabase) : Preset.Save =
-    fun preset ->
-      task {
-        let collection = db.GetCollection "presets"
-
-        let dbPreset = preset |> Preset.toDb
-
-        return! collection.InsertOneAsync(dbPreset)
-      }

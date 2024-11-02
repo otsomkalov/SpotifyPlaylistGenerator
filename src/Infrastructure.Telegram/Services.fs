@@ -3,7 +3,6 @@
 open System.Reflection
 open Microsoft.ApplicationInsights
 open Resources
-open SpotifyAPI.Web
 open Telegram
 open Infrastructure
 open Infrastructure.Telegram.Helpers
@@ -17,7 +16,6 @@ open MongoDB.Driver
 open StackExchange.Redis
 open Telegram.Bot
 open Telegram.Bot.Types
-open Telegram.Bot.Types.Enums
 open Telegram.Core
 open System
 open otsom.fs.Extensions
@@ -53,7 +51,7 @@ type MessageService
     let userId = message.From.Id |> UserId
 
     let loadPreset = PresetRepo.load _database
-    let updatePreset = PresetRepo.update _database
+    let savePreset = PresetRepo.save _database
     let getPreset = Preset.get loadPreset
 
     let sendMessage = sendUserMessage userId
@@ -61,7 +59,6 @@ type MessageService
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
     let askForReply = askUserForReply userId message.MessageId
-    let savePreset = Preset.save _database
     let updateUser = UserRepo.update _database
     let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
@@ -82,19 +79,19 @@ type MessageService
         let loadFromSpotify = Playlist.loadFromSpotify client
 
         let includePlaylist =
-          Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
+          Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
 
         let includePlaylist =
           Workflows.Playlist.includePlaylist replyToMessage getUser includePlaylist
 
         let excludePlaylist =
-          Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
+          Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
 
         let excludePlaylist =
           Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
 
         let targetPlaylist =
-          Playlist.targetPlaylist parsePlaylistId loadFromSpotify getPreset updatePreset
+          Playlist.targetPlaylist parsePlaylistId loadFromSpotify getPreset savePreset
 
         let targetPlaylist =
           Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
@@ -109,7 +106,7 @@ type MessageService
           match message.ReplyToMessage.Text with
           | Equals Messages.SendPlaylistSize ->
             let setTargetPlaylistSize =
-              PresetSettings.setTargetPlaylistSize getPreset updatePreset
+              PresetSettings.setTargetPlaylistSize getPreset savePreset
 
             let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
 
@@ -121,13 +118,9 @@ type MessageService
           | Equals Messages.SendExcludedPlaylist -> excludePlaylist userId (Playlist.RawPlaylistId message.Text)
           | Equals Messages.SendTargetedPlaylist -> targetPlaylist userId (Playlist.RawPlaylistId message.Text)
           | Equals Messages.SendPresetName ->
-            let createPreset = Preset.create savePreset getUser updateUser userId
-            let sendPresetInfo = Telegram.Workflows.Preset.show getPreset sendButtons
+            let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
 
-            let createPreset =
-              Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
-
-            createPreset message.Text
+            createPreset userId message.Text
         | _ ->
           match message.Text with
           | Equals "/start" -> sendCurrentPresetInfo userId
@@ -201,7 +194,7 @@ type MessageService
 
           | Equals Messages.SendPlaylistSize ->
             let setTargetPlaylistSize =
-              PresetSettings.setTargetPlaylistSize getPreset updatePreset
+              PresetSettings.setTargetPlaylistSize getPreset savePreset
 
             let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
 
@@ -210,17 +203,12 @@ type MessageService
 
             setTargetPlaylistSize userId (PresetSettings.RawPlaylistSize message.Text)
           | Equals Messages.SendPresetName ->
-            let createPreset = Preset.create savePreset getUser updateUser userId
-            let sendPresetInfo = Telegram.Workflows.Preset.show getPreset sendButtons
+            let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
 
-            let createPreset =
-              Telegram.Workflows.Message.createPreset createPreset sendPresetInfo
-
-            createPreset message.Text
-
+            createPreset userId message.Text
           | _ -> replyToMessage "Unknown command" |> Task.ignore
         | _ ->
-          match (message.Text) with
+          match message.Text with
           | StartsWith "/include"
           | StartsWith "/exclude"
           | StartsWith "/target"
@@ -277,7 +265,7 @@ type CallbackQueryService
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
-    let updatePreset = PresetRepo.update _database
+    let updatePreset = PresetRepo.save _database
 
     let userId = callbackQuery.From.Id |> UserId
     let botMessageId = callbackQuery.Message.MessageId |> BotMessageId

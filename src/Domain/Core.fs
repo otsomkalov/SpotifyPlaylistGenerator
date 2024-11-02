@@ -146,7 +146,7 @@ module Preset =
     | NoTargetedPlaylists
 
   type Validate = Preset -> Result<Preset, ValidationError list>
-  type Create = string -> Task<PresetId>
+  type Create = string -> Task<Preset>
   type Remove = PresetId -> Task<unit>
 
   type RunError =
@@ -164,6 +164,8 @@ module User =
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
+
+  type CreatePreset = UserId -> string -> Task<Preset>
 
   let create userId =
     { Id = userId
