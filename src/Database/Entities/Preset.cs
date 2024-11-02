@@ -7,7 +7,7 @@ public class Settings
 {
     public bool? IncludeLikedTracks { get; set; }
 
-    public int PlaylistSize { get; set; }
+    public int Size { get; set; }
 
     public bool RecommendationsEnabled { get; set; }
 

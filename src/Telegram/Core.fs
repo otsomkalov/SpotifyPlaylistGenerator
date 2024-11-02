@@ -24,7 +24,7 @@ module User =
   type SendCurrentPresetSettings = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
-  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPresetSize -> Task<unit>
   type QueueCurrentPresetRun = UserId -> Task<unit>
   type RunCurrentPreset = UserId -> Task<unit>
   type CreatePreset = UserId -> string -> Task<unit>
@@ -94,7 +94,7 @@ type Action =
   | SetCurrentPreset of presetId: PresetId
   | RemovePreset of presetId: PresetId
 
-  | AskForPlaylistSize
+  | AskForPresetSize
 
 type ParseAction = string -> Action
 

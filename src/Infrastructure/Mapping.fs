@@ -88,7 +88,7 @@ module PresetSettings =
          | Some true -> PresetSettings.LikedTracksHandling.Include
          | Some false -> PresetSettings.LikedTracksHandling.Exclude
          | None -> PresetSettings.LikedTracksHandling.Ignore)
-      PlaylistSize = settings.PlaylistSize |> PresetSettings.PlaylistSize.create
+      Size = settings.Size |> PresetSettings.Size.create
       RecommendationsEnabled = settings.RecommendationsEnabled
       UniqueArtists = settings.UniqueArtists }
 
@@ -99,7 +99,7 @@ module PresetSettings =
          | PresetSettings.LikedTracksHandling.Include -> Nullable true
          | PresetSettings.LikedTracksHandling.Exclude -> Nullable false
          | PresetSettings.LikedTracksHandling.Ignore -> Nullable<bool>()),
-      PlaylistSize = (settings.PlaylistSize |> PresetSettings.PlaylistSize.value),
+      Size = (settings.Size |> PresetSettings.Size.value),
       RecommendationsEnabled = settings.RecommendationsEnabled,
       UniqueArtists = settings.UniqueArtists
     )

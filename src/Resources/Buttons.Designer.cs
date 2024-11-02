@@ -177,11 +177,11 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to #️⃣ Set playlist size.
+        ///   Looks up a localized string similar to #️⃣ Set preset size.
         /// </summary>
-        public static string SetPlaylistSize {
+        public static string SetPresetSize {
             get {
-                return ResourceManager.GetString("SetPlaylistSize", resourceCulture);
+                return ResourceManager.GetString("SetPresetSize", resourceCulture);
             }
         }
         

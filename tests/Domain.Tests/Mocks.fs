@@ -40,7 +40,7 @@ let targetedPlaylist: TargetedPlaylist =
     Overwrite = true }
 
 let presetSettingsMock: PresetSettings.PresetSettings =
-  { PlaylistSize = PresetSettings.PlaylistSize.create 10
+  { Size = PresetSettings.Size.create 10
     RecommendationsEnabled = false
     LikedTracksHandling = PresetSettings.LikedTracksHandling.Ignore
     UniqueArtists = false }

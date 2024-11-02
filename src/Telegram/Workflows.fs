@@ -64,7 +64,7 @@ let private getPresetMessage =
           likedTracksHandlingText,
           recommendationsText,
           uniqueArtistsText,
-          (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+          (preset.Settings.Size |> PresetSettings.Size.value)
         )
 
       let keyboard =
@@ -539,7 +539,7 @@ module User =
         let! text, _ = getPresetMessage preset
 
         let buttons =
-          [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
+          [| [| Buttons.SetPresetSize |]; [| "Back" |] |]
           |> ReplyKeyboardMarkup.op_Implicit
 
         return! sendKeyboard text buttons
@@ -556,7 +556,7 @@ module User =
   let setCurrentPresetSize
     (sendMessage: SendMessage)
     (sendSettingsMessage: User.SendCurrentPresetSettings)
-    (setPlaylistSize: Domain.Core.User.SetCurrentPresetSize)
+    (setPresetSize: Domain.Core.User.SetCurrentPresetSize)
     : User.SetCurrentPresetSize
     =
     fun userId size ->
@@ -564,11 +564,11 @@ module User =
 
       let onError =
         function
-        | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
-        | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
-        | PresetSettings.PlaylistSize.NotANumber -> sendMessage Messages.PlaylistSizeNotANumber
+        | PresetSettings.Size.TooSmall -> sendMessage Messages.PresetSizeTooSmall
+        | PresetSettings.Size.TooBig -> sendMessage Messages.PresetSizeTooBig
+        | PresetSettings.Size.NotANumber -> sendMessage Messages.PresetSizeNotANumber
 
-      setPlaylistSize userId size
+      setPresetSize userId size
       |> TaskResult.taskEither onSuccess (onError >> Task.ignore)
 
   let setCurrentPreset (showNotification: ShowNotification) (setCurrentPreset: Domain.Core.User.SetCurrentPreset) : User.SetCurrentPreset =
