@@ -98,16 +98,16 @@ module PresetSettings =
   let ignoreLikedTracks load update : PresetSettings.IgnoreLikedTracks =
     setLikedTracksHandling load update PresetSettings.LikedTracksHandling.Ignore
 
-  let setTargetPlaylistSize (load: PresetRepo.Load) (update: PresetRepo.Save) : PresetSettings.SetTargetPlaylistSize =
+  let setPresetSize (load: PresetRepo.Load) (update: PresetRepo.Save) : PresetSettings.SetPresetSize =
     fun presetId size ->
       size
-      |> PresetSettings.PlaylistSize.tryParse
+      |> PresetSettings.Size.tryParse
       |> Result.taskMap (fun s ->
         presetId
         |> load
         |> Task.map (fun p ->
           { p with
-              Settings = { p.Settings with PlaylistSize = s } })
+              Settings = { p.Settings with Size = s } })
         |> Task.bind update)
 
 [<RequireQualifiedAccess>]
@@ -216,7 +216,7 @@ module Preset =
             ExcludedPlaylists = []
             TargetedPlaylists = []
             Settings =
-              { PlaylistSize = (PresetSettings.PlaylistSize.create 20)
+              { Size = (PresetSettings.Size.create 20)
                 RecommendationsEnabled = false
                 LikedTracksHandling = PresetSettings.LikedTracksHandling.Include
                 UniqueArtists = false } }
@@ -291,7 +291,7 @@ module Preset =
         match preset.Settings.UniqueArtists with
         | true -> tracks |> Tracks.uniqueByArtists
         | false -> tracks)
-      &=|> (List.takeSafe (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value))
+      &=|> (List.takeSafe (preset.Settings.Size |> PresetSettings.Size.value))
       &=|&> (saveTracks preset)
       &=|> (fun _ -> preset))
 
@@ -335,12 +335,12 @@ module User =
         | true -> Task.FromResult()
         | false -> User.create userId |> create)
 
-  let setCurrentPresetSize (load: UserRepo.Load) (setTargetPlaylistSize: PresetSettings.SetTargetPlaylistSize) : User.SetCurrentPresetSize =
+  let setCurrentPresetSize (load: UserRepo.Load) (setPresetSize: PresetSettings.SetPresetSize) : User.SetCurrentPresetSize =
     fun userId size ->
       userId
       |> load
       |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      |> Task.bind (fun presetId -> setTargetPlaylistSize presetId size)
+      |> Task.bind (fun presetId -> setPresetSize presetId size)
 
   let createPreset (savePreset: PresetRepo.Save) (loadUser: UserRepo.Load) (updateUser: UserRepo.Update) : User.CreatePreset =
     fun userId name -> task {

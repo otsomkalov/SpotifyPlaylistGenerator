@@ -27,8 +27,8 @@
     <data name="Settings" xml:space="preserve">
         <value>⚙ Settings</value>
     </data>
-    <data name="SetPlaylistSize" xml:space="preserve">
-        <value>#️⃣ Set playlist size</value>
+    <data name="SetPresetSize" xml:space="preserve">
+        <value>#️⃣ Set preset size</value>
     </data>
     <data name="IncludeLikedTracks" xml:space="preserve">
         <value>➕ Include liked</value>

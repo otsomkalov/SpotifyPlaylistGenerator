@@ -189,42 +189,6 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Playlist size should be a number!.
-        /// </summary>
-        public static string PlaylistSizeNotANumber {
-            get {
-                return ResourceManager.GetString("PlaylistSizeNotANumber", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to New playlist size is set!.
-        /// </summary>
-        public static string PlaylistSizeSet {
-            get {
-                return ResourceManager.GetString("PlaylistSizeSet", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Playlist size should be lower than 10000!.
-        /// </summary>
-        public static string PlaylistSizeTooBig {
-            get {
-                return ResourceManager.GetString("PlaylistSizeTooBig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Playlist size should be greater than 0!.
-        /// </summary>
-        public static string PlaylistSizeTooSmall {
-            get {
-                return ResourceManager.GetString("PlaylistSizeTooSmall", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Preset name: *{0}*
         ///Preset settings:
         ///*Include liked tracks* - {1}
@@ -235,6 +199,42 @@ namespace Resources {
         public static string PresetInfo {
             get {
                 return ResourceManager.GetString("PresetInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be a number!.
+        /// </summary>
+        public static string PresetSizeNotANumber {
+            get {
+                return ResourceManager.GetString("PresetSizeNotANumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New playlist size is set!.
+        /// </summary>
+        public static string PresetSizeSet {
+            get {
+                return ResourceManager.GetString("PresetSizeSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be lower than 10000!.
+        /// </summary>
+        public static string PresetSizeTooBig {
+            get {
+                return ResourceManager.GetString("PresetSizeTooBig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playlist size should be greater than 0!.
+        /// </summary>
+        public static string PresetSizeTooSmall {
+            get {
+                return ResourceManager.GetString("PresetSizeTooSmall", resourceCulture);
             }
         }
         
@@ -287,20 +287,20 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Send me new playlist size in reply to this message.
-        /// </summary>
-        public static string SendPlaylistSize {
-            get {
-                return ResourceManager.GetString("SendPlaylistSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Send new preset name in reply to this message.
         /// </summary>
         public static string SendPresetName {
             get {
                 return ResourceManager.GetString("SendPresetName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send me new playlist size in reply to this message.
+        /// </summary>
+        public static string SendPresetSize {
+            get {
+                return ResourceManager.GetString("SendPresetSize", resourceCulture);
             }
         }
         
@@ -358,9 +358,9 @@ namespace Resources {
         /// <summary>
         ///   Looks up a localized string similar to Command data should be positive number indicates playlist size.
         /// </summary>
-        public static string WrongPlaylistSize {
+        public static string WrongPresetSize {
             get {
-                return ResourceManager.GetString("WrongPlaylistSize", resourceCulture);
+                return ResourceManager.GetString("WrongPresetSize", resourceCulture);
             }
         }
     }

@@ -56,32 +56,32 @@ module PresetSettings =
     | Exclude
     | Ignore
 
-  type RawPlaylistSize = RawPlaylistSize of string
+  type RawPresetSize = RawPresetSize of string
 
-  type PlaylistSize = private PlaylistSize of int
+  type Size = private Size of int
 
   type PresetSettings =
     { LikedTracksHandling: LikedTracksHandling
-      PlaylistSize: PlaylistSize
+      Size: Size
       RecommendationsEnabled: bool
       UniqueArtists: bool }
 
   [<RequireQualifiedAccess>]
-  module PlaylistSize =
+  module Size =
     type ParsingError =
       | NotANumber
       | TooSmall
       | TooBig
 
-    let tryParse (RawPlaylistSize size) =
+    let tryParse (RawPresetSize size) =
       match Int32.TryParse size with
       | true, s when s >= 10000 -> Error(TooBig)
       | true, s when s <= 0 -> Error(TooSmall)
-      | true, s -> Ok(PlaylistSize(s))
+      | true, s -> Ok(Size(s))
       | _ -> Error(NotANumber)
 
-    let create size = PlaylistSize(size)
-    let value (PlaylistSize size) = size
+    let create size = Size(size)
+    let value (Size size) = size
 
   type EnableUniqueArtists = PresetId -> Task<unit>
   type DisableUniqueArtists = PresetId -> Task<unit>
@@ -93,7 +93,7 @@ module PresetSettings =
   type ExcludeLikedTracks = PresetId -> Task<unit>
   type IgnoreLikedTracks = PresetId -> Task<unit>
 
-  type SetTargetPlaylistSize = PresetId -> RawPlaylistSize -> Task<Result<unit, PlaylistSize.ParsingError>>
+  type SetPresetSize = PresetId -> RawPresetSize -> Task<Result<unit, Size.ParsingError>>
 
 type SimplePreset = { Id: PresetId; Name: string }
 
@@ -163,7 +163,7 @@ module User =
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type CreateIfNotExists = UserId -> Task<unit>
-  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<Result<unit, PresetSettings.PlaylistSize.ParsingError>>
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPresetSize -> Task<Result<unit, PresetSettings.Size.ParsingError>>
 
   type CreatePreset = UserId -> string -> Task<Preset>
 

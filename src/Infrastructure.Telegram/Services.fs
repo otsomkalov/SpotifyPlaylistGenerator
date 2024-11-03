@@ -104,16 +104,16 @@ type MessageService
         match isNull message.ReplyToMessage with
         | false ->
           match message.ReplyToMessage.Text with
-          | Equals Messages.SendPlaylistSize ->
-            let setTargetPlaylistSize =
-              PresetSettings.setTargetPlaylistSize getPreset savePreset
+          | Equals Messages.SendPresetSize ->
+            let setTargetPresetSize =
+              PresetSettings.setPresetSize getPreset savePreset
 
-            let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
+            let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
-            let setTargetPlaylistSize =
+            let setTargetPresetSize =
               Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
 
-            setTargetPlaylistSize userId (PresetSettings.RawPlaylistSize message.Text)
+            setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
           | Equals Messages.SendIncludedPlaylist -> includePlaylist userId (Playlist.RawPlaylistId message.Text)
           | Equals Messages.SendExcludedPlaylist -> excludePlaylist userId (Playlist.RawPlaylistId message.Text)
           | Equals Messages.SendTargetedPlaylist -> targetPlaylist userId (Playlist.RawPlaylistId message.Text)
@@ -171,7 +171,7 @@ type MessageService
               replyToMessage "You have entered empty playlist url" |> Task.ignore
             else
               targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-          | Equals Buttons.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
+          | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
           | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
           | Equals Buttons.RunPreset -> queueCurrentPresetRun userId
           | Equals Buttons.MyPresets ->
@@ -192,16 +192,16 @@ type MessageService
           | Equals Messages.SendExcludedPlaylist
           | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId
 
-          | Equals Messages.SendPlaylistSize ->
-            let setTargetPlaylistSize =
-              PresetSettings.setTargetPlaylistSize getPreset savePreset
+          | Equals Messages.SendPresetSize ->
+            let setTargetPresetSize =
+              PresetSettings.setPresetSize getPreset savePreset
 
-            let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPlaylistSize
+            let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
-            let setTargetPlaylistSize =
+            let setTargetPresetSize =
               Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
 
-            setTargetPlaylistSize userId (PresetSettings.RawPlaylistSize message.Text)
+            setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
           | Equals Messages.SendPresetName ->
             let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
 
@@ -243,7 +243,7 @@ type MessageService
           | Equals "/guide" -> sendMessage Messages.Guide |> Task.ignore
           | Equals "/privacy" -> sendMessage Messages.Privacy |> Task.ignore
           | Equals "/faq" -> sendMessage Messages.FAQ |> Task.ignore
-          | Equals Buttons.SetPlaylistSize -> askForReply Messages.SendPlaylistSize
+          | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
           | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
           | Equals Buttons.MyPresets ->
             let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
