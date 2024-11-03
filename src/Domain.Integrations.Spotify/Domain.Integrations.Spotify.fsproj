@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Helpers.fs"/>
+    <Compile Include="Library.fs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
+    <PackageReference Include="SpotifyAPI.Web" Version="7.1.1"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.fsproj"/>
+  </ItemGroup>
+
+</Project>

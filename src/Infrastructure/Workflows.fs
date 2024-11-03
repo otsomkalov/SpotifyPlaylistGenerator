@@ -1,16 +1,13 @@
 ﻿namespace Infrastructure.Workflows
 
 open System
-open Infrastructure
-open MongoDB.Driver
 open SpotifyAPI.Web
 open System.Net
 open System.Text.RegularExpressions
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
-open Infrastructure.Mapping
-open Infrastructure.Helpers.Spotify
+open Domain.Integrations.Spotify.Helpers
 
 [<RequireQualifiedAccess>]
 module Playlist =
