@@ -167,8 +167,6 @@ module User =
 
   type CreatePreset = UserId -> string -> Task<Preset>
 
-  type CreatePreset = UserId -> string -> Task<Preset>
-
   let create userId =
     { Id = userId
       CurrentPresetId = None
