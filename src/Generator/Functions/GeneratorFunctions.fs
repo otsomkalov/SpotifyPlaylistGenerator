@@ -28,21 +28,18 @@ type RunEnv(telemetryClient, connectionMultiplexer, client, logger, userId) =
 
 type GeneratorFunctions
   (
-    _db: IMongoDatabase,
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer,
     sendUserMessage: SendUserMessage,
     telemetryClient: TelemetryClient,
     getSpotifyClient: Spotify.GetClient,
-    editBotMessage: EditBotMessage
+    editBotMessage: EditBotMessage,
+    getPreset: Preset.Get
   ) =
 
   [<Function("GenerateAsync")>]
   member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: UserId; PresetId: PresetId |}, _: FunctionContext) =
-    let loadPreset = PresetRepo.load _db
-    let getPreset = Preset.get loadPreset
-
     use _ =
       _logger.BeginScope(
         "Running playlist generation for user %i{TelegramId} and preset %s{PresetId}",

@@ -44,15 +44,14 @@ type MessageService
     sendUserKeyboard: SendUserKeyboard,
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
-    getSpotifyClient: Spotify.GetClient
+    getSpotifyClient: Spotify.GetClient,
+    getPreset: Preset.Get
   ) =
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
-    let loadPreset = PresetRepo.load _database
     let savePreset = PresetRepo.save _database
-    let getPreset = Preset.get loadPreset
 
     let sendMessage = sendUserMessage userId
     let sendKeyboard = sendUserKeyboard userId
@@ -261,7 +260,8 @@ type CallbackQueryService
     _database: IMongoDatabase,
     editBotMessageButtons: EditBotMessageButtons,
     telemetryClient: TelemetryClient,
-    sendUserMessage: SendUserMessage
+    sendUserMessage: SendUserMessage,
+    getPreset: Preset.Get
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -282,9 +282,6 @@ type CallbackQueryService
     let getUser = User.get loadUser
 
     let listUserPresets = Workflows.User.listPresets editMessageButtons getUser
-
-    let loadPreset = PresetRepo.load _database
-    let getPreset = Preset.get loadPreset
 
     let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
 

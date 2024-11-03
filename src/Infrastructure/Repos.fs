@@ -18,7 +18,7 @@ open Infrastructure.Cache
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
-  let load (db: IMongoDatabase) : PresetRepo.Load =
+  let internal load (db: IMongoDatabase) : PresetRepo.Load =
     fun presetId ->
       task {
         let collection = db.GetCollection "presets"
