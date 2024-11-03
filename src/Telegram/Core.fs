@@ -27,6 +27,7 @@ module User =
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
   type QueueCurrentPresetRun = UserId -> Task<unit>
   type RunCurrentPreset = UserId -> Task<unit>
+  type CreatePreset = UserId -> string -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =
@@ -100,10 +101,6 @@ type ParseAction = string -> Action
 type AuthState =
   | Authorized
   | Unauthorized
-
-[<RequireQualifiedAccess>]
-module Message =
-  type CreatePreset = string -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

@@ -411,25 +411,13 @@ module TargetedPlaylist =
       }
 
 [<RequireQualifiedAccess>]
-module Message =
-  let createPreset (createPreset: Preset.Create) (sendPresetInfo: Preset.Show) : Message.CreatePreset =
-    fun name ->
-      task {
-        let! presetId = createPreset name
-
-        return! sendPresetInfo presetId
-      }
-
-[<RequireQualifiedAccess>]
 module Preset =
-  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
-    fun presetId ->
+  let internal show' showButtons =
+    fun preset ->
       task {
-        let! preset = getPreset presetId
-
         let! text, keyboard = getPresetMessage preset
 
-        let presetId = presetId |> PresetId.value
+        let presetId = preset.Id |> PresetId.value
 
         let keyboardMarkup =
           seq {
@@ -450,8 +438,12 @@ module Preset =
             seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
           }
 
-        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
+        do! showButtons text (keyboardMarkup |> InlineKeyboardMarkup)
       }
+
+  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+    getPreset
+    >> Task.bind (show' editMessage)
 
   let queueRun
     (queueRun': Domain.Core.Preset.QueueRun)
@@ -600,6 +592,11 @@ module User =
       |> loadUser
       |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
       |> Task.bind queueRun
+
+  let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
+    fun userId name ->
+      createPreset userId name
+      &|&> Preset.show' sendMessageButtons
 
 [<RequireQualifiedAccess>]
 module PresetSettings =

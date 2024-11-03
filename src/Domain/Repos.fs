@@ -8,7 +8,7 @@ open otsom.fs.Core
 module PresetRepo =
   type Load = PresetId -> Task<Preset>
 
-  type Update = Preset -> Task<unit>
+  type Save = Preset -> Task<unit>
   type Remove = PresetId -> Task<unit>
 
   type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
