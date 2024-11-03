@@ -96,7 +96,7 @@ type MessageService
           Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
 
         let queuePresetRun = PresetRepo.queueRun _queueClient userId
-        let queuePresetRun = Domain.Workflows.Preset.queueRun loadPreset Preset.validate queuePresetRun
+        let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset Preset.validate queuePresetRun
         let queueCurrentPresetRun =
           Workflows.User.queueCurrentPresetRun queuePresetRun sendMessage loadUser (fun _ -> Task.FromResult())
 
@@ -311,7 +311,7 @@ type CallbackQueryService
 
         let answerCallbackQuery = Telegram.Workflows.answerCallbackQuery _bot callbackQuery.Id
         let queuePresetRun = PresetRepo.queueRun _queueClient userId
-        let queuePresetRun = Domain.Workflows.Preset.queueRun loadPreset Preset.validate queuePresetRun
+        let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset Preset.validate queuePresetRun
         let queuePresetRun = Telegram.Workflows.Preset.queueRun queuePresetRun sendMessage answerCallbackQuery
 
         queuePresetRun presetId
@@ -441,7 +441,7 @@ type CallbackQueryService
 
       disableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
-      let enableUniqueArtists = PresetSettings.enableUniqueArtists loadPreset updatePreset
+      let enableUniqueArtists = PresetSettings.enableUniqueArtists getPreset updatePreset
 
       let enableUniqueArtists =
         Workflows.PresetSettings.enableUniqueArtists enableUniqueArtists showNotification sendPresetInfo
@@ -449,7 +449,7 @@ type CallbackQueryService
       enableUniqueArtists presetId
     | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
       let disableUniqueArtists =
-        PresetSettings.disableUniqueArtists loadPreset updatePreset
+        PresetSettings.disableUniqueArtists getPreset updatePreset
 
       let disableUniqueArtists =
         Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists showNotification sendPresetInfo
