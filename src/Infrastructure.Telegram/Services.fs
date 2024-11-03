@@ -45,7 +45,8 @@ type MessageService
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
     getSpotifyClient: Spotify.GetClient,
-    getPreset: Preset.Get
+    getPreset: Preset.Get,
+    validatePreset: Preset.Validate
   ) =
 
   member this.ProcessAsync(message: Message) =
@@ -96,7 +97,7 @@ type MessageService
           Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
 
         let queuePresetRun = PresetRepo.queueRun _queueClient userId
-        let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset Preset.validate queuePresetRun
+        let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
         let queueCurrentPresetRun =
           Workflows.User.queueCurrentPresetRun queuePresetRun sendMessage loadUser (fun _ -> Task.FromResult())
 
