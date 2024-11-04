@@ -137,13 +137,13 @@ module TargetedPlaylistRepo =
       |> Task.ignore
 
   let appendTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.AppendTracks =
-    let addInSpotify = Spotify.Playlist.addTracks spotifyClient
+    let addInSpotify = TargetedPlaylistRepo.addTracks spotifyClient
     let addInCache = Redis.Playlist.appendTracks telemetryClient multiplexer
 
     applyTracks addInSpotify addInCache
 
   let replaceTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.ReplaceTracks =
-    let replaceInSpotify = Spotify.Playlist.replaceTracks spotifyClient
+    let replaceInSpotify = TargetedPlaylistRepo.replaceTracks spotifyClient
     let replaceInCache = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
     applyTracks replaceInSpotify replaceInCache

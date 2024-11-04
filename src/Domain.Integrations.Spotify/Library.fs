@@ -1,5 +1,6 @@
 ﻿namespace Domain.Integrations.Spotify
 
+open System.Collections.Generic
 open System.Net
 open Domain.Repos
 open Domain.Workflows
@@ -56,3 +57,18 @@ module PlaylistRepo =
 
           return []
       }
+
+[<RequireQualifiedAccess>]
+module TargetedPlaylistRepo =
+  let private getSpotifyIds =
+    fun tracksIds -> tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
+
+  let addTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.AddItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistAddItemsRequest)
+      |> Task.map ignore
+
+  let replaceTracks (client: ISpotifyClient) =
+    fun playlistId tracksIds ->
+      client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
+      |> Task.ignore
