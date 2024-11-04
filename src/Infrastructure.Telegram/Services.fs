@@ -205,7 +205,7 @@ type MessageService
             let createPreset = ((User.createPreset savePreset loadUser updateUser) |>
               Telegram.Workflows.User.createPreset sendButtons)
 
-            createPreset userIdmessage.Text
+            createPreset userId message.Text
 
           | _ -> replyToMessage "Unknown command" |> Task.ignore
         | _ ->
