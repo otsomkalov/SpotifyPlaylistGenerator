@@ -5,10 +5,13 @@ open Domain.Core
 open Domain.Workflows
 open Microsoft.FSharp.Core
 open Resources
+open SpotifyAPI.Web
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
+open Telegram.Repos
 open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Core
 open System
 
@@ -17,8 +20,6 @@ let keyboardColumns = 4
 
 [<Literal>]
 let buttonsPerPage = 20
-
-type SendLink = string -> string -> string -> Task<unit>
 
 let private getPresetMessage =
   fun (preset: Preset) ->
@@ -63,7 +64,7 @@ let private getPresetMessage =
           likedTracksHandlingText,
           recommendationsText,
           uniqueArtistsText,
-          (preset.Settings.PlaylistSize |> PresetSettings.PlaylistSize.value)
+          (preset.Settings.Size |> PresetSettings.Size.value)
         )
 
       let keyboard =
@@ -133,6 +134,15 @@ let private getPlaylistButtons presetId playlistId playlistType enabled specific
     yield seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
   }
   |> InlineKeyboardMarkup
+
+let sendLoginMessage (initAuth: Auth.Init) (sendLink: SendLink) : SendLoginMessage =
+  fun userId ->
+    initAuth
+      userId
+      [ Scopes.PlaylistModifyPrivate
+        Scopes.PlaylistModifyPublic
+        Scopes.UserLibraryRead ]
+    |> Task.bind (sendLink Messages.LoginToSpotify Buttons.Login)
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
@@ -401,25 +411,13 @@ module TargetedPlaylist =
       }
 
 [<RequireQualifiedAccess>]
-module Message =
-  let createPreset (createPreset: Preset.Create) (sendPresetInfo: Preset.Show) : Message.CreatePreset =
-    fun name ->
-      task {
-        let! presetId = createPreset name
-
-        return! sendPresetInfo presetId
-      }
-
-[<RequireQualifiedAccess>]
 module Preset =
-  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
-    fun presetId ->
+  let internal show' showButtons =
+    fun preset ->
       task {
-        let! preset = getPreset presetId
-
         let! text, keyboard = getPresetMessage preset
 
-        let presetId = presetId |> PresetId.value
+        let presetId = preset.Id |> PresetId.value
 
         let keyboardMarkup =
           seq {
@@ -440,8 +438,12 @@ module Preset =
             seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
           }
 
-        do! editMessage text (keyboardMarkup |> InlineKeyboardMarkup)
+        do! showButtons text (keyboardMarkup |> InlineKeyboardMarkup)
       }
+
+  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+    getPreset
+    >> Task.bind (show' editMessage)
 
   let queueRun
     (queueRun': Domain.Core.Preset.QueueRun)
@@ -562,7 +564,7 @@ module User =
         let! text, _ = getPresetMessage preset
 
         let buttons =
-          [| [| Buttons.SetPlaylistSize |]; [| "Back" |] |]
+          [| [| Buttons.SetPresetSize |]; [| "Back" |] |]
           |> ReplyKeyboardMarkup.op_Implicit
 
         return! sendKeyboard text buttons
@@ -579,7 +581,7 @@ module User =
   let setCurrentPresetSize
     (sendMessage: SendMessage)
     (sendSettingsMessage: User.SendCurrentPresetSettings)
-    (setPlaylistSize: Domain.Core.User.SetCurrentPresetSize)
+    (setPresetSize: Domain.Core.User.SetCurrentPresetSize)
     : User.SetCurrentPresetSize
     =
     fun userId size ->
@@ -587,11 +589,11 @@ module User =
 
       let onError =
         function
-        | PresetSettings.PlaylistSize.TooSmall -> sendMessage Messages.PlaylistSizeTooSmall
-        | PresetSettings.PlaylistSize.TooBig -> sendMessage Messages.PlaylistSizeTooBig
-        | PresetSettings.PlaylistSize.NotANumber -> sendMessage Messages.PlaylistSizeNotANumber
+        | PresetSettings.Size.TooSmall -> sendMessage Messages.PresetSizeTooSmall
+        | PresetSettings.Size.TooBig -> sendMessage Messages.PresetSizeTooBig
+        | PresetSettings.Size.NotANumber -> sendMessage Messages.PresetSizeNotANumber
 
-      setPlaylistSize userId size
+      setPresetSize userId size
       |> TaskResult.taskEither onSuccess (onError >> Task.ignore)
 
   let setCurrentPreset (showNotification: ShowNotification) (setCurrentPreset: Domain.Core.User.SetCurrentPreset) : User.SetCurrentPreset =
@@ -615,6 +617,11 @@ module User =
       |> loadUser
       |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
       |> Task.bind queueRun
+
+  let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
+    fun userId name ->
+      createPreset userId name
+      &|&> Preset.show' sendMessageButtons
 
 [<RequireQualifiedAccess>]
 module PresetSettings =

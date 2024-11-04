@@ -18,7 +18,7 @@ open Infrastructure.Cache
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
-  let load (db: IMongoDatabase) : PresetRepo.Load =
+  let internal load (db: IMongoDatabase) : PresetRepo.Load =
     fun presetId ->
       task {
         let collection = db.GetCollection "presets"
@@ -32,7 +32,7 @@ module PresetRepo =
         return dbPreset |> Preset.fromDb
       }
 
-  let update (db: IMongoDatabase) : PresetRepo.Update =
+  let save (db: IMongoDatabase) : PresetRepo.Save =
     fun preset ->
       task {
         let collection = db.GetCollection "presets"
@@ -43,7 +43,7 @@ module PresetRepo =
 
         let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
 
-        return! collection.ReplaceOneAsync(presetsFilter, dbPreset) |> Task.map ignore
+        return! collection.ReplaceOneAsync(presetsFilter, dbPreset, ReplaceOptions(IsUpsert = true)) &|> ignore
       }
 
   let remove (db: IMongoDatabase) : PresetRepo.Remove =

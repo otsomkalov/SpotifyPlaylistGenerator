@@ -9,6 +9,8 @@ type AnswerCallbackQuery = unit -> Task<unit>
 type ShowNotification = string -> Task<unit>
 type Page = Page of int
 
+type SendLoginMessage = UserId -> Task<unit>
+
 [<RequireQualifiedAccess>]
 module Playlist =
   type Include = UserId -> Playlist.RawPlaylistId -> Task<unit>
@@ -22,9 +24,10 @@ module User =
   type SendCurrentPresetSettings = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
-  type SetCurrentPresetSize = UserId -> PresetSettings.RawPlaylistSize -> Task<unit>
+  type SetCurrentPresetSize = UserId -> PresetSettings.RawPresetSize -> Task<unit>
   type QueueCurrentPresetRun = UserId -> Task<unit>
   type RunCurrentPreset = UserId -> Task<unit>
+  type CreatePreset = UserId -> string -> Task<unit>
 
 [<RequireQualifiedAccess>]
 type IncludedPlaylistActions =
@@ -91,17 +94,13 @@ type Action =
   | SetCurrentPreset of presetId: PresetId
   | RemovePreset of presetId: PresetId
 
-  | AskForPlaylistSize
+  | AskForPresetSize
 
 type ParseAction = string -> Action
 
 type AuthState =
   | Authorized
   | Unauthorized
-
-[<RequireQualifiedAccess>]
-module Message =
-  type CreatePreset = string -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =

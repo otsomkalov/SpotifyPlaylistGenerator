@@ -3,6 +3,9 @@
 #nowarn "20"
 
 open Azure.Storage.Queues
+open Domain.Core
+open Domain.Repos
+open Infrastructure.Repos
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -46,3 +49,6 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
   services.AddMongoClientFactory()
   services.BuildSingleton<IMongoClient, IMongoClientFactory, IOptions<DatabaseSettings>>(configureMongoClient)
   services.BuildSingleton<IMongoDatabase, IOptions<DatabaseSettings>, IMongoClient>(configureMongoDatabase)
+
+  services
+    .BuildSingleton<PresetRepo.Load, IMongoDatabase>(PresetRepo.load)
