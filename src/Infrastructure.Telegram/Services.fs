@@ -81,7 +81,7 @@ type MessageService
           Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
 
         let includePlaylist =
-          Workflows.Playlist.includePlaylist replyToMessage getUser includePlaylist
+          Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist
 
         let excludePlaylist =
           Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
@@ -202,9 +202,11 @@ type MessageService
 
             setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
           | Equals Messages.SendPresetName ->
-            let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
+            let createPreset = ((User.createPreset savePreset loadUser updateUser) |>
+              Telegram.Workflows.User.createPreset sendButtons)
 
             createPreset userId message.Text
+
           | _ -> replyToMessage "Unknown command" |> Task.ignore
         | _ ->
           match message.Text with

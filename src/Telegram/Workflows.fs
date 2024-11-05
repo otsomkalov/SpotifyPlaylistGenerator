@@ -488,6 +488,31 @@ module Preset =
       }
 
 [<RequireQualifiedAccess>]
+module CurrentPreset =
+  let includePlaylist
+    (replyToMessage: ReplyToMessage)
+    (loadUser: User.Get)
+    (includePlaylist: Playlist.IncludePlaylist)
+    : Playlist.Include =
+    fun userId rawPlaylistId ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+        let includePlaylistResult = rawPlaylistId |> includePlaylist currentPresetId
+
+        let onSuccess (playlist: IncludedPlaylist) =
+          replyToMessage $"*{playlist.Name}* successfully included into current preset!"
+
+        let onError =
+          function
+          | Playlist.IncludePlaylistError.IdParsing(Playlist.IdParsingError id) ->
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, id))
+          | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+
+        return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
+[<RequireQualifiedAccess>]
 module User =
   let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
     fun userId ->
