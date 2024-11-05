@@ -45,8 +45,7 @@ type MessageService
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
     getSpotifyClient: Spotify.GetClient,
-    getPreset: Preset.Get
-    getSpotifyClient: Spotify.GetClient,
+    getPreset: Preset.Get,
     validatePreset: Preset.Validate
   ) =
 
