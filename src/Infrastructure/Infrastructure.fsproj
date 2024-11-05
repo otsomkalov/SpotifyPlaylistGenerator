@@ -21,7 +21,6 @@
     <Compile Include="Mapping.fs"/>
     <Compile Include="Redis.fs" />
     <Compile Include="Settings.fs"/>
-    <Compile Include="Spotify.fs"/>
     <Compile Include="Cache\Memory.fs" />
     <Compile Include="Cache\Redis.fs" />
     <Compile Include="Repos.fs" />
