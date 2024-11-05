@@ -38,7 +38,7 @@ module Playlist =
       | SpotifyUri id -> id |> PlaylistId |> Ok
       | Uri uri -> uri |> getPlaylistIdFromUri |> PlaylistId |> Ok
       | PlaylistId id -> id |> PlaylistId |> Ok
-      | _ -> Playlist.IdParsingError() |> Error
+      | id -> Playlist.IdParsingError(id) |> Error
 
   let loadFromSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
     fun playlistId ->

@@ -45,7 +45,8 @@ type MessageService
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
     getSpotifyClient: Spotify.GetClient,
-    getPreset: Preset.Get,
+    getPreset: Preset.Get
+    getSpotifyClient: Spotify.GetClient,
     validatePreset: Preset.Validate
   ) =
 
@@ -82,7 +83,7 @@ type MessageService
           Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
 
         let includePlaylist =
-          Workflows.Playlist.includePlaylist replyToMessage getUser includePlaylist
+          Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist
 
         let excludePlaylist =
           Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
