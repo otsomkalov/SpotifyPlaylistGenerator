@@ -37,31 +37,6 @@ module Playlist =
       | PlaylistId id -> id |> PlaylistId |> Ok
       | id -> Playlist.IdParsingError(id) |> Error
 
-  let loadFromSpotify (client: ISpotifyClient) : Playlist.LoadFromSpotify =
-    fun playlistId ->
-      let rawPlaylistId = playlistId |> PlaylistId.value
 
-      task {
-        try
-          let! playlist = rawPlaylistId |> client.Playlists.Get
-
-          let! currentUser = client.UserProfile.Current()
-
-          let playlist =
-            if playlist.Owner.Id = currentUser.Id then
-              SpotifyPlaylist.Writable(
-                { Id = playlist.Id |> PlaylistId
-                  Name = playlist.Name }
-              )
-            else
-              SpotifyPlaylist.Readable(
-                { Id = playlist.Id |> PlaylistId
-                  Name = playlist.Name }
-              )
-
-          return playlist |> Ok
-        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
-      }
   let countTracks telemetryClient multiplexer : Playlist.CountTracks =
     Infrastructure.Cache.Redis.Playlist.countTracks telemetryClient multiplexer

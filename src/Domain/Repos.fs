@@ -36,6 +36,7 @@ module TrackRepo =
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
   type ListTracks = PlaylistId -> Task<Track list>
+  type Load = PlaylistId -> Task<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
 
 type IListPlaylistTracks =
   abstract member ListPlaylistTracks: PlaylistId -> Task<Track list>

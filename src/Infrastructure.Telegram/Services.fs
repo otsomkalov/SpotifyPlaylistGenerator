@@ -77,7 +77,7 @@ type MessageService
       | Some client ->
         let parsePlaylistId = Playlist.parseId
 
-        let loadFromSpotify = Playlist.loadFromSpotify client
+        let loadFromSpotify = PlaylistRepo.load client
 
         let includePlaylist =
           Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
