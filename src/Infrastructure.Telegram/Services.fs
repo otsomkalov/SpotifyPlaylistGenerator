@@ -50,7 +50,8 @@ type MessageService
     getPreset: Preset.Get,
     validatePreset: Preset.Validate,
     loadUser: UserRepo.Load,
-    savePreset: PresetRepo.Save
+    savePreset: PresetRepo.Save,
+    sendCurrentPreset: User.SendCurrentPreset
   ) =
 
   member this.ProcessAsync(message: Message) =
@@ -65,9 +66,6 @@ type MessageService
     let getUser = User.get loadUser
     let sendLink = Repos.sendLink _bot userId
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
-
-    let sendCurrentPresetInfo =
-      Telegram.Workflows.User.sendCurrentPreset getUser getPreset sendKeyboard
 
     let sendSettingsMessage =
       Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendKeyboard
@@ -124,7 +122,7 @@ type MessageService
             createPreset userId message.Text
         | _ ->
           match message.Text with
-          | Equals "/start" -> sendCurrentPresetInfo userId
+          | Equals "/start" -> sendCurrentPreset userId
           | CommandWithData "/start" state ->
             let processSuccessfulLogin =
               let create = UserRepo.create _database
@@ -134,7 +132,7 @@ type MessageService
               fun () ->
                 task {
                   do! createUserIfNotExists userId
-                  do! sendCurrentPresetInfo userId
+                  do! sendCurrentPreset userId
                 }
 
             let sendErrorMessage =
@@ -182,7 +180,7 @@ type MessageService
           | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
           | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
           | Equals Buttons.TargetPlaylist -> askForReply Messages.SendTargetedPlaylist
-          | Equals "Back" -> sendCurrentPresetInfo userId
+          | Equals "Back" -> sendCurrentPreset userId
 
           | _ -> replyToMessage "Unknown command" |> Task.ignore
       | None ->
@@ -229,7 +227,7 @@ type MessageService
               fun () ->
                 task {
                   do! createUserIfNotExists userId
-                  do! sendCurrentPresetInfo userId
+                  do! sendCurrentPreset userId
                 }
 
             let sendErrorMessage =
@@ -250,7 +248,7 @@ type MessageService
             let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
             sendUserPresets (message.From.Id |> UserId)
           | Equals Buttons.Settings -> sendSettingsMessage userId
-          | Equals "Back" -> sendCurrentPresetInfo userId
+          | Equals "Back" -> sendCurrentPreset userId
 
           | _ -> replyToMessage "Unknown command" |> Task.ignore)
 
