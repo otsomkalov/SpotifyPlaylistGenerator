@@ -57,7 +57,6 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
-    let sendMessage = sendUserMessage userId
     let sendKeyboard = sendUserKeyboard userId
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
@@ -98,7 +97,7 @@ type MessageService
         let queuePresetRun = PresetRepo.queueRun _queueClient userId
         let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
         let queueCurrentPresetRun =
-          Workflows.User.queueCurrentPresetRun queuePresetRun sendMessage loadUser (fun _ -> Task.FromResult())
+          Workflows.User.queueCurrentPresetRun queuePresetRun replyToUserMessage loadUser (fun _ -> Task.FromResult())
 
         match isNull message.ReplyToMessage with
         | false ->
@@ -110,7 +109,7 @@ type MessageService
             let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
             let setTargetPresetSize =
-              Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
+              Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
 
             setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
           | Equals Messages.SendIncludedPlaylist -> includePlaylist userId (Playlist.RawPlaylistId message.Text)
@@ -143,13 +142,13 @@ type MessageService
 
             completeAuth userId state
             |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
-          | Equals "/help" -> sendMessage Messages.Help |> Task.ignore
-          | Equals "/guide" -> sendMessage Messages.Guide  |> Task.ignore
-          | Equals "/privacy" -> sendMessage Messages.Privacy |> Task.ignore
-          | Equals "/faq" -> sendMessage Messages.FAQ |> Task.ignore
-          | Equals "/generate" -> queueCurrentPresetRun userId
+          | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
+          | Equals "/guide" -> sendUserMessage userId Messages.Guide  |> Task.ignore
+          | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
+          | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
+          | Equals "/generate" -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
           | Equals "/version" ->
-            sendMessage (
+            sendUserMessage userId (
               Assembly
                 .GetExecutingAssembly()
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
@@ -172,7 +171,7 @@ type MessageService
               targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
           | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
           | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
-          | Equals Buttons.RunPreset -> queueCurrentPresetRun userId
+          | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
           | Equals Buttons.MyPresets ->
             let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
             sendUserPresets (message.From.Id |> UserId)
@@ -198,7 +197,7 @@ type MessageService
             let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
             let setTargetPresetSize =
-              Workflows.User.setCurrentPresetSize sendMessage sendSettingsMessage setCurrentPresetSize
+              Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
 
             setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
           | Equals Messages.SendPresetName ->
@@ -238,10 +237,10 @@ type MessageService
 
             completeAuth userId state
             |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
-          | Equals "/help" -> sendMessage Messages.Help |> Task.ignore
-          | Equals "/guide" -> sendMessage Messages.Guide |> Task.ignore
-          | Equals "/privacy" -> sendMessage Messages.Privacy |> Task.ignore
-          | Equals "/faq" -> sendMessage Messages.FAQ |> Task.ignore
+          | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
+          | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
+          | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
+          | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
           | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
           | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
           | Equals Buttons.MyPresets ->
