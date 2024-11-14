@@ -57,7 +57,6 @@ type MessageService
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
 
-    let sendKeyboard = sendUserKeyboard userId
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
     let askForReply = askUserForReply userId message.MessageId
@@ -67,7 +66,7 @@ type MessageService
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
 
     let sendSettingsMessage =
-      Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendKeyboard
+      Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendUserKeyboard
 
     getSpotifyClient userId
     |> Task.bind (function
