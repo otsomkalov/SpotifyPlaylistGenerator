@@ -2,6 +2,7 @@
 
 open System.Reflection
 open Domain.Integrations.Spotify
+open Domain.Repos
 open Microsoft.ApplicationInsights
 open Resources
 open Telegram
@@ -47,7 +48,8 @@ type MessageService
     askUserForReply: AskUserForReply,
     getSpotifyClient: GetClient,
     getPreset: Preset.Get,
-    validatePreset: Preset.Validate
+    validatePreset: Preset.Validate,
+    loadUser: UserRepo.Load
   ) =
 
   member this.ProcessAsync(message: Message) =
@@ -61,7 +63,6 @@ type MessageService
     let sendButtons = sendUserMessageButtons userId
     let askForReply = askUserForReply userId message.MessageId
     let updateUser = UserRepo.update _database
-    let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
     let sendLink = Repos.sendLink _bot userId
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
@@ -263,7 +264,8 @@ type CallbackQueryService
     editBotMessageButtons: EditBotMessageButtons,
     telemetryClient: TelemetryClient,
     sendUserMessage: SendUserMessage,
-    getPreset: Preset.Get
+    getPreset: Preset.Get,
+    loadUser: UserRepo.Load
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -280,7 +282,6 @@ type CallbackQueryService
     let countPlaylistTracks =
       Playlist.countTracks telemetryClient _connectionMultiplexer
 
-    let loadUser = UserRepo.load _database
     let getUser = User.get loadUser
 
     let listUserPresets = Workflows.User.listPresets editMessageButtons getUser
