@@ -49,13 +49,12 @@ type MessageService
     getSpotifyClient: GetClient,
     getPreset: Preset.Get,
     validatePreset: Preset.Validate,
-    loadUser: UserRepo.Load
+    loadUser: UserRepo.Load,
+    savePreset: PresetRepo.Save
   ) =
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
-
-    let savePreset = PresetRepo.save _database
 
     let sendMessage = sendUserMessage userId
     let sendKeyboard = sendUserKeyboard userId
@@ -265,12 +264,11 @@ type CallbackQueryService
     telemetryClient: TelemetryClient,
     sendUserMessage: SendUserMessage,
     getPreset: Preset.Get,
-    loadUser: UserRepo.Load
+    loadUser: UserRepo.Load,
+    updatePreset: PresetRepo.Save
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
-    let updatePreset = PresetRepo.save _database
-
     let userId = callbackQuery.From.Id |> UserId
     let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
 
