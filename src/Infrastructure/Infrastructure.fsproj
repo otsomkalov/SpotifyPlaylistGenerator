@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Queues" Version="12.17.1"/>
-    <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0"/>
     <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="StackExchange.Redis" Version="2.7.33"/>
@@ -33,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Database\Database.csproj"/>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
+    <ProjectReference Include="..\Domain.Integrations.Spotify\Domain.Integrations.Spotify.fsproj" />
     <ProjectReference Include="..\Resources\Resources.csproj"/>
   </ItemGroup>
 

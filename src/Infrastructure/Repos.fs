@@ -15,6 +15,7 @@ open otsom.fs.Extensions
 open Infrastructure.Mapping
 open System.Threading.Tasks
 open Infrastructure.Cache
+open Domain.Integrations.Spotify
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
@@ -175,7 +176,7 @@ module TrackRepo =
 module PlaylistRepo =
   let listTracks telemetryClient multiplexer logger client : PlaylistRepo.ListTracks =
     let listCachedPlaylistTracks = Redis.Playlist.listTracks telemetryClient multiplexer
-    let listSpotifyPlaylistTracks = Spotify.listPlaylistTracks logger client
+    let listSpotifyPlaylistTracks = PlaylistRepo.listPlaylistTracks logger client
     let cachePlaylistTracks = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
     fun playlistId ->
