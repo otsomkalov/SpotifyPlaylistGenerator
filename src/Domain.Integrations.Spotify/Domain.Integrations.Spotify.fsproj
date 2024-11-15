@@ -14,10 +14,6 @@
     <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
     <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify" Version="0.0.22" />
-<<<<<<< HEAD
-    <PackageReference Include="otsom.fs.Telegram.Bot.Auth.Spotify" Version="0.0.22" />
-=======
->>>>>>> refs/heads/main
     <PackageReference Include="SpotifyAPI.Web" Version="7.1.1"/>
   </ItemGroup>
 
