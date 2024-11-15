@@ -58,19 +58,3 @@ let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<Spot
           return config |> SpotifyClient :> ISpotifyClient
         })
       |> TaskOption.tap (fun client -> clients.TryAdd(userId, client) |> ignore)
-
-[<RequireQualifiedAccess>]
-module internal Playlist =
-  let private getSpotifyIds =
-    fun tracksIds ->
-      tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
-
-  let addTracks (client: ISpotifyClient) =
-    fun playlistId tracksIds ->
-      client.Playlists.AddItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistAddItemsRequest)
-      |> Task.map ignore
-
-  let replaceTracks (client: ISpotifyClient) =
-    fun playlistId tracksIds ->
-      client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
-      |> Task.ignore
