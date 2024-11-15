@@ -119,7 +119,7 @@ module UserRepo =
       task { do! collection.InsertOneAsync(dbUser) }
 
   let listLikedTracks telemetryClient multiplexer client userId : UserRepo.ListLikedTracks =
-    let listSpotifyTracks = Spotify.listSpotifyLikedTracks client
+    let listSpotifyTracks = UserRepo.listLikedTracks client
     let listRedisTracks = Redis.UserRepo.listLikedTracks telemetryClient multiplexer listSpotifyTracks userId
 
     Memory.UserRepo.listLikedTracks listRedisTracks
