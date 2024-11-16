@@ -2,7 +2,6 @@
 
 open System.Reflection
 open Domain.Integrations.Spotify
-open Domain.Repos
 open Microsoft.ApplicationInsights
 open Resources
 open Telegram
@@ -27,6 +26,7 @@ open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Core
 open otsom.fs.Core
 open Infrastructure.Repos
+open Domain.Repos
 
 type AuthState =
   | Authorized
