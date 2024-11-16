@@ -2,7 +2,6 @@
 
 open System.Reflection
 open Domain.Integrations.Spotify
-open Domain.Repos
 open Microsoft.ApplicationInsights
 open Resources
 open Telegram
