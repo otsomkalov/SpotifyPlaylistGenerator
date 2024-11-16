@@ -1,6 +1,7 @@
 ﻿namespace Generator.Functions
 
 open Domain.Extensions
+open Domain.Integrations.Spotify
 open Domain.Repos
 open FSharp
 open Infrastructure.Repos
@@ -33,7 +34,7 @@ type GeneratorFunctions
     connectionMultiplexer: IConnectionMultiplexer,
     sendUserMessage: SendUserMessage,
     telemetryClient: TelemetryClient,
-    getSpotifyClient: Spotify.GetClient,
+    getSpotifyClient: GetClient,
     editBotMessage: EditBotMessage,
     getPreset: Preset.Get
   ) =

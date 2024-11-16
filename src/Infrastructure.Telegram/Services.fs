@@ -1,6 +1,7 @@
 ﻿module Infrastructure.Telegram.Services
 
 open System.Reflection
+open Domain.Integrations.Spotify
 open Microsoft.ApplicationInsights
 open Resources
 open Telegram
@@ -44,7 +45,7 @@ type MessageService
     sendUserKeyboard: SendUserKeyboard,
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
-    getSpotifyClient: Spotify.GetClient,
+    getSpotifyClient: GetClient,
     getPreset: Preset.Get,
     validatePreset: Preset.Validate
   ) =
