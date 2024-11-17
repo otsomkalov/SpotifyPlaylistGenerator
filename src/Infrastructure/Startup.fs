@@ -52,3 +52,5 @@ let addInfrastructure (configuration: IConfiguration) (services: IServiceCollect
 
   services
     .BuildSingleton<PresetRepo.Load, IMongoDatabase>(PresetRepo.load)
+
+    .BuildSingleton<UserRepo.Load, IMongoDatabase>(UserRepo.load)
