@@ -33,7 +33,7 @@ module PresetRepo =
         return dbPreset |> Preset.fromDb
       }
 
-  let save (db: IMongoDatabase) : PresetRepo.Save =
+  let internal save (db: IMongoDatabase) : PresetRepo.Save =
     fun preset ->
       task {
         let collection = db.GetCollection "presets"
