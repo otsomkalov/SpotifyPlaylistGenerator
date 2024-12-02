@@ -9,6 +9,8 @@ type AnswerCallbackQuery = unit -> Task<unit>
 type ShowNotification = string -> Task<unit>
 type Page = Page of int
 
+type ChatMessageId = ChatMessageId of int
+
 type SendLoginMessage = UserId -> Task<unit>
 
 [<RequireQualifiedAccess>]
@@ -25,7 +27,7 @@ module User =
   type RemovePreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPreset = UserId -> PresetId -> Task<unit>
   type SetCurrentPresetSize = UserId -> PresetSettings.RawPresetSize -> Task<unit>
-  type QueueCurrentPresetRun = UserId -> Task<unit>
+  type QueueCurrentPresetRun = UserId -> ChatMessageId -> Task<unit>
   type RunCurrentPreset = UserId -> Task<unit>
   type CreatePreset = UserId -> string -> Task<unit>
 

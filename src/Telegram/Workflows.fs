@@ -528,12 +528,13 @@ module User =
         do! sendButtons "Your presets" keyboardMarkup
       }
 
-  let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPreset =
-    loadUser
-    >> Task.map _.CurrentPresetId
-    >> Task.bind (function
-      | Some presetId ->
-        task {
+  let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPreset =
+    fun userId ->
+      let sendKeyboard = sendUserKeyboard userId
+
+      userId |> loadUser &|> _.CurrentPresetId
+      &|&> (function
+      | Some presetId -> task {
           let! preset = getPreset presetId
           let! text, _ = getPresetMessage preset
 
@@ -579,12 +580,14 @@ module User =
       }
 
   let setCurrentPresetSize
-    (sendMessage: SendMessage)
+    (sendUserMessage: SendUserMessage)
     (sendSettingsMessage: User.SendCurrentPresetSettings)
     (setPresetSize: Domain.Core.User.SetCurrentPresetSize)
     : User.SetCurrentPresetSize
     =
     fun userId size ->
+      let sendMessage = sendUserMessage userId
+
       let onSuccess () = sendSettingsMessage userId
 
       let onError =
@@ -606,17 +609,20 @@ module User =
 
   let queueCurrentPresetRun
     (queueRun: Domain.Core.Preset.QueueRun)
-    (replyToMessage: ReplyToMessage)
+    (replyToUserMessage: ReplyToUserMessage)
     (loadUser: User.Get)
     (answerCallbackQuery: AnswerCallbackQuery)
     : User.QueueCurrentPresetRun =
-    let queueRun = Preset.queueRun queueRun replyToMessage answerCallbackQuery
 
-    fun userId ->
+    fun userId chatMessageId ->
+      let (ChatMessageId chatMessageId) = chatMessageId
+
+      let replyToMessage = replyToUserMessage userId chatMessageId
+
       userId
       |> loadUser
-      |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-      |> Task.bind queueRun
+      &|> (fun u -> u.CurrentPresetId |> Option.get)
+      &|&> (Preset.queueRun queueRun replyToMessage answerCallbackQuery)
 
   let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
     fun userId name ->
