@@ -27,6 +27,7 @@ open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Core
 open otsom.fs.Core
 open Infrastructure.Repos
+open Domain.Repos
 
 type AuthState =
   | Authorized
