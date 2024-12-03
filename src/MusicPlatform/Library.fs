@@ -34,3 +34,7 @@ module Playlist =
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = unit -> Task<Track list>
+
+[<RequireQualifiedAccess>]
+module Track =
+  type GetRecommendations = TrackId list -> Task<Track list>

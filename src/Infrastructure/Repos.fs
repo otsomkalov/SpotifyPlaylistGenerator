@@ -16,7 +16,6 @@ open otsom.fs.Extensions
 open Infrastructure.Mapping
 open System.Threading.Tasks
 open Infrastructure.Cache
-open Domain.Integrations.Spotify
 open MusicPlatform.Spotify
 
 [<RequireQualifiedAccess>]
@@ -148,30 +147,6 @@ module TargetedPlaylistRepo =
 
     fun playlistId tracks ->
       applyTracks replaceInSpotify replaceInCache playlistId tracks
-
-[<RequireQualifiedAccess>]
-module TrackRepo =
-  [<Literal>]
-  let private recommendationsLimit = 100
-
-  let getRecommendations logRecommendedTracks (client: ISpotifyClient) : TrackRepo.GetRecommendations =
-    fun tracks ->
-      let request = RecommendationsRequest()
-
-      for track in tracks |> List.takeSafe 5 do
-        request.SeedTracks.Add(track |> TrackId.value)
-
-      request.Limit <- recommendationsLimit
-
-      client.Browse.GetRecommendations(request)
-      |> Task.map _.Tracks
-      |> Task.tap (fun tracks -> logRecommendedTracks tracks.Count)
-      |> Task.map (
-        Seq.map (fun st ->
-          { Id = TrackId st.Id
-            Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
-        >> Seq.toList
-      )
 
 [<RequireQualifiedAccess>]
 module PlaylistRepo =

@@ -236,7 +236,7 @@ module Preset =
       LoadPreset: PresetRepo.Load
       AppendTracks: Playlist.AddTracks
       ReplaceTracks: Playlist.ReplaceTracks
-      GetRecommendations: TrackRepo.GetRecommendations
+      GetRecommendations: Track.GetRecommendations
       Shuffler: Track list -> Track list }
 
   let run (env: #IListLikedTracks) (io: RunIO) : Preset.Run =
