@@ -557,8 +557,10 @@ module User =
 
         sendKeyboard "You did not select current preset" buttons)
 
-  let sendCurrentPresetSettings (loadUser: User.Get) (getPreset: Preset.Get) (sendKeyboard: SendKeyboard) : User.SendCurrentPresetSettings =
+  let sendCurrentPresetSettings (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPresetSettings =
     fun userId ->
+      let sendKeyboard = sendUserKeyboard userId
+
       task {
         let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
         let! preset = getPreset currentPresetId
