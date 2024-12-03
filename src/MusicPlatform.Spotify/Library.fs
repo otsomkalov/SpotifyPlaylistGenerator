@@ -25,7 +25,7 @@ module Playlist =
       | None -> initialBatch |> async.Return
   }
 
-  let rec listTracks' (client: ISpotifyClient) playlistId (offset: int) = async {
+  let rec private listTracks' (client: ISpotifyClient) playlistId (offset: int) = async {
     let! tracks =
       client.Playlists.GetItems(playlistId, PlaylistGetItemsRequest(Offset = offset))
       |> Async.AwaitTask
@@ -115,3 +115,25 @@ module User =
     let loadTracks' = Playlist.loadTracks' likedTacksLimit
 
     fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
+
+[<RequireQualifiedAccess>]
+module Track =
+  let getRecommendations (client: ISpotifyClient) : Track.GetRecommendations =
+    let recommendationsLimit = 100
+
+    fun tracks ->
+      let request = RecommendationsRequest()
+
+      for track in tracks |> List.takeSafe 5 do
+        request.SeedTracks.Add(track |> TrackId.value)
+
+      request.Limit <- recommendationsLimit
+
+      client.Browse.GetRecommendations(request)
+      |> Task.map _.Tracks
+      |> Task.map (
+        Seq.map (fun st ->
+          { Id = TrackId st.Id
+            Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
+        >> Seq.toList
+      )

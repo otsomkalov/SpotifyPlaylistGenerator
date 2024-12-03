@@ -9,8 +9,6 @@ open Infrastructure
 open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
-open MongoDB.Driver
-open SpotifyAPI.Web
 open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
@@ -18,6 +16,7 @@ open Telegram.Bot
 open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
+open MusicPlatform.Spotify
 
 type RunEnv(telemetryClient, connectionMultiplexer, client, logger, userId) =
   interface IListPlaylistTracks with
@@ -51,20 +50,13 @@ type GeneratorFunctions
     task {
       let! client = getSpotifyClient command.UserId |> Task.map Option.get
 
-      let logRecommendedTracks =
-        Logf.logfi
-          _logger
-          "Preset %s{PresetId} of user %i{TelegramId} has %i{RecommendedTracksCount} recommended tracks"
-          (command.PresetId |> PresetId.value)
-          (command.UserId |> UserId.value)
-
       let listTracks =
         PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
       let sendMessage = sendUserMessage command.UserId
-      let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
+      let getRecommendations = Track.getRecommendations client
 
       let appendTracks =
         TargetedPlaylistRepo.addTracks telemetryClient client connectionMultiplexer
