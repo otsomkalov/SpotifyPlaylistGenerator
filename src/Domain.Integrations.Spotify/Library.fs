@@ -6,9 +6,6 @@ open System.Net
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
-open Domain.Workflows
-open FSharp
-open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open MusicPlatform
 open SpotifyAPI.Web
@@ -81,12 +78,10 @@ module PlaylistRepo =
   }
 
   let load (client: ISpotifyClient) : PlaylistRepo.Load =
-    fun playlistId ->
-      let rawPlaylistId = playlistId |> PlaylistId.value
-
+    fun (PlaylistId playlistId) ->
       task {
         try
-          let! playlist = rawPlaylistId |> client.Playlists.Get
+          let! playlist = playlistId |> client.Playlists.Get
 
           let! currentUser = client.UserProfile.Current()
 
@@ -104,7 +99,7 @@ module PlaylistRepo =
 
           return playlist |> Ok
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
+          return Playlist.MissingFromSpotifyError playlistId |> Error
       }
 
 [<RequireQualifiedAccess>]
@@ -121,21 +116,3 @@ module TargetedPlaylistRepo =
     fun playlistId tracksIds ->
       client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
       |> Task.ignore
-
-[<RequireQualifiedAccess>]
-module UserRepo =
-  let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) = async {
-    let! tracks =
-      client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
-      |> Async.AwaitTask
-
-    return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
-  }
-
-  let listLikedTracks (client: ISpotifyClient) : UserRepo.ListLikedTracks =
-    let likedTacksLimit = 50
-
-    let listLikedTracks' = listLikedTracks' client
-    let loadTracks' = PlaylistRepo.loadTracks' likedTacksLimit
-
-    fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask

@@ -55,3 +55,21 @@ module Playlist =
 
           return []
       }
+
+[<RequireQualifiedAccess>]
+module User =
+  let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) = async {
+    let! tracks =
+      client.Library.GetTracks(LibraryTracksRequest(Offset = offset, Limit = 50))
+      |> Async.AwaitTask
+
+    return (tracks.Items |> Seq.map _.Track |> getTracksIds, tracks.Total)
+  }
+
+  let listLikedTracks (client: ISpotifyClient) : User.ListLikedTracks =
+    let likedTacksLimit = 50
+
+    let listLikedTracks' = listLikedTracks' client
+    let loadTracks' = Playlist.loadTracks' likedTacksLimit
+
+    fun () -> loadTracks' listLikedTracks' |> Async.StartAsTask
