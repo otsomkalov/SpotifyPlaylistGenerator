@@ -142,11 +142,11 @@ module TargetedPlaylistRepo =
 
     applyTracks addInSpotify addInCache
 
-  let replaceTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.ReplaceTracks =
-    let replaceInSpotify = TargetedPlaylistRepo.replaceTracks spotifyClient
+  let replaceTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : Playlist.ReplaceTracks =
+    let replaceInSpotify = Playlist.replaceTracks spotifyClient
     let replaceInCache = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
-    fun (WritablePlaylistId playlistId) tracks ->
+    fun playlistId tracks ->
       applyTracks replaceInSpotify replaceInCache playlistId tracks
 
 [<RequireQualifiedAccess>]

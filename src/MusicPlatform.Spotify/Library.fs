@@ -67,6 +67,11 @@ module Playlist =
       client.Playlists.AddItems(playlistId, tracks |> getSpotifyIds |> PlaylistAddItemsRequest)
       &|> ignore
 
+  let replaceTracks (client: ISpotifyClient) =
+    fun (PlaylistId playlistId) tracks ->
+      client.Playlists.ReplaceItems(playlistId, tracks |> getSpotifyIds |> PlaylistReplaceItemsRequest)
+      &|> ignore
+
 [<RequireQualifiedAccess>]
 module User =
   let rec private listLikedTracks' (client: ISpotifyClient) (offset: int) = async {

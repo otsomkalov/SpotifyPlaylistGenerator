@@ -17,10 +17,6 @@ module PresetRepo =
   type QueueRun = PresetId -> Task<unit>
 
 [<RequireQualifiedAccess>]
-module TargetedPlaylistRepo =
-  type ReplaceTracks = TargetedPlaylistId -> Track list -> Task<unit>
-
-[<RequireQualifiedAccess>]
 module UserRepo =
   type Load = UserId -> Task<User>
   type Update = User -> Task<unit>
