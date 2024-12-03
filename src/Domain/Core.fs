@@ -8,14 +8,6 @@ open otsom.fs.Core
 type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
 
-type SpotifyPlaylistData =
-  { Id: PlaylistId
-    Name: string }
-
-type SpotifyPlaylist =
-  | Readable of SpotifyPlaylistData
-  | Writable of SpotifyPlaylistData
-
 type IncludedPlaylist =
   { Id: ReadablePlaylistId
     Name: string
@@ -104,21 +96,20 @@ type User = {
 module Playlist =
   type RawPlaylistId = RawPlaylistId of string
   type IdParsingError = IdParsingError of string
-  type MissingFromSpotifyError = MissingFromSpotifyError of string
 
   type IncludePlaylistError =
     | IdParsing of IdParsingError
-    | MissingFromSpotify of MissingFromSpotifyError
+    | Load of Playlist.LoadError
 
   type ExcludePlaylistError =
     | IdParsing of IdParsingError
-    | MissingFromSpotify of MissingFromSpotifyError
+    | Load of Playlist.LoadError
 
   type AccessError = AccessError of unit
 
   type TargetPlaylistError =
     | IdParsing of IdParsingError
-    | MissingFromSpotify of MissingFromSpotifyError
+    | Load of Playlist.LoadError
     | AccessError of AccessError
 
   type IncludePlaylist = PresetId -> RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
