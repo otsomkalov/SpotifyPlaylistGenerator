@@ -101,13 +101,3 @@ module PlaylistRepo =
         with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
           return Playlist.MissingFromSpotifyError playlistId |> Error
       }
-
-[<RequireQualifiedAccess>]
-module TargetedPlaylistRepo =
-  let private getSpotifyIds =
-    fun tracks -> tracks |> List.map _.Id |> List.map(TrackId.value) |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
-
-  let replaceTracks (client: ISpotifyClient) =
-    fun (PlaylistId playlistId) tracks ->
-      client.Playlists.ReplaceItems(playlistId, tracks |> getSpotifyIds |> PlaylistReplaceItemsRequest)
-      |> Task.ignore

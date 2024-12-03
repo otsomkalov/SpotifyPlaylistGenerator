@@ -235,7 +235,7 @@ module Preset =
     { ListExcludedTracks: PresetRepo.ListExcludedTracks
       LoadPreset: PresetRepo.Load
       AppendTracks: Playlist.AddTracks
-      ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
+      ReplaceTracks: Playlist.ReplaceTracks
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
 
@@ -247,7 +247,7 @@ module Preset =
         |> Seq.filter _.Enabled
         |> Seq.map (fun p ->
           match p.Overwrite with
-          | true -> io.ReplaceTracks p.Id tracks
+          | true -> io.ReplaceTracks (p.Id |> WritablePlaylistId.value) tracks
           | false -> io.AppendTracks (p.Id |> WritablePlaylistId.value) tracks)
         |> Task.WhenAll
         |> Task.ignore
