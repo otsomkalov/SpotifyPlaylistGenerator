@@ -401,9 +401,6 @@ module ExcludedPlaylist =
 [<RequireQualifiedAccess>]
 module Playlist =
   type ParseId = Playlist.RawPlaylistId -> Result<PlaylistId, Playlist.IdParsingError>
-
-  type LoadFromSpotify = PlaylistId -> Task<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
-
   type IncludeInStorage = IncludedPlaylist -> Async<IncludedPlaylist>
   type ExcludeInStorage = ExcludedPlaylist -> Async<ExcludedPlaylist>
   type TargetInStorage = TargetedPlaylist -> Async<TargetedPlaylist>
@@ -412,14 +409,14 @@ module Playlist =
 
   let includePlaylist
     (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
+    (loadPlaylist: PlaylistRepo.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.IncludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.IncludePlaylistError.IdParsing
 
-    let loadFromSpotify =
-      loadFromSpotify
+    let loadPlaylist =
+      loadPlaylist
       >> TaskResult.mapError Playlist.IncludePlaylistError.MissingFromSpotify
 
     fun presetId rawPlaylistId ->
@@ -440,20 +437,20 @@ module Playlist =
 
       rawPlaylistId
       |> parseId
-      |> Result.taskBind loadFromSpotify
+      |> Result.taskBind loadPlaylist
       |> TaskResult.map IncludedPlaylist.fromSpotifyPlaylist
       |> TaskResult.taskMap updatePreset
 
   let excludePlaylist
     (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
+    (loadPlaylist: PlaylistRepo.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.ExcludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.ExcludePlaylistError.IdParsing
 
-    let loadFromSpotify =
-      loadFromSpotify
+    let loadPlaylist =
+      loadPlaylist
       >> TaskResult.mapError Playlist.ExcludePlaylistError.MissingFromSpotify
 
     fun presetId rawPlaylistId ->
@@ -474,20 +471,20 @@ module Playlist =
 
       rawPlaylistId
       |> parseId
-      |> Result.taskBind loadFromSpotify
+      |> Result.taskBind loadPlaylist
       |> TaskResult.map ExcludedPlaylist.fromSpotifyPlaylist
       |> TaskResult.taskMap updatePreset
 
   let targetPlaylist
     (parseId: ParseId)
-    (loadFromSpotify: LoadFromSpotify)
+    (loadPlaylist: PlaylistRepo.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.TargetPlaylist =
     let parseId = parseId >> Result.mapError Playlist.TargetPlaylistError.IdParsing
 
-    let loadFromSpotify =
-      loadFromSpotify
+    let loadPlaylist =
+      loadPlaylist
       >> TaskResult.mapError Playlist.TargetPlaylistError.MissingFromSpotify
 
     let checkAccess playlist =
@@ -513,7 +510,7 @@ module Playlist =
 
       rawPlaylistId
       |> parseId
-      |> Result.taskBind loadFromSpotify
+      |> Result.taskBind loadPlaylist
       |> Task.map (Result.bind checkAccess)
       |> TaskResult.taskMap updatePreset
 

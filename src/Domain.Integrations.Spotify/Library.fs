@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.Net
 open System.Threading.Tasks
+open Domain.Core
 open Domain.Repos
 open Domain.Workflows
 open FSharp
@@ -94,6 +95,33 @@ module PlaylistRepo =
           Logf.logfw logger "Playlist with id %s{PlaylistId} not found in Spotify" playlistId
 
           return []
+      }
+
+  let load (client: ISpotifyClient) : PlaylistRepo.Load =
+    fun playlistId ->
+      let rawPlaylistId = playlistId |> PlaylistId.value
+
+      task {
+        try
+          let! playlist = rawPlaylistId |> client.Playlists.Get
+
+          let! currentUser = client.UserProfile.Current()
+
+          let playlist =
+            if playlist.Owner.Id = currentUser.Id then
+              SpotifyPlaylist.Writable(
+                { Id = playlist.Id |> PlaylistId
+                  Name = playlist.Name }
+              )
+            else
+              SpotifyPlaylist.Readable(
+                { Id = playlist.Id |> PlaylistId
+                  Name = playlist.Name }
+              )
+
+          return playlist |> Ok
+        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+          return Playlist.MissingFromSpotifyError rawPlaylistId |> Error
       }
 
 [<RequireQualifiedAccess>]

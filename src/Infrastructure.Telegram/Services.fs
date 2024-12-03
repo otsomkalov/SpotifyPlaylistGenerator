@@ -2,7 +2,6 @@
 
 open System.Reflection
 open Domain.Integrations.Spotify
-open Domain.Repos
 open Microsoft.ApplicationInsights
 open Resources
 open Telegram
@@ -74,7 +73,7 @@ type MessageService
       | Some client ->
         let parsePlaylistId = Playlist.parseId
 
-        let loadFromSpotify = Playlist.loadFromSpotify client
+        let loadFromSpotify = PlaylistRepo.load client
 
         let includePlaylist =
           Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
