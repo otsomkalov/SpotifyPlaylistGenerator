@@ -18,7 +18,6 @@ module PresetRepo =
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
-  type AppendTracks = TargetedPlaylistId -> Track list -> Task<unit>
   type ReplaceTracks = TargetedPlaylistId -> Track list -> Task<unit>
 
 [<RequireQualifiedAccess>]

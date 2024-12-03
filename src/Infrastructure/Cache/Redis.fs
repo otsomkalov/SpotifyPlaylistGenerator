@@ -53,13 +53,13 @@ module Playlist =
     let prependList = Redis.prependList telemetryClient (getPlaylistsDatabase multiplexer)
 
     fun playlistId tracks ->
-      prependList playlistId (serializeTracks tracks)
+      prependList (playlistId |> PlaylistId.value) (serializeTracks tracks)
 
   let replaceTracks (telemetryClient: TelemetryClient) multiplexer =
     let replaceList = Redis.replaceList telemetryClient (getPlaylistsDatabase multiplexer)
 
     fun playlistId tracks ->
-      replaceList playlistId (serializeTracks tracks)
+      replaceList (playlistId |> PlaylistId.value) (serializeTracks tracks)
 
   let listTracks telemetryClient multiplexer : Playlist.ListTracks =
     PlaylistId.value
