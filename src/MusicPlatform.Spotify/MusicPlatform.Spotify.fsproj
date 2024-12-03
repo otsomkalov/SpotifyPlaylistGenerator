@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Helpers.fs"/>
+    <Compile Include="Library.fs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
+    <PackageReference Include="SpotifyAPI.Web" Version="7.1.1"/>
+    <PackageReference Include="otsom.fs.Extensions" Version="0.0.39"/>
+    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.2"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MusicPlatform\MusicPlatform.fsproj"/>
+  </ItemGroup>
+
+</Project>

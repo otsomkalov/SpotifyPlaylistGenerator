@@ -2,22 +2,11 @@
 
 open System
 open System.Threading.Tasks
+open MusicPlatform
 open otsom.fs.Core
 
-type PlaylistId = PlaylistId of string
 type ReadablePlaylistId = ReadablePlaylistId of PlaylistId
 type WritablePlaylistId = WritablePlaylistId of PlaylistId
-type TrackId = TrackId of string
-
-type ArtistId = ArtistId of string
-
-type Artist = { Id: ArtistId; }
-
-type Track = { Id: TrackId; Artists: Set<Artist> }
-
-[<RequireQualifiedAccess>]
-module TrackId =
-  let value (TrackId id) = id
 
 type SpotifyPlaylistData =
   { Id: PlaylistId

@@ -2,6 +2,7 @@
 
 open System.Threading.Tasks
 open Domain.Core
+open MusicPlatform
 open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
@@ -35,7 +36,6 @@ module TrackRepo =
 
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
-  type ListTracks = PlaylistId -> Task<Track list>
   type Load = PlaylistId -> Task<Result<SpotifyPlaylist, Playlist.MissingFromSpotifyError>>
 
 type IListPlaylistTracks =

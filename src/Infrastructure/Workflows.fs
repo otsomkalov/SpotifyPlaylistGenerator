@@ -1,13 +1,11 @@
 ﻿namespace Infrastructure.Workflows
 
 open System
-open SpotifyAPI.Web
-open System.Net
+open MusicPlatform
 open System.Text.RegularExpressions
 open Domain.Core
 open Domain.Workflows
 open Infrastructure.Core
-open Domain.Integrations.Spotify.Helpers
 
 [<RequireQualifiedAccess>]
 module Playlist =

@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Infrastructure.Telegram.Workflows
 
+open MusicPlatform
 open Resources
 open System
 open Domain.Core

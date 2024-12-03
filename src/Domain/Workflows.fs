@@ -5,6 +5,7 @@ open Domain.Core
 open Domain.Repos
 open Microsoft.FSharp.Control
 open Microsoft.FSharp.Core
+open MusicPlatform
 open otsom.fs.Extensions
 open shortid
 open shortid.Configuration
