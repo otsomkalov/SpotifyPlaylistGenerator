@@ -9,6 +9,7 @@ open Infrastructure.Helpers
 open Microsoft.ApplicationInsights
 open MongoDB.Driver
 open Database
+open MusicPlatform
 open SpotifyAPI.Web
 open otsom.fs.Core
 open otsom.fs.Extensions
@@ -16,6 +17,7 @@ open Infrastructure.Mapping
 open System.Threading.Tasks
 open Infrastructure.Cache
 open Domain.Integrations.Spotify
+open MusicPlatform.Spotify
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
@@ -56,10 +58,10 @@ module PresetRepo =
 
       collection.DeleteOneAsync(presetsFilter) |> Task.ignore
 
-  let private listPlaylistsTracks (listTracks: PlaylistRepo.ListTracks) =
+  let private listPlaylistsTracks (listTracks: Playlist.ListTracks) =
     List.map listTracks >> Task.WhenAll >> Task.map List.concat
 
-  let listExcludedTracks logger (listTracks: PlaylistRepo.ListTracks) : PresetRepo.ListExcludedTracks =
+  let listExcludedTracks logger (listTracks: Playlist.ListTracks) : PresetRepo.ListExcludedTracks =
     let listTracks = listPlaylistsTracks listTracks
 
     fun playlists ->
@@ -174,9 +176,9 @@ module TrackRepo =
 
 [<RequireQualifiedAccess>]
 module PlaylistRepo =
-  let listTracks telemetryClient multiplexer logger client : PlaylistRepo.ListTracks =
+  let listTracks telemetryClient multiplexer logger client : Playlist.ListTracks =
     let listCachedPlaylistTracks = Redis.Playlist.listTracks telemetryClient multiplexer
-    let listSpotifyPlaylistTracks = PlaylistRepo.listPlaylistTracks logger client
+    let listSpotifyPlaylistTracks = Playlist.listTracks logger client
     let cachePlaylistTracks = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
     fun playlistId ->

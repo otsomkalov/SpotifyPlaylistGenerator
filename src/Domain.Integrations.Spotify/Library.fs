@@ -10,6 +10,7 @@ open Domain.Workflows
 open FSharp
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
+open MusicPlatform
 open SpotifyAPI.Web
 open otsom.fs.Core
 open otsom.fs.Extensions
@@ -78,24 +79,6 @@ module PlaylistRepo =
        |> getTracksIds,
        tracks.Total)
   }
-
-  let listPlaylistTracks (logger: ILogger) client : PlaylistRepo.ListTracks =
-    let playlistTracksLimit = 100
-
-    fun playlistId ->
-      let playlistId = playlistId |> PlaylistId.value
-      let listPlaylistTracks = listTracks' client playlistId
-      let loadTracks' = loadTracks' playlistTracksLimit
-
-      task {
-        try
-          return! loadTracks' listPlaylistTracks
-
-        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          Logf.logfw logger "Playlist with id %s{PlaylistId} not found in Spotify" playlistId
-
-          return []
-      }
 
   let load (client: ISpotifyClient) : PlaylistRepo.Load =
     fun playlistId ->

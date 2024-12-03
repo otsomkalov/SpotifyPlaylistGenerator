@@ -1,4 +1,4 @@
-﻿namespace Domain.Integrations.Spotify
+﻿namespace MusicPlatform.Spotify
 
 open System
 open MusicPlatform

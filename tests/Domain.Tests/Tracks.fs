@@ -2,6 +2,7 @@
 
 open Domain.Core
 open Domain.Workflows
+open MusicPlatform
 open Xunit
 open FsUnit.Xunit
 open Domain.Tests.Extensions

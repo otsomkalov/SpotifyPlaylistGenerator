@@ -1,6 +1,7 @@
 ﻿module Domain.Tests.Mocks
 
 open Domain.Core
+open MusicPlatform
 
 let includedTrack =
   { Id = TrackId "included-track-id"

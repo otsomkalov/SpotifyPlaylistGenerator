@@ -5,6 +5,7 @@ open Domain.Repos
 open Domain.Workflows
 open Infrastructure
 open Microsoft.ApplicationInsights
+open MusicPlatform
 open StackExchange.Redis
 open Infrastructure.Helpers
 open otsom.fs.Core
@@ -60,7 +61,7 @@ module Playlist =
     fun playlistId tracks ->
       replaceList playlistId (serializeTracks tracks)
 
-  let listTracks telemetryClient multiplexer : PlaylistRepo.ListTracks =
+  let listTracks telemetryClient multiplexer : Playlist.ListTracks =
     PlaylistId.value
     >> (listCachedTracks telemetryClient (getPlaylistsDatabase multiplexer))
 

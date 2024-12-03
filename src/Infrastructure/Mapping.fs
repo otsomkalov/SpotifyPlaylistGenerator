@@ -4,6 +4,7 @@ open System
 open Database
 open Domain.Core
 open Domain.Workflows
+open MusicPlatform
 open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
