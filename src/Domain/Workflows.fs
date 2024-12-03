@@ -47,7 +47,7 @@ module Tracks =
 
 [<RequireQualifiedAccess>]
 module SimplePreset =
-  let fromPreset (preset: Preset) = { Id = preset.Id; Name = preset.Name }
+  let fromPreset (preset: Preset) : SimplePreset = { Id = preset.Id; Name = preset.Name }
 
 [<RequireQualifiedAccess>]
 module PresetSettings =
@@ -410,7 +410,7 @@ module Playlist =
 
   let includePlaylist
     (parseId: ParseId)
-    (loadPlaylist: PlaylistRepo.Load)
+    (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.IncludePlaylist =
@@ -418,7 +418,7 @@ module Playlist =
 
     let loadPlaylist =
       loadPlaylist
-      >> TaskResult.mapError Playlist.IncludePlaylistError.MissingFromSpotify
+      >> TaskResult.mapError Playlist.IncludePlaylistError.Load
 
     fun presetId rawPlaylistId ->
       let updatePreset playlist =
@@ -444,7 +444,7 @@ module Playlist =
 
   let excludePlaylist
     (parseId: ParseId)
-    (loadPlaylist: PlaylistRepo.Load)
+    (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.ExcludePlaylist =
@@ -452,7 +452,7 @@ module Playlist =
 
     let loadPlaylist =
       loadPlaylist
-      >> TaskResult.mapError Playlist.ExcludePlaylistError.MissingFromSpotify
+      >> TaskResult.mapError Playlist.ExcludePlaylistError.Load
 
     fun presetId rawPlaylistId ->
       let updatePreset playlist =
@@ -478,7 +478,7 @@ module Playlist =
 
   let targetPlaylist
     (parseId: ParseId)
-    (loadPlaylist: PlaylistRepo.Load)
+    (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.TargetPlaylist =
@@ -486,7 +486,7 @@ module Playlist =
 
     let loadPlaylist =
       loadPlaylist
-      >> TaskResult.mapError Playlist.TargetPlaylistError.MissingFromSpotify
+      >> TaskResult.mapError Playlist.TargetPlaylistError.Load
 
     let checkAccess playlist =
       playlist
