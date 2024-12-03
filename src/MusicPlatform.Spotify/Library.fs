@@ -8,6 +8,7 @@ open MusicPlatform
 open SpotifyAPI.Web
 open MusicPlatform.Spotify.Helpers
 open otsom.fs.Extensions
+open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -55,6 +56,16 @@ module Playlist =
 
           return []
       }
+
+  let private getSpotifyIds =
+    List.map (_.Id)
+    >> List.map (fun (TrackId id) -> $"spotify:track:{id}")
+    >> List<string>
+
+  let addTracks (client: ISpotifyClient) : Playlist.AddTracks =
+    fun (PlaylistId playlistId) tracks ->
+      client.Playlists.AddItems(playlistId, tracks |> getSpotifyIds |> PlaylistAddItemsRequest)
+      &|> ignore
 
 [<RequireQualifiedAccess>]
 module User =

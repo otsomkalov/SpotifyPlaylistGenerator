@@ -105,14 +105,9 @@ module PlaylistRepo =
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
   let private getSpotifyIds =
-    fun tracksIds -> tracksIds |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
-
-  let addTracks (client: ISpotifyClient) =
-    fun playlistId tracksIds ->
-      client.Playlists.AddItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistAddItemsRequest)
-      |> Task.map ignore
+    fun tracks -> tracks |> List.map _.Id |> List.map(TrackId.value) |> List.map (fun id -> $"spotify:track:{id}") |> List<string>
 
   let replaceTracks (client: ISpotifyClient) =
-    fun playlistId tracksIds ->
-      client.Playlists.ReplaceItems(playlistId, tracksIds |> getSpotifyIds |> PlaylistReplaceItemsRequest)
+    fun (PlaylistId playlistId) tracks ->
+      client.Playlists.ReplaceItems(playlistId, tracks |> getSpotifyIds |> PlaylistReplaceItemsRequest)
       |> Task.ignore

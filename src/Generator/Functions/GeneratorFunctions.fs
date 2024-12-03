@@ -67,7 +67,7 @@ type GeneratorFunctions
       let getRecommendations = TrackRepo.getRecommendations logRecommendedTracks client
 
       let appendTracks =
-        TargetedPlaylistRepo.appendTracks telemetryClient client connectionMultiplexer
+        TargetedPlaylistRepo.addTracks telemetryClient client connectionMultiplexer
 
       let replaceTracks =
         TargetedPlaylistRepo.replaceTracks telemetryClient client connectionMultiplexer

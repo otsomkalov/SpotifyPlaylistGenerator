@@ -234,7 +234,7 @@ module Preset =
   type RunIO =
     { ListExcludedTracks: PresetRepo.ListExcludedTracks
       LoadPreset: PresetRepo.Load
-      AppendTracks: TargetedPlaylistRepo.AppendTracks
+      AppendTracks: Playlist.AddTracks
       ReplaceTracks: TargetedPlaylistRepo.ReplaceTracks
       GetRecommendations: TrackRepo.GetRecommendations
       Shuffler: Track list -> Track list }
@@ -248,7 +248,7 @@ module Preset =
         |> Seq.map (fun p ->
           match p.Overwrite with
           | true -> io.ReplaceTracks p.Id tracks
-          | false -> io.AppendTracks p.Id tracks)
+          | false -> io.AppendTracks (p.Id |> WritablePlaylistId.value) tracks)
         |> Task.WhenAll
         |> Task.ignore
 

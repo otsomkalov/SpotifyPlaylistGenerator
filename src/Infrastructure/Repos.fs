@@ -129,17 +129,15 @@ module UserRepo =
 [<RequireQualifiedAccess>]
 module TargetedPlaylistRepo =
   let private applyTracks spotifyAction cacheAction =
-    fun playlistId (tracks: Track list) ->
-      let playlistId = playlistId |> WritablePlaylistId.value |> PlaylistId.value
-
-      let spotifyTask : Task<unit> = spotifyAction playlistId (tracks |> List.map (_.Id >> TrackId.value))
+    fun (playlistId: PlaylistId) (tracks: Track list) ->
+      let spotifyTask : Task<unit> = spotifyAction playlistId tracks
       let cacheTask: Task<unit> = cacheAction playlistId tracks
 
       Task.WhenAll([ spotifyTask; cacheTask])
       |> Task.ignore
 
-  let appendTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : TargetedPlaylistRepo.AppendTracks =
-    let addInSpotify = TargetedPlaylistRepo.addTracks spotifyClient
+  let addTracks (telemetryClient: TelemetryClient) (spotifyClient: ISpotifyClient) multiplexer : Playlist.AddTracks =
+    let addInSpotify = Playlist.addTracks spotifyClient
     let addInCache = Redis.Playlist.appendTracks telemetryClient multiplexer
 
     applyTracks addInSpotify addInCache
@@ -148,7 +146,8 @@ module TargetedPlaylistRepo =
     let replaceInSpotify = TargetedPlaylistRepo.replaceTracks spotifyClient
     let replaceInCache = Redis.Playlist.replaceTracks telemetryClient multiplexer
 
-    applyTracks replaceInSpotify replaceInCache
+    fun (WritablePlaylistId playlistId) tracks ->
+      applyTracks replaceInSpotify replaceInCache playlistId tracks
 
 [<RequireQualifiedAccess>]
 module TrackRepo =
@@ -186,5 +185,5 @@ module PlaylistRepo =
       |> Task.bind (function
         | [] ->
           listSpotifyPlaylistTracks playlistId
-          |> Task.taskTap (cachePlaylistTracks (playlistId |> PlaylistId.value))
+          |> Task.taskTap (cachePlaylistTracks playlistId)
         | tracks -> Task.FromResult tracks)

@@ -18,6 +18,7 @@ module TrackId =
 [<RequireQualifiedAccess>]
 module Playlist =
   type ListTracks = PlaylistId -> Task<Track list>
+  type AddTracks = PlaylistId -> Track list -> Task<unit>
 
 [<RequireQualifiedAccess>]
 module User =
