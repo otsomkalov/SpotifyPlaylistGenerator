@@ -28,23 +28,22 @@ module Core =
       | false, _ ->
         userId
         |> loadCompletedAuth
-        |> TaskOption.taskMap (fun auth ->
-          task {
-            let! tokenResponse =
-              AuthorizationCodeRefreshRequest(spotifySettings.ClientId, spotifySettings.ClientSecret, auth.Token)
-              |> OAuthClient().RequestToken
+        |> TaskOption.taskMap (fun auth -> task {
+          let! tokenResponse =
+            AuthorizationCodeRefreshRequest(spotifySettings.ClientId, spotifySettings.ClientSecret, auth.Token)
+            |> OAuthClient().RequestToken
 
-            let retryHandler =
-              SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
+          let retryHandler =
+            SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
 
-            let config =
-              SpotifyClientConfig
-                .CreateDefault()
-                .WithRetryHandler(retryHandler)
-                .WithToken(tokenResponse.AccessToken)
+          let config =
+            SpotifyClientConfig
+              .CreateDefault()
+              .WithRetryHandler(retryHandler)
+              .WithToken(tokenResponse.AccessToken)
 
-            return config |> SpotifyClient :> ISpotifyClient
-          })
+          return config |> SpotifyClient :> ISpotifyClient
+        })
         |> TaskOption.tap (fun client -> clients.TryAdd(userId, client) |> ignore)
 
 [<RequireQualifiedAccess>]
@@ -77,27 +76,26 @@ module PlaylistRepo =
        tracks.Total)
   }
 
-  let load (client: ISpotifyClient) : PlaylistRepo.Load =
-    fun (PlaylistId playlistId) ->
-      task {
-        try
-          let! playlist = playlistId |> client.Playlists.Get
+  let load (client: ISpotifyClient) : Playlist.Load =
+    fun (PlaylistId playlistId) -> task {
+      try
+        let! playlist = playlistId |> client.Playlists.Get
 
-          let! currentUser = client.UserProfile.Current()
+        let! currentUser = client.UserProfile.Current()
 
-          let playlist =
-            if playlist.Owner.Id = currentUser.Id then
-              SpotifyPlaylist.Writable(
-                { Id = playlist.Id |> PlaylistId
-                  Name = playlist.Name }
-              )
-            else
-              SpotifyPlaylist.Readable(
-                { Id = playlist.Id |> PlaylistId
-                  Name = playlist.Name }
-              )
+        let playlist =
+          if playlist.Owner.Id = currentUser.Id then
+            Playlist.Writable(
+              { Id = playlist.Id |> PlaylistId
+                Name = playlist.Name }
+            )
+          else
+            Playlist.Readable(
+              { Id = playlist.Id |> PlaylistId
+                Name = playlist.Name }
+            )
 
-          return playlist |> Ok
-        with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
-          return Playlist.MissingFromSpotifyError playlistId |> Error
-      }
+        return playlist |> Ok
+      with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+        return Playlist.NotFound |> Error
+    }

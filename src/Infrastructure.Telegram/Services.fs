@@ -3,6 +3,7 @@
 open System.Reflection
 open Domain.Integrations.Spotify
 open Microsoft.ApplicationInsights
+open MusicPlatform.Spotify
 open Resources
 open Telegram
 open Infrastructure

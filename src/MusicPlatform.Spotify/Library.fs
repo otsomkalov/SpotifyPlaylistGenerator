@@ -58,19 +58,45 @@ module Playlist =
       }
 
   let private getSpotifyIds =
-    List.map (_.Id)
-    >> List.map (fun (TrackId id) -> $"spotify:track:{id}")
-    >> List<string>
+    fun (tracks: Track list) ->
+      tracks
+      |> List.map (_.Id)
+      |> List.map (fun (TrackId id) -> $"spotify:track:{id}")
+      |> List<string>
 
   let addTracks (client: ISpotifyClient) : Playlist.AddTracks =
     fun (PlaylistId playlistId) tracks ->
       client.Playlists.AddItems(playlistId, tracks |> getSpotifyIds |> PlaylistAddItemsRequest)
       &|> ignore
 
-  let replaceTracks (client: ISpotifyClient) =
+  let replaceTracks (client: ISpotifyClient) : Playlist.ReplaceTracks =
     fun (PlaylistId playlistId) tracks ->
       client.Playlists.ReplaceItems(playlistId, tracks |> getSpotifyIds |> PlaylistReplaceItemsRequest)
       &|> ignore
+
+  let load (client: ISpotifyClient) : Playlist.Load =
+    fun (PlaylistId playlistId) -> task {
+      try
+        let! playlist = playlistId |> client.Playlists.Get
+
+        let! currentUser = client.UserProfile.Current()
+
+        let playlist =
+          if playlist.Owner.Id = currentUser.Id then
+            Writable(
+              { Id = playlist.Id |> PlaylistId
+                Name = playlist.Name }
+            )
+          else
+            Readable(
+              { Id = playlist.Id |> PlaylistId
+                Name = playlist.Name }
+            )
+
+        return playlist |> Ok
+      with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
+        return Playlist.LoadError.NotFound |> Error
+    }
 
 [<RequireQualifiedAccess>]
 module User =

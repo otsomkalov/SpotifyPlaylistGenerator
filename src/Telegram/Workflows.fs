@@ -4,6 +4,7 @@ open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Microsoft.FSharp.Core
+open MusicPlatform
 open Resources
 open SpotifyAPI.Web
 open Telegram.Bot.Types.ReplyMarkups
@@ -472,7 +473,7 @@ module Preset =
   let run (sendMessage: SendMessage) (editBotMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
       let onSuccess editMessage =
-        fun preset -> editMessage $"Preset *{preset.Name}* executed!"
+        fun (preset: Preset) -> editMessage $"Preset *{preset.Name}* executed!"
 
       let onError editMessage =
         function
@@ -506,8 +507,10 @@ module CurrentPreset =
           function
           | Playlist.IncludePlaylistError.IdParsing(Playlist.IdParsingError id) ->
             replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, id))
-          | Playlist.IncludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+          | Playlist.IncludePlaylistError.Load(Playlist.LoadError.NotFound) ->
+            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
+
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
 
         return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }

@@ -59,7 +59,7 @@ module Run =
           LoadPreset = fun _ -> preset |> Task.FromResult
           ReplaceTracks =
             fun id tracks ->
-              id |> should equal Mocks.targetedPlaylist.Id
+              id |> should equal Mocks.targetedPlaylistId
               tracks |> should equal [ Mocks.includedTrack ]
               Task.FromResult() }
 
@@ -88,7 +88,7 @@ module Run =
       { io with
           ReplaceTracks =
             fun id tracks ->
-              id |> should equal Mocks.targetedPlaylist.Id
+              id |> should equal Mocks.targetedPlaylistId
               tracks |> should equal [ Mocks.includedTrack; Mocks.recommendedTrack ]
               Task.FromResult() }
 

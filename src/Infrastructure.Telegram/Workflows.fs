@@ -52,8 +52,9 @@ module Playlist =
           function
           | Playlist.ExcludePlaylistError.IdParsing _ ->
             replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-          | Playlist.ExcludePlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+          | Playlist.ExcludePlaylistError.Load(Playlist.LoadError.NotFound) ->
+            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
 
         return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
@@ -72,8 +73,9 @@ module Playlist =
           function
           | Playlist.TargetPlaylistError.IdParsing _ ->
             replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-          | Playlist.TargetPlaylistError.MissingFromSpotify(Playlist.MissingFromSpotifyError id) ->
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, id))
+          | Playlist.TargetPlaylistError.Load(Playlist.LoadError.NotFound) ->
+            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
           | Playlist.TargetPlaylistError.AccessError _ -> replyToMessage Messages.PlaylistIsReadonly
 
         return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore

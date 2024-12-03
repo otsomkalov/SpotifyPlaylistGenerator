@@ -15,11 +15,21 @@ type Track = { Id: TrackId; Artists: Set<Artist> }
 module TrackId =
   let value (TrackId id) = id
 
+type PlaylistData = { Id: PlaylistId; Name: string }
+
+type Playlist =
+  | Readable of PlaylistData
+  | Writable of PlaylistData
+
 [<RequireQualifiedAccess>]
 module Playlist =
   type ListTracks = PlaylistId -> Task<Track list>
   type AddTracks = PlaylistId -> Track list -> Task<unit>
   type ReplaceTracks = PlaylistId -> Track list -> Task<unit>
+
+  type LoadError = | NotFound
+
+  type Load = PlaylistId -> Task<Result<Playlist, LoadError>>
 
 [<RequireQualifiedAccess>]
 module User =
