@@ -1,7 +1,6 @@
 ﻿namespace Generator.Functions
 
 open Domain.Extensions
-open Domain.Integrations.Spotify
 open Domain.Repos
 open FSharp
 open Infrastructure.Repos
@@ -9,6 +8,7 @@ open Infrastructure
 open Microsoft.ApplicationInsights
 open Microsoft.Azure.Functions.Worker
 open Microsoft.Extensions.Logging
+open MusicPlatform.Spotify.Core
 open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
@@ -39,23 +39,26 @@ type GeneratorFunctions
   ) =
 
   [<Function("GenerateAsync")>]
-  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: UserId; PresetId: PresetId |}, _: FunctionContext) =
+  member this.GenerateAsync([<QueueTrigger("%Storage:QueueName%")>] command: {| UserId: int64; PresetId: PresetId |}, _: FunctionContext) =
     use _ =
       _logger.BeginScope(
         "Running playlist generation for user %i{TelegramId} and preset %s{PresetId}",
-        (command.UserId |> UserId.value),
+        (command.UserId),
         (command.PresetId |> PresetId.value)
       )
 
+    let userId = command.UserId |> UserId
+    let musicPlatformUserId = command.UserId |> string |> MusicPlatform.UserId
+
     task {
-      let! client = getSpotifyClient command.UserId |> Task.map Option.get
+      let! client = getSpotifyClient musicPlatformUserId |> Task.map Option.get
 
       let listTracks =
         PlaylistRepo.listTracks telemetryClient connectionMultiplexer _logger client
 
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
-      let sendMessage = sendUserMessage command.UserId
+      let sendMessage = sendUserMessage userId
       let getRecommendations = Track.getRecommendations client
 
       let appendTracks =
@@ -65,7 +68,7 @@ type GeneratorFunctions
         TargetedPlaylistRepo.replaceTracks telemetryClient client connectionMultiplexer
 
       do
-        Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId |> UserId.value)
+        Logf.logfi _logger "Received request to generate playlist for user with Telegram id %i{TelegramId}" (command.UserId)
 
       let io: Domain.Workflows.Preset.RunIO =
         { ListExcludedTracks = listExcludedTracks
@@ -75,9 +78,9 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations
           Shuffler = List.shuffle }
 
-      let editMessage = editBotMessage command.UserId
+      let editMessage = editBotMessage userId
 
-      let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger, command.UserId)
+      let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger, userId)
 
       let runPreset = Domain.Workflows.Preset.run env io
       let runPreset = Telegram.Workflows.Preset.run sendMessage editMessage runPreset
