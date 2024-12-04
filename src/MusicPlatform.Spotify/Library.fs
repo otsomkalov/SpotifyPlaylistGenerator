@@ -1,6 +1,8 @@
 ﻿namespace MusicPlatform.Spotify
 
+open System
 open System.Net
+open System.Text.RegularExpressions
 open FSharp
 open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Control
@@ -97,6 +99,32 @@ module Playlist =
       with ApiException e when e.Response.StatusCode = HttpStatusCode.NotFound ->
         return Playlist.LoadError.NotFound |> Error
     }
+
+  let parseId: Playlist.ParseId =
+    fun (Playlist.RawPlaylistId rawPlaylistId) ->
+      let getPlaylistIdFromUri (uri: Uri) = uri.Segments |> Array.last
+
+      let (|Uri|_|) text =
+        match Uri.TryCreate(text, UriKind.Absolute) with
+        | true, uri -> Some uri
+        | _ -> None
+
+      let (|PlaylistId|_|) (text: string) =
+        if Regex.IsMatch(text, "[A-z0-9]{22}") then
+          Some text
+        else
+          None
+
+      let (|SpotifyUri|_|) (text: string) =
+        match text.Split(":") with
+        | [| "spotify"; "playlist"; id |] -> Some(id)
+        | _ -> None
+
+      match rawPlaylistId with
+      | SpotifyUri id -> id |> PlaylistId |> Ok
+      | Uri uri -> uri |> getPlaylistIdFromUri |> PlaylistId |> Ok
+      | PlaylistId id -> id |> PlaylistId |> Ok
+      | id -> Playlist.IdParsingError(id) |> Error
 
 [<RequireQualifiedAccess>]
 module User =

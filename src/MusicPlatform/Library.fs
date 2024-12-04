@@ -31,6 +31,11 @@ module Playlist =
 
   type Load = PlaylistId -> Task<Result<Playlist, LoadError>>
 
+  type RawPlaylistId = RawPlaylistId of string
+  type IdParsingError = IdParsingError of string
+
+  type ParseId = RawPlaylistId -> Result<PlaylistId, IdParsingError>
+
 [<RequireQualifiedAccess>]
 module User =
   type ListLikedTracks = unit -> Task<Track list>
