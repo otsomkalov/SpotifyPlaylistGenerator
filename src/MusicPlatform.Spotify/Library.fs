@@ -1,16 +1,53 @@
 ﻿namespace MusicPlatform.Spotify
 
 open System
+open System.Collections.Concurrent
 open System.Net
 open System.Text.RegularExpressions
 open FSharp
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Options
 open Microsoft.FSharp.Control
 open MusicPlatform
 open SpotifyAPI.Web
 open MusicPlatform.Spotify.Helpers
 open otsom.fs.Extensions
 open System.Collections.Generic
+open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
+open otsom.fs.Telegram.Bot.Auth.Spotify.Workflows
+open System.Threading.Tasks
+
+module Core =
+  type GetClient = UserId -> Task<ISpotifyClient option>
+
+  let getClient (loadCompletedAuth: Completed.Load) (spotifyOptions: IOptions<SpotifySettings>) : GetClient =
+    let spotifySettings = spotifyOptions.Value
+    let clients = Dictionary<string, ISpotifyClient>()
+
+    fun (UserId userId) ->
+      match clients.TryGetValue(userId) with
+      | true, client -> client |> Some |> Task.FromResult
+      | false, _ ->
+        userId
+        |> (fun userId -> otsom.fs.Core.UserId(userId |> int64))
+        |> loadCompletedAuth
+        |> TaskOption.taskMap (fun auth -> task {
+          let! tokenResponse =
+            AuthorizationCodeRefreshRequest(spotifySettings.ClientId, spotifySettings.ClientSecret, auth.Token)
+            |> OAuthClient().RequestToken
+
+          let retryHandler =
+            SimpleRetryHandler(RetryAfter = TimeSpan.FromSeconds(30), RetryTimes = 3, TooManyRequestsConsumesARetry = true)
+
+          let config =
+            SpotifyClientConfig
+              .CreateDefault()
+              .WithRetryHandler(retryHandler)
+              .WithToken(tokenResponse.AccessToken)
+
+          return config |> SpotifyClient :> ISpotifyClient
+        })
+        |> TaskOption.tap (fun client -> clients.TryAdd(userId, client) |> ignore)
 
 [<RequireQualifiedAccess>]
 module Playlist =
@@ -165,3 +202,7 @@ module Track =
             Artists = st.Artists |> Seq.map (fun a -> { Id = ArtistId a.Id }) |> Set.ofSeq })
         >> Seq.toList
       )
+
+module Library =
+  let buildMusicPlatform (getSpotifyClient: Core.GetClient) : BuildMusicPlatform =
+    fun userId -> userId |> getSpotifyClient &|> Option.map (fun _ -> { new IMusicPlatform })

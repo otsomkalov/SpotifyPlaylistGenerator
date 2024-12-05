@@ -2,6 +2,7 @@
 
 open System.Threading.Tasks
 
+type UserId = UserId of string
 type PlaylistId = PlaylistId of string
 type TrackId = TrackId of string
 
@@ -43,3 +44,8 @@ module User =
 [<RequireQualifiedAccess>]
 module Track =
   type GetRecommendations = TrackId list -> Task<Track list>
+
+type IMusicPlatform =
+  interface end
+
+type BuildMusicPlatform = UserId -> Task<IMusicPlatform option>

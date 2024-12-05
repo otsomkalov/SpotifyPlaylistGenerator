@@ -1,10 +1,10 @@
 ﻿module Telegram.Workflows
 
+open MusicPlatform
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Microsoft.FSharp.Core
-open MusicPlatform
 open Resources
 open SpotifyAPI.Web
 open Telegram.Bot.Types.ReplyMarkups
