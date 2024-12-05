@@ -1,9 +1,9 @@
 ﻿module Infrastructure.Telegram.Services
 
 open System.Reflection
-open Domain.Integrations.Spotify
 open Microsoft.ApplicationInsights
 open MusicPlatform.Spotify
+open MusicPlatform.Spotify.Core
 open Resources
 open Telegram
 open Infrastructure
@@ -25,10 +25,10 @@ open otsom.fs.Extensions.String
 open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Auth.Spotify.Settings
 open otsom.fs.Telegram.Bot.Core
+open MusicPlatform
 open otsom.fs.Core
 open Infrastructure.Repos
 open Domain.Repos
-open MusicPlatform
 
 type AuthState =
   | Authorized
@@ -59,6 +59,7 @@ type MessageService
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
+    let musicPlatformUserId = message.From.Id |> string |> MusicPlatform.UserId
 
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
@@ -71,7 +72,7 @@ type MessageService
     let sendSettingsMessage =
       Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendUserKeyboard
 
-    getSpotifyClient userId
+    getSpotifyClient musicPlatformUserId
     |> Task.bind (function
       | Some client ->
         let loadFromSpotify = Playlist.load client
