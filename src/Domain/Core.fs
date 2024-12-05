@@ -94,27 +94,24 @@ type User = {
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type RawPlaylistId = RawPlaylistId of string
-  type IdParsingError = IdParsingError of string
-
   type IncludePlaylistError =
-    | IdParsing of IdParsingError
+    | IdParsing of Playlist.IdParsingError
     | Load of Playlist.LoadError
 
   type ExcludePlaylistError =
-    | IdParsing of IdParsingError
+    | IdParsing of Playlist.IdParsingError
     | Load of Playlist.LoadError
 
   type AccessError = AccessError of unit
 
   type TargetPlaylistError =
-    | IdParsing of IdParsingError
+    | IdParsing of Playlist.IdParsingError
     | Load of Playlist.LoadError
     | AccessError of AccessError
 
-  type IncludePlaylist = PresetId -> RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
-  type ExcludePlaylist = PresetId -> RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
-  type TargetPlaylist = PresetId -> RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
+  type IncludePlaylist = PresetId -> Playlist.RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
+  type ExcludePlaylist = PresetId -> Playlist.RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
+  type TargetPlaylist = PresetId -> Playlist.RawPlaylistId -> Task<Result<TargetedPlaylist, TargetPlaylistError>>
 
 [<RequireQualifiedAccess>]
 module Preset =

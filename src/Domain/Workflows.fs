@@ -401,7 +401,6 @@ module ExcludedPlaylist =
 
 [<RequireQualifiedAccess>]
 module Playlist =
-  type ParseId = Playlist.RawPlaylistId -> Result<PlaylistId, Playlist.IdParsingError>
   type IncludeInStorage = IncludedPlaylist -> Async<IncludedPlaylist>
   type ExcludeInStorage = ExcludedPlaylist -> Async<ExcludedPlaylist>
   type TargetInStorage = TargetedPlaylist -> Async<TargetedPlaylist>
@@ -409,7 +408,7 @@ module Playlist =
   type CountTracks = PlaylistId -> Task<int64>
 
   let includePlaylist
-    (parseId: ParseId)
+    (parseId: Playlist.ParseId)
     (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
@@ -443,7 +442,7 @@ module Playlist =
       |> TaskResult.taskMap updatePreset
 
   let excludePlaylist
-    (parseId: ParseId)
+    (parseId: Playlist.ParseId)
     (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
@@ -477,7 +476,7 @@ module Playlist =
       |> TaskResult.taskMap updatePreset
 
   let targetPlaylist
-    (parseId: ParseId)
+    (parseId: Playlist.ParseId)
     (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)

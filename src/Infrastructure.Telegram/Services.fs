@@ -28,6 +28,7 @@ open otsom.fs.Telegram.Bot.Core
 open otsom.fs.Core
 open Infrastructure.Repos
 open Domain.Repos
+open MusicPlatform
 
 type AuthState =
   | Authorized
@@ -74,7 +75,7 @@ type MessageService
       | Some client ->
         let parsePlaylistId = Playlist.parseId
 
-        let loadFromSpotify = PlaylistRepo.load client
+        let loadFromSpotify = Playlist.load client
 
         let includePlaylist =
           Playlist.includePlaylist parsePlaylistId loadFromSpotify getPreset savePreset

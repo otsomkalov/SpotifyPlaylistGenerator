@@ -2,6 +2,7 @@
 
 open Domain.Workflows
 open Domain.Core
+open MusicPlatform
 
 [<RequireQualifiedAccess>]
 module RawPlaylistId =
