@@ -5,7 +5,6 @@ open Domain.Core
 open Microsoft.FSharp.Core
 open MusicPlatform
 open otsom.fs.Core
-open MusicPlatform
 
 type AnswerCallbackQuery = unit -> Task<unit>
 type ShowNotification = string -> Task<unit>

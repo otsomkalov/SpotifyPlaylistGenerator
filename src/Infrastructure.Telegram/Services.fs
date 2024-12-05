@@ -29,7 +29,6 @@ open MusicPlatform
 open otsom.fs.Core
 open Infrastructure.Repos
 open Domain.Repos
-open MusicPlatform
 
 type AuthState =
   | Authorized
