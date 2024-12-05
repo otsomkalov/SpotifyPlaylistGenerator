@@ -23,6 +23,7 @@ let private configureServices (builderContext: HostBuilderContext) (services: IS
 
   services
   |> Domain.Startup.addDomain
+  |> MusicPlatform.Spotify.Startup.addSpotifyMusicPlatform configuration
   |> Auth.Spotify.Startup.addTelegramBotSpotifyAuthCore configuration
   |> Auth.Spotify.Mongo.Startup.addMongoSpotifyAuth
   |> Telegram.Startup.addBot configuration
