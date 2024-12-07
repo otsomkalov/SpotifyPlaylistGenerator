@@ -205,4 +205,8 @@ module Track =
 
 module Library =
   let buildMusicPlatform (getSpotifyClient: Core.GetClient) : BuildMusicPlatform =
-    fun userId -> userId |> getSpotifyClient &|> Option.map (fun _ -> { new IMusicPlatform })
+    fun userId ->
+      userId |> getSpotifyClient
+      &|> Option.map (fun client ->
+        { new IMusicPlatform with
+            member this.LoadPlaylist = Playlist.load client })

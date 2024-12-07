@@ -45,7 +45,9 @@ module User =
 module Track =
   type GetRecommendations = TrackId list -> Task<Track list>
 
+type ILoadPlaylist = abstract LoadPlaylist: Playlist.Load
+
 type IMusicPlatform =
-  interface end
+  inherit ILoadPlaylist
 
 type BuildMusicPlatform = UserId -> Task<IMusicPlatform option>
