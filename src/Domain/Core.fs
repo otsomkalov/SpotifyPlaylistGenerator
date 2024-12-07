@@ -110,6 +110,7 @@ module Playlist =
     | IdParsing of Playlist.IdParsingError
     | Load of Playlist.LoadError
     | AccessError of AccessError
+    | Unauthorized
 
   type IncludePlaylist = PresetId -> Playlist.RawPlaylistId -> Task<Result<IncludedPlaylist, IncludePlaylistError>>
   type ExcludePlaylist = PresetId -> Playlist.RawPlaylistId -> Task<Result<ExcludedPlaylist, ExcludePlaylistError>>
