@@ -55,6 +55,9 @@ module Playlist =
           | Playlist.ExcludePlaylistError.Load(Playlist.LoadError.NotFound) ->
             let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
+          | Playlist.ExcludePlaylistError.Unauthorized ->
+            // TODO: Send proper login message with the link
+            replyToMessage "Login to Spotify to exclude playlist"
 
         return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
