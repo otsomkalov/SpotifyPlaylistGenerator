@@ -89,7 +89,7 @@ type MessageService
               Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist
 
             let excludePlaylist =
-              Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
+              Playlist.excludePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let excludePlaylist =
               Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
