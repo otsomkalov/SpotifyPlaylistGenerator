@@ -53,7 +53,8 @@ type MessageService
     validatePreset: Preset.Validate,
     loadUser: UserRepo.Load,
     savePreset: PresetRepo.Save,
-    sendCurrentPreset: User.SendCurrentPreset
+    sendCurrentPreset: User.SendCurrentPreset,
+    parsePlaylistId: Playlist.ParseId
   ) =
 
   member this.ProcessAsync(message: Message) =
@@ -74,8 +75,6 @@ type MessageService
     getSpotifyClient musicPlatformUserId
     |> Task.bind (function
       | Some client ->
-        let parsePlaylistId = Playlist.parseId
-
         let loadFromSpotify = Playlist.load client
 
         let includePlaylist =

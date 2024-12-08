@@ -147,7 +147,7 @@ module Playlist =
         | _ -> None
 
       let (|PlaylistId|_|) (text: string) =
-        if Regex.IsMatch(text, "[A-z0-9]{22}") then
+        if Regex.IsMatch(text, "^[A-z0-9]{22}$") then
           Some text
         else
           None

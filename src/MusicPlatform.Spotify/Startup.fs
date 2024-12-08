@@ -9,4 +9,6 @@ open otsom.fs.Extensions.DependencyInjection
 let addSpotifyMusicPlatform (cfg: IConfiguration) (services: IServiceCollection) =
   services.BuildSingleton<GetClient, _, _>(getClient)
 
+  services.AddSingleton<Playlist.ParseId>(Playlist.parseId)
+
   services.BuildSingleton<BuildMusicPlatform, _>(Library.buildMusicPlatform)
