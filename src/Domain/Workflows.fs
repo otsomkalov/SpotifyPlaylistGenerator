@@ -408,38 +408,44 @@ module Playlist =
   type CountTracks = PlaylistId -> Task<int64>
 
   let includePlaylist
+    (musicPlatform: #ILoadPlaylist option)
     (parseId: Playlist.ParseId)
-    (loadPlaylist: Playlist.Load)
     (loadPreset: PresetRepo.Load)
     (updatePreset: PresetRepo.Save)
     : Playlist.IncludePlaylist =
     let parseId = parseId >> Result.mapError Playlist.IncludePlaylistError.IdParsing
 
-    let loadPlaylist =
-      loadPlaylist
+    let loadPlaylist (mp: #ILoadPlaylist) =
+      mp.LoadPlaylist
       >> TaskResult.mapError Playlist.IncludePlaylistError.Load
 
+    let includePlaylist' mp =
+      fun presetId rawPlaylistId ->
+        let updatePreset playlist =
+          task {
+            let! preset = loadPreset presetId
+
+            let updatedIncludedPlaylists = preset.IncludedPlaylists |> List.append [ playlist ]
+
+            let updatedPreset =
+              { preset with
+                  IncludedPlaylists = updatedIncludedPlaylists }
+
+            do! updatePreset updatedPreset
+
+            return playlist
+          }
+
+        rawPlaylistId
+        |> parseId
+        |> Result.taskBind (loadPlaylist mp)
+        |> TaskResult.map IncludedPlaylist.fromSpotifyPlaylist
+        |> TaskResult.taskMap updatePreset
+
     fun presetId rawPlaylistId ->
-      let updatePreset playlist =
-        task {
-          let! preset = loadPreset presetId
-
-          let updatedIncludedPlaylists = preset.IncludedPlaylists |> List.append [ playlist ]
-
-          let updatedPreset =
-            { preset with
-                IncludedPlaylists = updatedIncludedPlaylists }
-
-          do! updatePreset updatedPreset
-
-          return playlist
-        }
-
-      rawPlaylistId
-      |> parseId
-      |> Result.taskBind loadPlaylist
-      |> TaskResult.map IncludedPlaylist.fromSpotifyPlaylist
-      |> TaskResult.taskMap updatePreset
+      match musicPlatform with
+      | Some mp -> includePlaylist' mp presetId rawPlaylistId
+      | None -> Playlist.IncludePlaylistError.Unauthorized |> Error |> Task.FromResult
 
   let excludePlaylist
     (parseId: Playlist.ParseId)

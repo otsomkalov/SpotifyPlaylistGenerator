@@ -97,6 +97,7 @@ module Playlist =
   type IncludePlaylistError =
     | IdParsing of Playlist.IdParsingError
     | Load of Playlist.LoadError
+    | Unauthorized
 
   type ExcludePlaylistError =
     | IdParsing of Playlist.IdParsingError

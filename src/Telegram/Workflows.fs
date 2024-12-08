@@ -511,6 +511,9 @@ module CurrentPreset =
             let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
 
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
+          | Playlist.IncludePlaylistError.Unauthorized ->
+            // TODO: Send proper login message with the link
+            replyToMessage "Login to Spotify to include playlist"
 
         return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
