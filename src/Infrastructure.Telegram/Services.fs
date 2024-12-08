@@ -46,7 +46,6 @@ type MessageService
     completeAuth: Auth.Complete,
     sendUserMessage: SendUserMessage,
     replyToUserMessage: ReplyToUserMessage,
-    sendUserKeyboard: SendUserKeyboard,
     sendUserMessageButtons: SendUserMessageButtons,
     askUserForReply: AskUserForReply,
     getSpotifyClient: GetClient,
@@ -73,10 +72,11 @@ type MessageService
     let sendLink = Repos.sendLink _bot userId
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
 
-    let sendSettingsMessage =
-      Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendUserKeyboard
-
     let chatCtx = buildChatContext chatId
+
+    let sendSettingsMessage =
+      Telegram.Workflows.User.sendCurrentPresetSettings chatCtx getUser getPreset
+
 
     task {
       let! musicPlatform = buildMusicPlatform musicPlatformUserId
