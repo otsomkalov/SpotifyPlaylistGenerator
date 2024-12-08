@@ -11,6 +11,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Constants
 open Telegram.Core
 open Telegram.Repos
+open otsom.fs.Bot
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Core
@@ -447,12 +448,12 @@ module Preset =
     >> Task.bind (show' editMessage)
 
   let queueRun
+    (chatCtx: #ISendMessage)
     (queueRun': Domain.Core.Preset.QueueRun)
-    (sendMessage: SendMessage)
     (answerCallbackQuery: AnswerCallbackQuery)
     : Preset.Run =
     let onSuccess (preset: Preset) =
-      sendMessage $"Preset *{preset.Name}* run is queued!"
+      chatCtx.SendMessage $"Preset *{preset.Name}* run is queued!"
       |> Task.ignore
 
     let onError errors =
@@ -463,7 +464,7 @@ module Preset =
           | Preset.ValidationError.NoTargetedPlaylists -> "No targeted playlists!")
         |> String.concat Environment.NewLine
 
-      sendMessage errorsText
+      chatCtx.SendMessage errorsText
       |> Task.ignore
       |> Task.taskTap answerCallbackQuery
 
@@ -616,21 +617,17 @@ module User =
       }
 
   let queueCurrentPresetRun
+    (chatCtx: #ISendMessage)
     (queueRun: Domain.Core.Preset.QueueRun)
-    (replyToUserMessage: ReplyToUserMessage)
     (loadUser: User.Get)
     (answerCallbackQuery: AnswerCallbackQuery)
     : User.QueueCurrentPresetRun =
 
     fun userId chatMessageId ->
-      let (ChatMessageId chatMessageId) = chatMessageId
-
-      let replyToMessage = replyToUserMessage userId chatMessageId
-
       userId
       |> loadUser
       &|> (fun u -> u.CurrentPresetId |> Option.get)
-      &|&> (Preset.queueRun queueRun replyToMessage answerCallbackQuery)
+      &|&> (Preset.queueRun chatCtx queueRun answerCallbackQuery)
 
   let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
     fun userId name ->

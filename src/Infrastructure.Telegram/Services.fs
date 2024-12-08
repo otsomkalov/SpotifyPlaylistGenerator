@@ -29,6 +29,7 @@ open MusicPlatform
 open otsom.fs.Core
 open Infrastructure.Repos
 open Domain.Repos
+open otsom.fs.Bot
 
 type AuthState =
   | Authorized
@@ -55,12 +56,14 @@ type MessageService
     savePreset: PresetRepo.Save,
     sendCurrentPreset: User.SendCurrentPreset,
     parsePlaylistId: Playlist.ParseId,
-    buildMusicPlatform: BuildMusicPlatform
+    buildMusicPlatform: BuildMusicPlatform,
+    buildChatContext: BuildChatContext
   ) =
 
   member this.ProcessAsync(message: Message) =
     let userId = message.From.Id |> UserId
     let musicPlatformUserId = message.From.Id |> string |> MusicPlatform.UserId
+    let chatId = message.Chat.Id |> otsom.fs.Bot.ChatId
 
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
@@ -72,6 +75,8 @@ type MessageService
 
     let sendSettingsMessage =
       Telegram.Workflows.User.sendCurrentPresetSettings getUser getPreset sendUserKeyboard
+
+    let chatCtx = buildChatContext chatId
 
     task {
       let! musicPlatform = buildMusicPlatform musicPlatformUserId
@@ -103,7 +108,7 @@ type MessageService
             let queuePresetRun = PresetRepo.queueRun _queueClient userId
             let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
             let queueCurrentPresetRun =
-              Workflows.User.queueCurrentPresetRun queuePresetRun replyToUserMessage loadUser (fun _ -> Task.FromResult())
+              Workflows.User.queueCurrentPresetRun chatCtx queuePresetRun loadUser (fun _ -> Task.FromResult())
 
             match isNull message.ReplyToMessage with
             | false ->
@@ -266,19 +271,19 @@ type CallbackQueryService
     _database: IMongoDatabase,
     editBotMessageButtons: EditBotMessageButtons,
     telemetryClient: TelemetryClient,
-    sendUserMessage: SendUserMessage,
     getPreset: Preset.Get,
     loadUser: UserRepo.Load,
-    updatePreset: PresetRepo.Save
+    updatePreset: PresetRepo.Save,
+    buildChatContext: BuildChatContext
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
-    let botMessageId = callbackQuery.Message.MessageId |> BotMessageId
+    let chatId = callbackQuery.From.Id |> otsom.fs.Bot.ChatId
+    let botMessageId = callbackQuery.Message.MessageId |> otsom.fs.Telegram.Bot.Core.BotMessageId
 
     let updateUser = UserRepo.update _database
     let editMessageButtons = editBotMessageButtons userId botMessageId
-    let sendMessage = sendUserMessage userId
     let showNotification = Workflows.showNotification _bot callbackQuery.Id
 
     let countPlaylistTracks =
@@ -308,6 +313,8 @@ type CallbackQueryService
     let showTargetedPlaylist =
       Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
+    let chatCtx = buildChatContext chatId
+
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.Preset presetAction ->
       match presetAction with
@@ -317,7 +324,7 @@ type CallbackQueryService
         let answerCallbackQuery = Telegram.Workflows.answerCallbackQuery _bot callbackQuery.Id
         let queuePresetRun = PresetRepo.queueRun _queueClient userId
         let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset Preset.validate queuePresetRun
-        let queuePresetRun = Telegram.Workflows.Preset.queueRun queuePresetRun sendMessage answerCallbackQuery
+        let queuePresetRun = Telegram.Workflows.Preset.queueRun chatCtx queuePresetRun answerCallbackQuery
 
         queuePresetRun presetId
 
