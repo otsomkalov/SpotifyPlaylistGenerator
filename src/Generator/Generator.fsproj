@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0"/>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0"/>
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0"/>
+    <PackageReference Include="otsom.fs.Bot.Telegram" Version="0.0.2"/>
   </ItemGroup>
 
   <ItemGroup>
