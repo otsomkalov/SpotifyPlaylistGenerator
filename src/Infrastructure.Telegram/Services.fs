@@ -85,8 +85,6 @@ type MessageService
         getSpotifyClient musicPlatformUserId
         |> Task.bind (function
           | Some client ->
-            let loadFromSpotify = Playlist.load client
-
             let includePlaylist =
               Playlist.includePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
@@ -94,13 +92,13 @@ type MessageService
               Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist
 
             let excludePlaylist =
-              Playlist.excludePlaylist parsePlaylistId loadFromSpotify getPreset savePreset
+              Playlist.excludePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let excludePlaylist =
               Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
 
             let targetPlaylist =
-              Playlist.targetPlaylist parsePlaylistId loadFromSpotify getPreset savePreset
+              Playlist.targetPlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let targetPlaylist =
               Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
