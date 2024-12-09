@@ -564,20 +564,17 @@ module User =
 
         sendKeyboard "You did not select current preset" buttons)
 
-  let sendCurrentPresetSettings (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPresetSettings =
+  let sendCurrentPresetSettings (chatCtx: #ISendKeyboard) (loadUser: User.Get) (getPreset: Preset.Get) : User.SendCurrentPresetSettings =
     fun userId ->
-      let sendKeyboard = sendUserKeyboard userId
-
       task {
         let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
         let! preset = getPreset currentPresetId
         let! text, _ = getPresetMessage preset
 
-        let buttons =
-          [| [| Buttons.SetPresetSize |]; [| "Back" |] |]
-          |> ReplyKeyboardMarkup.op_Implicit
+        let buttons : Keyboard =
+          [| [| KeyboardButton Buttons.SetPresetSize |]; [| KeyboardButton "Back" |] |]
 
-        return! sendKeyboard text buttons
+        return! chatCtx.SendKeyboard text buttons &|> ignore
       }
 
   let removePreset (removePreset: User.RemovePreset) (sendUserPresets: User.ListPresets) : User.RemovePreset =
