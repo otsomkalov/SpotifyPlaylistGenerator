@@ -471,22 +471,21 @@ module Preset =
     queueRun'
     >> TaskResult.taskEither onSuccess onError
 
-  let run (sendMessage: SendMessage) (editBotMessage: BotMessageId -> string -> Task<unit>) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
+  let run (chatCtx: #ISendMessage & #IBuildBotMessageContext) (runPreset: Domain.Core.Preset.Run) : Preset.Run =
     fun presetId ->
-      let onSuccess editMessage =
-        fun (preset: Preset) -> editMessage $"Preset *{preset.Name}* executed!"
+      let onSuccess (botMessageCtx: #IEditMessage) =
+        fun (preset: Preset) -> botMessageCtx.EditMessage $"Preset *{preset.Name}* executed!"
 
-      let onError editMessage =
+      let onError (botMessageCtx: #IEditMessage) =
         function
-        | Preset.RunError.NoIncludedTracks -> editMessage "Your preset has 0 included tracks"
-        | Preset.RunError.NoPotentialTracks -> editMessage "Playlists combination in your preset produced 0 potential tracks"
+        | Preset.RunError.NoIncludedTracks -> botMessageCtx.EditMessage "Your preset has 0 included tracks"
+        | Preset.RunError.NoPotentialTracks -> botMessageCtx.EditMessage "Playlists combination in your preset produced 0 potential tracks"
 
       task {
-        let! sentMessageId = sendMessage "Running preset..."
+        let! sentMessageId = chatCtx.SendMessage "Running preset..."
+        let botMessageContext = chatCtx.BuildBotMessageContext sentMessageId
 
-        let editMessage = editBotMessage sentMessageId
-
-        return! runPreset presetId |> TaskResult.taskEither (onSuccess editMessage) (onError editMessage)
+        return! runPreset presetId |> TaskResult.taskEither (onSuccess botMessageContext) (onError botMessageContext)
       }
 
 [<RequireQualifiedAccess>]
