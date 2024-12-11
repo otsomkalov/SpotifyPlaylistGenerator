@@ -182,7 +182,7 @@ type MessageService
               | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
               | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
               | Equals Buttons.MyPresets ->
-                let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
+                let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
                 sendUserPresets (message.From.Id |> UserId)
               | Equals Buttons.Settings -> sendSettingsMessage userId
               | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
@@ -253,7 +253,7 @@ type MessageService
               | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
               | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
               | Equals Buttons.MyPresets ->
-                let sendUserPresets = Telegram.Workflows.User.listPresets sendButtons getUser
+                let sendUserPresets = Telegram.Workflows.User.showPresets sendButtons getUser
                 sendUserPresets (message.From.Id |> UserId)
               | Equals Buttons.Settings -> sendSettingsMessage userId
               | Equals "Back" -> sendCurrentPreset userId
@@ -289,7 +289,7 @@ type CallbackQueryService
 
     let getUser = User.get loadUser
 
-    let listUserPresets = Workflows.User.listPresets editMessageButtons getUser
+    let listUserPresets = Workflows.User.showPresets editMessageButtons getUser
 
     let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
 
@@ -340,7 +340,7 @@ type CallbackQueryService
         Domain.Workflows.User.removePreset getUser removePreset updateUser
 
       let removeUserPreset =
-        Telegram.Workflows.User.removePreset removeUserPreset listUserPresets
+        Telegram.Workflows.User.removePreset editMessageButtons loadUser removeUserPreset
 
       removeUserPreset userId presetId
     | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId

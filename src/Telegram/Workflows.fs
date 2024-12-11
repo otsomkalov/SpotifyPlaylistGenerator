@@ -520,7 +520,7 @@ module CurrentPreset =
 
 [<RequireQualifiedAccess>]
 module User =
-  let listPresets (sendButtons: SendMessageButtons) (loadUser: User.Get) : User.ListPresets =
+  let private showPresets' sendOrEditButtons loadUser =
     fun userId ->
       task {
         let! user = loadUser userId
@@ -531,8 +531,14 @@ module User =
           |> Seq.singleton
           |> InlineKeyboardMarkup
 
-        do! sendButtons "Your presets" keyboardMarkup
+        do! sendOrEditButtons "Your presets" keyboardMarkup
       }
+
+  let sendPresets (sendMessageButtons: SendMessageButtons) loadUser : User.SendPresets =
+    showPresets' sendMessageButtons loadUser
+
+  let showPresets (editMessageButtons: EditMessageButtons) loadUser : User.ShowPresets =
+    showPresets' editMessageButtons loadUser
 
   let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPreset =
     fun userId ->
@@ -576,12 +582,12 @@ module User =
         return! chatCtx.SendKeyboard text buttons &|> ignore
       }
 
-  let removePreset (removePreset: User.RemovePreset) (sendUserPresets: User.ListPresets) : User.RemovePreset =
+  let removePreset editMessageButtons loadUser (removePreset: User.RemovePreset) : User.RemovePreset =
     fun userId presetId ->
       task {
         do! removePreset userId presetId
 
-        return! sendUserPresets userId
+        return! showPresets' editMessageButtons loadUser userId
       }
 
   let setCurrentPresetSize
