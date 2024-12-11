@@ -13,6 +13,7 @@ open StackExchange.Redis
 open Domain.Workflows
 open Domain.Core
 open Telegram.Bot
+open otsom.fs.Bot
 open otsom.fs.Core
 open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Core
@@ -34,8 +35,8 @@ type GeneratorFunctions
     sendUserMessage: SendUserMessage,
     telemetryClient: TelemetryClient,
     getSpotifyClient: GetClient,
-    editBotMessage: EditBotMessage,
-    getPreset: Preset.Get
+    getPreset: Preset.Get,
+    buildChatContext: BuildChatContext
   ) =
 
   [<Function("GenerateAsync")>]
@@ -49,6 +50,9 @@ type GeneratorFunctions
 
     let userId = command.UserId |> UserId
     let musicPlatformUserId = command.UserId |> string |> MusicPlatform.UserId
+    let chatId = command.UserId |> ChatId
+
+    let chatCtx = buildChatContext chatId
 
     task {
       let! client = getSpotifyClient musicPlatformUserId |> Task.map Option.get
@@ -78,12 +82,10 @@ type GeneratorFunctions
           GetRecommendations = getRecommendations
           Shuffler = List.shuffle }
 
-      let editMessage = editBotMessage userId
-
       let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger, userId)
 
       let runPreset = Domain.Workflows.Preset.run env io
-      let runPreset = Telegram.Workflows.Preset.run sendMessage editMessage runPreset
+      let runPreset = Telegram.Workflows.Preset.run chatCtx runPreset
 
       do! runPreset command.PresetId
     }
