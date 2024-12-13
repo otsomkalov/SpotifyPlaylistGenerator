@@ -22,7 +22,8 @@ module Playlist =
 
 [<RequireQualifiedAccess>]
 module User =
-  type ListPresets = UserId -> Task<unit>
+  type ShowPresets = UserId -> Task<unit>
+  type SendPresets = UserId -> Task<unit>
   type SendCurrentPreset = UserId -> Task<unit>
   type SendCurrentPresetSettings = UserId -> Task<unit>
   type RemovePreset = UserId -> PresetId -> Task<unit>
