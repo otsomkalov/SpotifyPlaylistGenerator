@@ -291,7 +291,6 @@ type CallbackQueryService
 
     let listUserPresets = Workflows.User.showPresets editMessageButtons getUser
 
-    let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
 
     let listIncludedPlaylists =
       Workflows.IncludedPlaylist.list getPreset editMessageButtons
@@ -316,7 +315,10 @@ type CallbackQueryService
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.Preset presetAction ->
       match presetAction with
-      | PresetActions.Show presetId -> sendPresetInfo presetId
+      | PresetActions.Show presetId ->
+        let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
+
+        sendPresetInfo presetId
       | PresetActions.Run presetId ->
 
         let answerCallbackQuery = Telegram.Workflows.answerCallbackQuery _bot callbackQuery.Id
@@ -417,21 +419,21 @@ type CallbackQueryService
       let includeLikedTracks = PresetSettings.includeLikedTracks getPreset updatePreset
 
       let includeLikedTracks =
-        Workflows.PresetSettings.includeLikedTracks showNotification sendPresetInfo includeLikedTracks
+        Workflows.PresetSettings.includeLikedTracks getPreset editMessageButtons showNotification includeLikedTracks
 
       includeLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.ExcludeLikedTracks presetId) ->
       let excludeLikedTracks = PresetSettings.excludeLikedTracks getPreset updatePreset
 
       let excludeLikedTracks =
-        Workflows.PresetSettings.excludeLikedTracks showNotification sendPresetInfo excludeLikedTracks
+        Workflows.PresetSettings.excludeLikedTracks getPreset editMessageButtons showNotification excludeLikedTracks
 
       excludeLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.IgnoreLikedTracks presetId) ->
       let ignoreLikedTracks = PresetSettings.ignoreLikedTracks getPreset updatePreset
 
       let ignoreLikedTracks =
-        Workflows.PresetSettings.ignoreLikedTracks showNotification sendPresetInfo ignoreLikedTracks
+        Workflows.PresetSettings.ignoreLikedTracks getPreset editMessageButtons showNotification ignoreLikedTracks
 
       ignoreLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.EnableRecommendations presetId) ->
@@ -439,7 +441,7 @@ type CallbackQueryService
         PresetSettings.enableRecommendations getPreset updatePreset
 
       let enableRecommendations =
-        Workflows.PresetSettings.enableRecommendations enableRecommendations showNotification sendPresetInfo
+        Workflows.PresetSettings.enableRecommendations getPreset editMessageButtons enableRecommendations showNotification
 
       enableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.DisableRecommendations presetId) ->
@@ -447,14 +449,14 @@ type CallbackQueryService
         PresetSettings.disableRecommendations getPreset updatePreset
 
       let disableRecommendations =
-        Workflows.PresetSettings.disableRecommendations disableRecommendations showNotification sendPresetInfo
+        Workflows.PresetSettings.disableRecommendations getPreset editMessageButtons disableRecommendations showNotification
 
       disableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
       let enableUniqueArtists = PresetSettings.enableUniqueArtists getPreset updatePreset
 
       let enableUniqueArtists =
-        Workflows.PresetSettings.enableUniqueArtists enableUniqueArtists showNotification sendPresetInfo
+        Workflows.PresetSettings.enableUniqueArtists getPreset editMessageButtons enableUniqueArtists showNotification
 
       enableUniqueArtists presetId
     | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
@@ -462,7 +464,7 @@ type CallbackQueryService
         PresetSettings.disableUniqueArtists getPreset updatePreset
 
       let disableUniqueArtists =
-        Workflows.PresetSettings.disableUniqueArtists disableUniqueArtists showNotification sendPresetInfo
+        Workflows.PresetSettings.disableUniqueArtists getPreset editMessageButtons disableUniqueArtists showNotification
 
       disableUniqueArtists presetId
     | Action.User(UserActions.ListPresets()) -> listUserPresets userId

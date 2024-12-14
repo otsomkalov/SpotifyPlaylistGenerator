@@ -639,9 +639,10 @@ module User =
 [<RequireQualifiedAccess>]
 module PresetSettings =
   let enableUniqueArtists
+    (getPreset: Preset.Get)
+    (editMessage: EditMessageButtons)
     (enableUniqueArtists: PresetSettings.EnableUniqueArtists)
     (showNotification: ShowNotification)
-    (sendPresetInfo: Preset.Show)
     : PresetSettings.EnableUniqueArtists =
     fun presetId ->
       task {
@@ -649,13 +650,14 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! sendPresetInfo presetId
+        return! Preset.show getPreset editMessage presetId
       }
 
   let disableUniqueArtists
+    (getPreset: Preset.Get)
+    (editMessage: EditMessageButtons)
     (disableUniqueArtists: PresetSettings.DisableUniqueArtists)
     (showNotification: ShowNotification)
-    (sendPresetInfo: Preset.Show)
     : PresetSettings.DisableUniqueArtists =
     fun presetId ->
       task {
@@ -663,13 +665,14 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! sendPresetInfo presetId
+        return! Preset.show getPreset editMessage presetId
       }
 
   let enableRecommendations
+    (getPreset: Preset.Get)
+    (editMessage: EditMessageButtons)
     (enableRecommendations: PresetSettings.EnableRecommendations)
     (showNotification: ShowNotification)
-    (showPreset: Preset.Show)
     : PresetSettings.EnableRecommendations =
     fun presetId ->
       task {
@@ -677,13 +680,14 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! showPreset presetId
+        return! Preset.show getPreset editMessage presetId
       }
 
   let disableRecommendations
+    (getPreset: Preset.Get)
+    (editMessage: EditMessageButtons)
     (disableRecommendations: PresetSettings.DisableRecommendations)
     (showNotification: ShowNotification)
-    (showPreset: Preset.Show)
     : PresetSettings.DisableRecommendations =
     fun presetId ->
       task {
@@ -691,24 +695,24 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! showPreset presetId
+        return! Preset.show getPreset editMessage presetId
       }
 
-  let private setLikedTracksHandling (showNotification: ShowNotification) setLikedTracksHandling (shorPreset: Preset.Show) =
+  let private setLikedTracksHandling (getPreset: Preset.Get) (editMessage: EditMessageButtons) (showNotification: ShowNotification) setLikedTracksHandling =
     fun presetId ->
       task {
         do! setLikedTracksHandling presetId
 
         do! showNotification Messages.Updated
 
-        return! shorPreset presetId
+        return! Preset.show getPreset editMessage presetId
       }
 
-  let includeLikedTracks showNotification sendPresetInfo (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
-    setLikedTracksHandling showNotification includeLikedTracks sendPresetInfo
+  let includeLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
+    setLikedTracksHandling getPreset editMessage showNotification includeLikedTracks
 
-  let excludeLikedTracks showNotification sendPresetInfo (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
-    setLikedTracksHandling showNotification excludeLikedTracks sendPresetInfo
+  let excludeLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
+    setLikedTracksHandling getPreset editMessage showNotification excludeLikedTracks
 
-  let ignoreLikedTracks showNotification sendPresetInfo (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
-    setLikedTracksHandling showNotification ignoreLikedTracks sendPresetInfo
+  let ignoreLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
+    setLikedTracksHandling getPreset editMessage showNotification ignoreLikedTracks
