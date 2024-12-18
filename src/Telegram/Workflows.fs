@@ -1,7 +1,6 @@
 ﻿module Telegram.Workflows
 
 open MusicPlatform
-open System.Threading.Tasks
 open Domain.Core
 open Domain.Workflows
 open Microsoft.FSharp.Core
@@ -219,16 +218,16 @@ module IncludedPlaylist =
       }
 
   let remove
+    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
     (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
     (showNotification: ShowNotification)
-    (showIncludedPlaylists: IncludedPlaylist.List)
     : IncludedPlaylist.Remove =
     fun presetId playlistId ->
       task {
         do! removeIncludedPlaylist presetId playlistId
         do! showNotification "Included playlist successfully removed"
 
-        return! showIncludedPlaylists presetId (Page 0)
+        return! list getPreset editMessageButtons presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]
@@ -304,16 +303,16 @@ module ExcludedPlaylist =
       }
 
   let remove
+    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
     (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
     (showNotification: ShowNotification)
-    (listExcludedPlaylists: ExcludedPlaylist.List)
     : ExcludedPlaylist.Remove =
     fun presetId playlistId ->
       task {
         do! removeExcludedPlaylist presetId playlistId
         do! showNotification "Excluded playlist successfully removed"
 
-        return! listExcludedPlaylists presetId (Page 0)
+        return! list getPreset editMessageButtons presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]
@@ -400,16 +399,16 @@ module TargetedPlaylist =
       }
 
   let remove
+    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
     (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
     (showNotification: ShowNotification)
-    (showTargetedPlaylists: TargetedPlaylist.List)
     : TargetedPlaylist.Remove =
     fun presetId playlistId ->
       task {
         do! removeTargetedPlaylist presetId playlistId
         do! showNotification "Target playlist successfully removed"
 
-        return! showTargetedPlaylists presetId (Page 0)
+        return! list getPreset editMessageButtons presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]

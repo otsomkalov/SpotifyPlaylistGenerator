@@ -289,18 +289,6 @@ type CallbackQueryService
 
     let getUser = User.get loadUser
 
-    let listUserPresets = Workflows.User.showPresets editMessageButtons getUser
-
-
-    let listIncludedPlaylists =
-      Workflows.IncludedPlaylist.list getPreset editMessageButtons
-
-    let listExcludedPlaylists =
-      Workflows.ExcludedPlaylist.list getPreset editMessageButtons
-
-    let listTargetedPlaylists =
-      Workflows.TargetedPlaylist.list getPreset editMessageButtons
-
     let showIncludedPlaylist =
       Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
 
@@ -346,7 +334,10 @@ type CallbackQueryService
 
       removeUserPreset userId presetId
     | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId
-    | Action.IncludedPlaylist(IncludedPlaylistActions.List(presetId, page)) -> listIncludedPlaylists presetId page
+    | Action.IncludedPlaylist(IncludedPlaylistActions.List(presetId, page)) ->
+      let listIncludedPlaylists =
+        Workflows.IncludedPlaylist.list getPreset editMessageButtons
+      listIncludedPlaylists presetId page
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->
       let enableIncludedPlaylist = IncludedPlaylist.enable getPreset updatePreset
 
@@ -365,10 +356,13 @@ type CallbackQueryService
       let removeIncludedPlaylist = IncludedPlaylist.remove getPreset updatePreset
 
       let removeIncludedPlaylist =
-        Workflows.IncludedPlaylist.remove removeIncludedPlaylist showNotification listIncludedPlaylists
+        Workflows.IncludedPlaylist.remove getPreset editMessageButtons removeIncludedPlaylist showNotification
 
       removeIncludedPlaylist presetId playlistId
-    | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) -> listExcludedPlaylists presetId page
+    | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) ->
+      let listExcludedPlaylists =
+        Workflows.ExcludedPlaylist.list getPreset editMessageButtons
+      listExcludedPlaylists presetId page
     | Action.ExcludedPlaylist(ExcludedPlaylistActions.Show(presetId, playlistId)) -> showExcludedPlaylist presetId playlistId
     | Action.EnableExcludedPlaylist(presetId, playlistId) ->
       let enableExcludedPlaylist = ExcludedPlaylist.enable getPreset updatePreset
@@ -388,10 +382,13 @@ type CallbackQueryService
       let removeExcludedPlaylist = ExcludedPlaylist.remove getPreset updatePreset
 
       let removeExcludedPlaylist =
-        Workflows.ExcludedPlaylist.remove removeExcludedPlaylist showNotification listExcludedPlaylists
+        Workflows.ExcludedPlaylist.remove getPreset editMessageButtons removeExcludedPlaylist showNotification
 
       removeExcludedPlaylist presetId playlistId
-    | Action.TargetedPlaylist(TargetedPlaylistActions.List(presetId, page)) -> listTargetedPlaylists presetId page
+    | Action.TargetedPlaylist(TargetedPlaylistActions.List(presetId, page)) ->
+      let listTargetedPlaylists =
+        Workflows.TargetedPlaylist.list getPreset editMessageButtons
+      listTargetedPlaylists presetId page
     | Action.TargetedPlaylist(TargetedPlaylistActions.Show(presetId, playlistId)) -> showTargetedPlaylist presetId playlistId
     | Action.AppendToTargetedPlaylist(presetId, playlistId) ->
       let appendToTargetedPlaylist = TargetedPlaylist.appendTracks getPreset updatePreset
@@ -412,7 +409,7 @@ type CallbackQueryService
       let removeTargetedPlaylist = TargetedPlaylist.remove getPreset updatePreset
 
       let removeTargetedPlaylist =
-        Workflows.TargetedPlaylist.remove removeTargetedPlaylist showNotification listTargetedPlaylists
+        Workflows.TargetedPlaylist.remove getPreset editMessageButtons removeTargetedPlaylist showNotification
 
       removeTargetedPlaylist presetId playlistId
     | Action.PresetSettings(PresetSettingsActions.IncludeLikedTracks presetId) ->
@@ -467,4 +464,6 @@ type CallbackQueryService
         Workflows.PresetSettings.disableUniqueArtists getPreset editMessageButtons disableUniqueArtists showNotification
 
       disableUniqueArtists presetId
-    | Action.User(UserActions.ListPresets()) -> listUserPresets userId
+    | Action.User(UserActions.ListPresets()) ->
+      let listUserPresets = Workflows.User.showPresets editMessageButtons getUser
+      listUserPresets userId

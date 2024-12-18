@@ -10,14 +10,14 @@ open Xunit
 open Domain.Workflows
 open Telegram.Workflows
 
+let getPreset =
+  fun presetId ->
+    presetId |> should equal Mocks.preset.Id
+
+    Mocks.preset |> Task.FromResult
+
 [<Fact>]
 let ``list should send included playlists`` () =
-  let getPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.preset.Id
-
-      Mocks.preset |> Task.FromResult
-
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
@@ -30,11 +30,6 @@ let ``list should send included playlists`` () =
 
 [<Fact>]
 let ``show should send included playlist details`` () =
-  let getPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
-      Mocks.preset |> Task.FromResult
-
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
@@ -60,15 +55,15 @@ let ``remove should delete playlist and show included playlists`` () =
       playlistId |> should equal Mocks.includedPlaylist.Id
       Task.FromResult()
 
-  let showNotification = fun _ -> Task.FromResult()
+  let editMessageButtons =
+    fun text (replyMarkup: InlineKeyboardMarkup) ->
+      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
 
-  let listExcludedPlaylists =
-    fun presetId page ->
-      presetId |> should equal Mocks.presetId
-      page |> should equal (Page 0)
       Task.FromResult()
 
+  let showNotification = fun _ -> Task.FromResult()
+
   let sut =
-    IncludedPlaylist.remove removePlaylist showNotification listExcludedPlaylists
+    IncludedPlaylist.remove getPreset editMessageButtons removePlaylist showNotification
 
   sut Mocks.presetId Mocks.includedPlaylist.Id
