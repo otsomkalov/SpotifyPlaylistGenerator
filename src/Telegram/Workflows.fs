@@ -776,3 +776,15 @@ module PresetSettings =
 
   let ignoreLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
     setLikedTracksHandling getPreset editMessage showNotification ignoreLikedTracks
+
+let faqMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandlerMatcher =
+  let handler =
+    fun message ->
+      let chatCtx = buildChatContext message.ChatId
+
+      chatCtx.SendMessage Messages.FAQ &|> ignore
+
+  fun message ->
+    match message.Text with
+    | Equals "/faq" -> Some(handler)
+    | _ -> None
