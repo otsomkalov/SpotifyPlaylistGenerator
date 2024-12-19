@@ -1,7 +1,9 @@
 ﻿module Infrastructure.Telegram.Services
 
 open System.Reflection
+open FSharp
 open Microsoft.ApplicationInsights
+open Microsoft.Extensions.Logging
 open MusicPlatform.Spotify
 open MusicPlatform.Spotify.Core
 open Resources
@@ -56,13 +58,14 @@ type MessageService
     sendCurrentPreset: User.SendCurrentPreset,
     parsePlaylistId: Playlist.ParseId,
     buildMusicPlatform: BuildMusicPlatform,
-    buildChatContext: BuildChatContext
+    buildChatContext: BuildChatContext,
+    matchers: MessageHandlerMatcher seq,
+    logger: ILogger<MessageService>
   ) =
 
-  member this.ProcessAsync(message: Message) =
+  let defaultMessageHandler (message: Telegram.Bot.Types.Message) : MessageHandler =
     let userId = message.From.Id |> UserId
     let musicPlatformUserId = message.From.Id |> string |> MusicPlatform.UserId
-    let chatId = message.Chat.Id |> otsom.fs.Bot.ChatId
 
     let replyToMessage = replyToUserMessage userId message.MessageId
     let sendButtons = sendUserMessageButtons userId
@@ -72,194 +75,223 @@ type MessageService
     let sendLink = Repos.sendLink _bot userId
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
 
-    let chatCtx = buildChatContext chatId
+    fun m ->
+      let chatCtx = buildChatContext m.ChatId
 
-    let sendSettingsMessage =
-      Telegram.Workflows.User.sendCurrentPresetSettings chatCtx getUser getPreset
+      let sendSettingsMessage =
+        Telegram.Workflows.User.sendCurrentPresetSettings chatCtx getUser getPreset
 
 
-    task {
-      let! musicPlatform = buildMusicPlatform musicPlatformUserId
+      task {
+        let! musicPlatform = buildMusicPlatform musicPlatformUserId
 
-      return!
-        getSpotifyClient musicPlatformUserId
-        |> Task.bind (function
-          | Some client ->
-            let includePlaylist =
-              Playlist.includePlaylist musicPlatform parsePlaylistId getPreset savePreset
+        return!
+          getSpotifyClient musicPlatformUserId
+          |> Task.bind (function
+            | Some client ->
+              let includePlaylist =
+                Playlist.includePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
-            let includePlaylist =
-              Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist initAuth sendLink
+              let includePlaylist =
+                Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist initAuth sendLink
 
-            let excludePlaylist =
-              Playlist.excludePlaylist musicPlatform parsePlaylistId getPreset savePreset
+              let excludePlaylist =
+                Playlist.excludePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
-            let excludePlaylist =
-              Workflows.CurrentPreset.excludePlaylist replyToMessage getUser excludePlaylist initAuth sendLink
+              let excludePlaylist =
+                Workflows.CurrentPreset.excludePlaylist replyToMessage getUser excludePlaylist initAuth sendLink
 
-            let targetPlaylist =
-              Playlist.targetPlaylist musicPlatform parsePlaylistId getPreset savePreset
+              let targetPlaylist =
+                Playlist.targetPlaylist musicPlatform parsePlaylistId getPreset savePreset
 
-            let targetPlaylist =
-              Workflows.CurrentPreset.targetPlaylist replyToMessage getUser targetPlaylist initAuth sendLink
+              let targetPlaylist =
+                Workflows.CurrentPreset.targetPlaylist replyToMessage getUser targetPlaylist initAuth sendLink
 
-            let queuePresetRun = PresetRepo.queueRun _queueClient userId
-            let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
-            let queueCurrentPresetRun =
-              Workflows.User.queueCurrentPresetRun chatCtx queuePresetRun loadUser (fun _ -> Task.FromResult())
+              let queuePresetRun = PresetRepo.queueRun _queueClient userId
 
-            match isNull message.ReplyToMessage with
-            | false ->
-              match message.ReplyToMessage.Text with
-              | Equals Messages.SendPresetSize ->
-                let setTargetPresetSize =
-                  PresetSettings.setPresetSize getPreset savePreset
+              let queuePresetRun =
+                Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
 
-                let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
+              let queueCurrentPresetRun =
+                Workflows.User.queueCurrentPresetRun chatCtx queuePresetRun loadUser (fun _ -> Task.FromResult())
 
-                let setTargetPresetSize =
-                  Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
+              match isNull message.ReplyToMessage with
+              | false ->
+                match message.ReplyToMessage.Text with
+                | Equals Messages.SendPresetSize ->
+                  let setTargetPresetSize = PresetSettings.setPresetSize getPreset savePreset
 
-                setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
-              | Equals Messages.SendIncludedPlaylist -> includePlaylist userId (Playlist.RawPlaylistId message.Text)
-              | Equals Messages.SendExcludedPlaylist -> excludePlaylist userId (Playlist.RawPlaylistId message.Text)
-              | Equals Messages.SendTargetedPlaylist -> targetPlaylist userId (Playlist.RawPlaylistId message.Text)
-              | Equals Messages.SendPresetName ->
-                let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
+                  let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
-                createPreset userId message.Text
-            | _ ->
-              match message.Text with
-              | Equals "/start" -> sendCurrentPreset userId
-              | CommandWithData "/start" state ->
-                let processSuccessfulLogin =
-                  let create = UserRepo.create _database
-                  let exists = UserRepo.exists _database
-                  let createUserIfNotExists = User.createIfNotExists exists create
+                  let setTargetPresetSize =
+                    Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
 
-                  fun () ->
-                    task {
+                  setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
+                | Equals Messages.SendIncludedPlaylist -> includePlaylist userId (Playlist.RawPlaylistId message.Text)
+                | Equals Messages.SendExcludedPlaylist -> excludePlaylist userId (Playlist.RawPlaylistId message.Text)
+                | Equals Messages.SendTargetedPlaylist -> targetPlaylist userId (Playlist.RawPlaylistId message.Text)
+                | Equals Messages.SendPresetName ->
+                  let createPreset =
+                    ((User.createPreset savePreset loadUser updateUser)
+                     |> Telegram.Workflows.User.createPreset sendButtons)
+
+                  createPreset userId message.Text
+              | _ ->
+                match message.Text with
+                | Equals "/start" -> sendCurrentPreset userId
+                | CommandWithData "/start" state ->
+                  let processSuccessfulLogin =
+                    let create = UserRepo.create _database
+                    let exists = UserRepo.exists _database
+                    let createUserIfNotExists = User.createIfNotExists exists create
+
+                    fun () -> task {
                       do! createUserIfNotExists userId
                       do! sendCurrentPreset userId
                     }
 
-                let sendErrorMessage =
-                  function
-                  | Auth.CompleteError.StateNotFound -> replyToMessage "State not found. Try to login via fresh link."
-                  | Auth.CompleteError.StateDoesntBelongToUser ->
-                    replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
+                  let sendErrorMessage =
+                    function
+                    | Auth.CompleteError.StateNotFound -> replyToMessage "State not found. Try to login via fresh link."
+                    | Auth.CompleteError.StateDoesntBelongToUser ->
+                      replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
 
-                completeAuth userId state
-                |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
-              | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
-              | Equals "/guide" -> sendUserMessage userId Messages.Guide  |> Task.ignore
-              | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
-              | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
-              | Equals "/generate" -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
-              | Equals "/version" ->
-                sendUserMessage userId (
-                  Assembly
-                    .GetExecutingAssembly()
-                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                    .InformationalVersion
-                ) |> Task.ignore
-              | CommandWithData "/include" rawPlaylistId ->
-                if String.IsNullOrEmpty rawPlaylistId then
-                  replyToMessage "You have entered empty playlist url" |> Task.ignore
-                else
-                  includePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId) |> Task.ignore
-              | CommandWithData "/exclude" rawPlaylistId ->
-                if String.IsNullOrEmpty rawPlaylistId then
-                  replyToMessage "You have entered empty playlist url" |> Task.ignore
-                else
-                  excludePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-              | CommandWithData "/target" rawPlaylistId ->
-                if String.IsNullOrEmpty rawPlaylistId then
-                  replyToMessage "You have entered empty playlist url" |> Task.ignore
-                else
-                  targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-              | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
-              | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
-              | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
-              | Equals Buttons.MyPresets ->
-                let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
-                sendUserPresets (message.From.Id |> UserId)
-              | Equals Buttons.Settings -> sendSettingsMessage userId
-              | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
-              | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
-              | Equals Buttons.TargetPlaylist -> askForReply Messages.SendTargetedPlaylist
-              | Equals "Back" -> sendCurrentPreset userId
+                  completeAuth userId state
+                  |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
+                | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
+                | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
+                | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
+                | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
+                | Equals "/generate" -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
+                | Equals "/version" ->
+                  sendUserMessage
+                    userId
+                    (Assembly
+                      .GetExecutingAssembly()
+                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                      .InformationalVersion)
+                  |> Task.ignore
+                | CommandWithData "/include" rawPlaylistId ->
+                  if String.IsNullOrEmpty rawPlaylistId then
+                    replyToMessage "You have entered empty playlist url" |> Task.ignore
+                  else
+                    includePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId) |> Task.ignore
+                | CommandWithData "/exclude" rawPlaylistId ->
+                  if String.IsNullOrEmpty rawPlaylistId then
+                    replyToMessage "You have entered empty playlist url" |> Task.ignore
+                  else
+                    excludePlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
+                | CommandWithData "/target" rawPlaylistId ->
+                  if String.IsNullOrEmpty rawPlaylistId then
+                    replyToMessage "You have entered empty playlist url" |> Task.ignore
+                  else
+                    targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
+                | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
+                | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
+                | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
+                | Equals Buttons.MyPresets ->
+                  let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
+                  sendUserPresets (message.From.Id |> UserId)
+                | Equals Buttons.Settings -> sendSettingsMessage userId
+                | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
+                | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
+                | Equals Buttons.TargetPlaylist -> askForReply Messages.SendTargetedPlaylist
+                | Equals "Back" -> sendCurrentPreset userId
 
-              | _ -> replyToMessage "Unknown command" |> Task.ignore
-          | None ->
-            match isNull message.ReplyToMessage with
-            | false ->
-              match (message.ReplyToMessage.Text) with
-              | Equals Messages.SendIncludedPlaylist
-              | Equals Messages.SendExcludedPlaylist
-              | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId &|> ignore
+                | _ -> replyToMessage "Unknown command" |> Task.ignore
+            | None ->
+              match isNull message.ReplyToMessage with
+              | false ->
+                match (message.ReplyToMessage.Text) with
+                | Equals Messages.SendIncludedPlaylist
+                | Equals Messages.SendExcludedPlaylist
+                | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId &|> ignore
 
-              | Equals Messages.SendPresetSize ->
-                let setTargetPresetSize =
-                  PresetSettings.setPresetSize getPreset savePreset
+                | Equals Messages.SendPresetSize ->
+                  let setTargetPresetSize = PresetSettings.setPresetSize getPreset savePreset
 
-                let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
+                  let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
 
-                let setTargetPresetSize =
-                  Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
+                  let setTargetPresetSize =
+                    Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
 
-                setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
-              | Equals Messages.SendPresetName ->
-                let createPreset = ((User.createPreset savePreset loadUser updateUser) |> Telegram.Workflows.User.createPreset sendButtons)
+                  setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
+                | Equals Messages.SendPresetName ->
+                  let createPreset =
+                    ((User.createPreset savePreset loadUser updateUser)
+                     |> Telegram.Workflows.User.createPreset sendButtons)
 
-                createPreset userId message.Text
-              | _ -> replyToMessage "Unknown command" |> Task.ignore
-            | _ ->
-              match message.Text with
-              | StartsWith "/include"
-              | StartsWith "/exclude"
-              | StartsWith "/target"
-              | Equals Buttons.IncludePlaylist
-              | Equals Buttons.ExcludePlaylist
-              | Equals Buttons.TargetPlaylist
-              | Equals Buttons.RunPreset
-              | StartsWith "/generate"
-              | Equals "/start" -> sendLoginMessage userId &|> ignore
+                  createPreset userId message.Text
+                | _ -> replyToMessage "Unknown command" |> Task.ignore
+              | _ ->
+                match message.Text with
+                | StartsWith "/include"
+                | StartsWith "/exclude"
+                | StartsWith "/target"
+                | Equals Buttons.IncludePlaylist
+                | Equals Buttons.ExcludePlaylist
+                | Equals Buttons.TargetPlaylist
+                | Equals Buttons.RunPreset
+                | StartsWith "/generate"
+                | Equals "/start" -> sendLoginMessage userId &|> ignore
 
-              | CommandWithData "/start" state ->
-                let processSuccessfulLogin =
-                  let create = UserRepo.create _database
-                  let exists = UserRepo.exists _database
-                  let createUserIfNotExists = User.createIfNotExists exists create
+                | CommandWithData "/start" state ->
+                  let processSuccessfulLogin =
+                    let create = UserRepo.create _database
+                    let exists = UserRepo.exists _database
+                    let createUserIfNotExists = User.createIfNotExists exists create
 
-                  fun () ->
-                    task {
+                    fun () -> task {
                       do! createUserIfNotExists userId
                       do! sendCurrentPreset userId
                     }
 
-                let sendErrorMessage =
-                  function
-                  | Auth.CompleteError.StateNotFound -> replyToMessage "State not found. Try to login via fresh link."
-                  | Auth.CompleteError.StateDoesntBelongToUser ->
-                    replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
+                  let sendErrorMessage =
+                    function
+                    | Auth.CompleteError.StateNotFound -> replyToMessage "State not found. Try to login via fresh link."
+                    | Auth.CompleteError.StateDoesntBelongToUser ->
+                      replyToMessage "State provided does not belong to your login request. Try to login via fresh link."
 
-                completeAuth userId state
-                |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
-              | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
-              | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
-              | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
-              | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
-              | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
-              | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
-              | Equals Buttons.MyPresets ->
-                let sendUserPresets = Telegram.Workflows.User.showPresets sendButtons getUser
-                sendUserPresets (message.From.Id |> UserId)
-              | Equals Buttons.Settings -> sendSettingsMessage userId
-              | Equals "Back" -> sendCurrentPreset userId
+                  completeAuth userId state
+                  |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
+                | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
+                | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
+                | Equals "/privacy" -> sendUserMessage userId Messages.Privacy |> Task.ignore
+                | Equals "/faq" -> sendUserMessage userId Messages.FAQ |> Task.ignore
+                | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
+                | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
+                | Equals Buttons.MyPresets ->
+                  let sendUserPresets = Telegram.Workflows.User.showPresets sendButtons getUser
+                  sendUserPresets (message.From.Id |> UserId)
+                | Equals Buttons.Settings -> sendSettingsMessage userId
+                | Equals "Back" -> sendCurrentPreset userId
 
-              | _ -> replyToMessage "Unknown command" |> Task.ignore)
-    }
+                | _ -> replyToMessage "Unknown command" |> Task.ignore)
+      }
+
+
+  member this.ProcessAsync(message: Telegram.Bot.Types.Message) =
+    let chatId = message.Chat.Id |> otsom.fs.Bot.ChatId
+
+    let message' = { ChatId = chatId; Text = message.Text }
+
+    let messageHandlers =
+      matchers
+      |> Seq.map (fun matcher -> matcher message')
+      |> Seq.filter Option.isSome
+      |> Seq.map Option.get
+      |> List.ofSeq
+
+    match messageHandlers with
+    | first :: _ :: _ ->
+      Logf.logfw logger "Message content matched to multiple (%i{ProcessorsCount}) handlers. Using the first." messageHandlers.Length
+
+      first message'
+    | [ handler ] -> handler message'
+    | [] ->
+      Logf.logfw logger "Message content didn't match any handler. Running default one."
+
+      defaultMessageHandler message message'
 
 type CallbackQueryService
   (
@@ -278,7 +310,9 @@ type CallbackQueryService
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
     let userId = callbackQuery.From.Id |> UserId
     let chatId = callbackQuery.From.Id |> otsom.fs.Bot.ChatId
-    let botMessageId = callbackQuery.Message.MessageId |> otsom.fs.Telegram.Bot.Core.BotMessageId
+
+    let botMessageId =
+      callbackQuery.Message.MessageId |> otsom.fs.Telegram.Bot.Core.BotMessageId
 
     let updateUser = UserRepo.update _database
     let editMessageButtons = editBotMessageButtons userId botMessageId

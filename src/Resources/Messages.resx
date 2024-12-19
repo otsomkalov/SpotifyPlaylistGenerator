@@ -176,4 +176,7 @@ Click "Generate" keyboard button or send "/generate" command. After a few second
 *Only liked*: {2}
         </value>
     </data>
+    <data name="UnknownCommand" xml:space="preserve">
+        <value>Unknown command!</value>
+    </data>
 </root>

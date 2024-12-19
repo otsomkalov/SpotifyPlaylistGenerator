@@ -15,6 +15,7 @@ open otsom.fs.Extensions
 open otsom.fs.Telegram.Bot.Auth.Spotify
 open otsom.fs.Telegram.Bot.Core
 open System
+open otsom.fs.Extensions.String
 
 [<Literal>]
 let keyboardColumns = 4

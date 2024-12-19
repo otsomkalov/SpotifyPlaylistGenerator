@@ -4,6 +4,7 @@ open System.Threading.Tasks
 open Domain.Core
 open Microsoft.FSharp.Core
 open MusicPlatform
+open otsom.fs.Bot
 open otsom.fs.Core
 open otsom.fs.Telegram.Bot.Core
 
@@ -126,3 +127,12 @@ module TargetedPlaylist =
 module Preset =
   type Show = PresetId -> Task<unit>
   type Run = PresetId -> Task<unit>
+
+type Message = {
+  ChatId: ChatId
+  Text: string
+}
+
+type MessageHandler = Message -> Task<unit>
+
+type MessageHandlerMatcher = Message -> MessageHandler option
