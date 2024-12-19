@@ -31,59 +31,6 @@ let showNotification (bot: ITelegramBotClient) callbackQueryId : ShowNotificatio
       return ()
     }
 
-[<RequireQualifiedAccess>]
-module Playlist =
-
-  let excludePlaylist
-    (replyToMessage: ReplyToMessage)
-    (loadUser: User.Get)
-    (excludePlaylist: Playlist.ExcludePlaylist)
-    : Playlist.Exclude =
-    fun userId rawPlaylistId ->
-      task {
-        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-
-        let excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId
-
-        let onSuccess (playlist: ExcludedPlaylist) =
-          replyToMessage $"*{playlist.Name}* successfully excluded from current preset!"
-
-        let onError =
-          function
-          | Playlist.ExcludePlaylistError.IdParsing _ ->
-            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-          | Playlist.ExcludePlaylistError.Load(Playlist.LoadError.NotFound) ->
-            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
-          | Playlist.ExcludePlaylistError.Unauthorized ->
-            // TODO: Send proper login message with the link
-            replyToMessage "Login to Spotify to exclude playlist"
-
-        return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
-      }
-
-  let targetPlaylist (replyToMessage: ReplyToMessage) (loadUser: User.Get) (targetPlaylist: Playlist.TargetPlaylist) : Playlist.Target =
-    fun userId rawPlaylistId ->
-      task {
-        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
-
-        let targetPlaylistResult = rawPlaylistId |> targetPlaylist currentPresetId
-
-        let onSuccess (playlist: TargetedPlaylist) =
-          replyToMessage $"*{playlist.Name}* successfully targeted for current preset!"
-
-        let onError =
-          function
-          | Playlist.TargetPlaylistError.IdParsing _ ->
-            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, (rawPlaylistId |> RawPlaylistId.value)))
-          | Playlist.TargetPlaylistError.Load(Playlist.LoadError.NotFound) ->
-            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
-            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
-          | Playlist.TargetPlaylistError.AccessError _ -> replyToMessage Messages.PlaylistIsReadonly
-
-        return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
-      }
-
 let parseAction: ParseAction =
   fun (str: string) ->
     match str.Split("|") with

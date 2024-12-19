@@ -89,19 +89,19 @@ type MessageService
               Playlist.includePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let includePlaylist =
-              Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist
+              Workflows.CurrentPreset.includePlaylist replyToMessage getUser includePlaylist initAuth sendLink
 
             let excludePlaylist =
               Playlist.excludePlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let excludePlaylist =
-              Workflows.Playlist.excludePlaylist replyToMessage getUser excludePlaylist
+              Workflows.CurrentPreset.excludePlaylist replyToMessage getUser excludePlaylist initAuth sendLink
 
             let targetPlaylist =
               Playlist.targetPlaylist musicPlatform parsePlaylistId getPreset savePreset
 
             let targetPlaylist =
-              Workflows.Playlist.targetPlaylist replyToMessage getUser targetPlaylist
+              Workflows.CurrentPreset.targetPlaylist replyToMessage getUser targetPlaylist initAuth sendLink
 
             let queuePresetRun = PresetRepo.queueRun _queueClient userId
             let queuePresetRun = Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
@@ -197,7 +197,7 @@ type MessageService
               match (message.ReplyToMessage.Text) with
               | Equals Messages.SendIncludedPlaylist
               | Equals Messages.SendExcludedPlaylist
-              | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId
+              | Equals Messages.SendTargetedPlaylist -> sendLoginMessage userId &|> ignore
 
               | Equals Messages.SendPresetSize ->
                 let setTargetPresetSize =
@@ -224,7 +224,7 @@ type MessageService
               | Equals Buttons.TargetPlaylist
               | Equals Buttons.RunPreset
               | StartsWith "/generate"
-              | Equals "/start" -> sendLoginMessage userId
+              | Equals "/start" -> sendLoginMessage userId &|> ignore
 
               | CommandWithData "/start" state ->
                 let processSuccessfulLogin =
