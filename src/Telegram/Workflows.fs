@@ -788,3 +788,15 @@ let faqMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandl
     match message.Text with
     | Equals "/faq" -> Some(handler)
     | _ -> None
+
+let privacyMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandlerMatcher =
+  let handler =
+    fun message ->
+      let chatCtx = buildChatContext message.ChatId
+
+      chatCtx.SendMessage Messages.Privacy &|> ignore
+
+  fun message ->
+    match message.Text with
+    | Equals "/privacy" -> Some(handler)
+    | _ -> None

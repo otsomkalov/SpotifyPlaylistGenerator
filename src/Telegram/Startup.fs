@@ -11,4 +11,6 @@ open otsom.fs.Telegram.Bot.Core
 let addBot (cfg: IConfiguration) (services: IServiceCollection) =
   services.BuildSingleton<User.SendCurrentPreset, User.Get, Preset.Get, SendUserKeyboard>(User.sendCurrentPreset)
 
-  services.BuildSingleton<MessageHandlerMatcher, _>(faqMessageHandlerMatcher)
+  services
+    .BuildSingleton<MessageHandlerMatcher, _>(faqMessageHandlerMatcher)
+    .BuildSingleton<MessageHandlerMatcher, _>(privacyMessageHandlerMatcher)
