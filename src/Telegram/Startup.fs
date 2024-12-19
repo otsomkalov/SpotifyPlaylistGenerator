@@ -15,3 +15,4 @@ let addBot (cfg: IConfiguration) (services: IServiceCollection) =
     .BuildSingleton<MessageHandlerMatcher, _>(faqMessageHandlerMatcher)
     .BuildSingleton<MessageHandlerMatcher, _>(privacyMessageHandlerMatcher)
     .BuildSingleton<MessageHandlerMatcher, _>(guideMessageHandlerMatcher)
+    .BuildSingleton<MessageHandlerMatcher, _>(helpMessageHandlerMatcher)
