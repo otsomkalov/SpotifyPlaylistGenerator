@@ -800,3 +800,15 @@ let privacyMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageH
     match message.Text with
     | Equals "/privacy" -> Some(handler)
     | _ -> None
+
+let guideMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandlerMatcher =
+  let handler =
+    fun message ->
+      let chatCtx = buildChatContext message.ChatId
+
+      chatCtx.SendMessage Messages.Guide &|> ignore
+
+  fun message ->
+    match message.Text with
+    | Equals "/guide" -> Some(handler)
+    | _ -> None

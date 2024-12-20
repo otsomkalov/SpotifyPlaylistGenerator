@@ -159,7 +159,6 @@ type MessageService
                   completeAuth userId state
                   |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
                 | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
-                | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
                 | Equals "/generate" -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
                 | Equals "/version" ->
                   sendUserMessage
@@ -253,7 +252,6 @@ type MessageService
                   completeAuth userId state
                   |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
                 | Equals "/help" -> sendUserMessage userId Messages.Help |> Task.ignore
-                | Equals "/guide" -> sendUserMessage userId Messages.Guide |> Task.ignore
                 | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
                 | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
                 | Equals Buttons.MyPresets ->
