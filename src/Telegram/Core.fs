@@ -5,6 +5,7 @@ open Domain.Core
 open Microsoft.FSharp.Core
 open MusicPlatform
 open otsom.fs.Core
+open otsom.fs.Telegram.Bot.Core
 
 type AnswerCallbackQuery = unit -> Task<unit>
 type ShowNotification = string -> Task<unit>
@@ -12,7 +13,7 @@ type Page = Page of int
 
 type ChatMessageId = ChatMessageId of int
 
-type SendLoginMessage = UserId -> Task<unit>
+type SendLoginMessage = UserId -> Task<BotMessageId>
 
 [<RequireQualifiedAccess>]
 module Playlist =

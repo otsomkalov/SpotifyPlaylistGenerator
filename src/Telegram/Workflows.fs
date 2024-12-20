@@ -493,6 +493,8 @@ module CurrentPreset =
     (replyToMessage: ReplyToMessage)
     (loadUser: User.Get)
     (includePlaylist: Playlist.IncludePlaylist)
+    (initAuth: Auth.Init)
+    (sendLink: SendLink)
     : Playlist.Include =
     fun userId rawPlaylistId ->
       task {
@@ -511,10 +513,68 @@ module CurrentPreset =
 
             replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
           | Playlist.IncludePlaylistError.Unauthorized ->
-            // TODO: Send proper login message with the link
-            replyToMessage "Login to Spotify to include playlist"
+            sendLoginMessage initAuth sendLink userId
 
         return! includePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
+  let excludePlaylist
+    (replyToMessage: ReplyToMessage)
+    (loadUser: User.Get)
+    (excludePlaylist: Playlist.ExcludePlaylist)
+    (initAuth: Auth.Init)
+    (sendLink: SendLink)
+    : Playlist.Exclude =
+    fun userId rawPlaylistId ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+        let excludePlaylistResult = rawPlaylistId |> excludePlaylist currentPresetId
+
+        let onSuccess (playlist: ExcludedPlaylist) =
+          replyToMessage $"*{playlist.Name}* successfully excluded from current preset!"
+
+        let onError =
+          function
+          | Playlist.ExcludePlaylistError.IdParsing(Playlist.IdParsingError id) ->
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, id))
+          | Playlist.ExcludePlaylistError.Load(Playlist.LoadError.NotFound) ->
+            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
+          | Playlist.ExcludePlaylistError.Unauthorized ->
+            sendLoginMessage initAuth sendLink userId
+
+        return! excludePlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
+      }
+
+  let targetPlaylist
+    (replyToMessage: ReplyToMessage)
+    (loadUser: User.Get)
+    (targetPlaylist: Playlist.TargetPlaylist)
+    (initAuth: Auth.Init)
+    (sendLink: SendLink)
+    : Playlist.Target =
+    fun userId rawPlaylistId ->
+      task {
+        let! currentPresetId = loadUser userId |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
+
+        let targetPlaylistResult = rawPlaylistId |> targetPlaylist currentPresetId
+
+        let onSuccess (playlist: TargetedPlaylist) =
+          replyToMessage $"*{playlist.Name}* successfully targeted for current preset!"
+
+        let onError =
+          function
+          | Playlist.TargetPlaylistError.IdParsing(Playlist.IdParsingError id) ->
+            replyToMessage (String.Format(Messages.PlaylistIdCannotBeParsed, id))
+          | Playlist.TargetPlaylistError.Load(Playlist.LoadError.NotFound) ->
+            let (Playlist.RawPlaylistId rawPlaylistId) = rawPlaylistId
+            replyToMessage (String.Format(Messages.PlaylistNotFoundInSpotify, rawPlaylistId))
+          | Playlist.TargetPlaylistError.AccessError _ -> replyToMessage Messages.PlaylistIsReadonly
+          | Playlist.TargetPlaylistError.Unauthorized ->
+            sendLoginMessage initAuth sendLink userId
+
+        return! targetPlaylistResult |> TaskResult.taskEither onSuccess onError |> Task.ignore
       }
 
 [<RequireQualifiedAccess>]

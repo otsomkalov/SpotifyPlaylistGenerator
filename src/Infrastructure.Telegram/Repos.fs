@@ -8,6 +8,7 @@ open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Repos
 open otsom.fs.Core
 open otsom.fs.Extensions
+open otsom.fs.Telegram.Bot.Core
 
 let private escapeMarkdownString (str: string) =
   Regex.Replace(str, "([\(\)`\.#\-!+])", "\$1")
@@ -24,4 +25,4 @@ let sendLink (bot: ITelegramBotClient) userId : SendLink =
          |> Seq.singleton
          |> InlineKeyboardMarkup)
     )
-    |> Task.map ignore
+    &|> (_.MessageId >> BotMessageId)
