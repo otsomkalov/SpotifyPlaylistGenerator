@@ -812,3 +812,15 @@ let guideMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHan
     match message.Text with
     | Equals "/guide" -> Some(handler)
     | _ -> None
+
+let helpMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandlerMatcher =
+  let handler =
+    fun message ->
+      let chatCtx = buildChatContext message.ChatId
+
+      chatCtx.SendMessage Messages.Help &|> ignore
+
+  fun message ->
+    match message.Text with
+    | Equals "/help" -> Some(handler)
+    | _ -> None
