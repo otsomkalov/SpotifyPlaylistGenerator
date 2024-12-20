@@ -3,7 +3,6 @@
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Tests
-open Telegram
 open Telegram.Bot.Types.ReplyMarkups
 open Telegram.Core
 open FsUnit.Xunit
@@ -11,14 +10,14 @@ open Xunit
 open Domain.Workflows
 open Telegram.Workflows
 
+let getPreset =
+  fun presetId ->
+    presetId |> should equal Mocks.preset.Id
+
+    Mocks.preset |> Task.FromResult
+
 [<Fact>]
 let ``list should send targeted playlists`` () =
-  let getPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.preset.Id
-
-      Mocks.preset |> Task.FromResult
-
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard
@@ -33,12 +32,6 @@ let ``list should send targeted playlists`` () =
 
 [<Fact>]
 let ``show should send targeted playlist details`` () =
-  let getPreset =
-    fun presetId ->
-      presetId |> should equal User.userPresetMock.Id
-
-      Mocks.preset |> Task.FromResult
-
   let editMessageButtons =
     fun text (replyMarkup: InlineKeyboardMarkup) ->
       replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
@@ -67,12 +60,11 @@ let ``remove should delete playlist and show targeted playlists`` () =
   let showNotification =
     fun _ -> Task.FromResult()
 
-  let listTargetedPlaylists =
-    fun presetId  page ->
-      presetId |> should equal Mocks.presetId
-      page |> should equal (Page 0)
+  let editMessageButtons =
+    fun text (replyMarkup: InlineKeyboardMarkup) ->
+      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
       Task.FromResult()
 
-  let sut = TargetedPlaylist.remove removePlaylist showNotification listTargetedPlaylists
+  let sut = TargetedPlaylist.remove getPreset editMessageButtons removePlaylist showNotification
 
   sut Mocks.presetId Mocks.targetedPlaylist.Id
