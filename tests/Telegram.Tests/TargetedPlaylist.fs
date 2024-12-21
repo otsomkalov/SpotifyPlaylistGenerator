@@ -9,6 +9,7 @@ open FsUnit.Xunit
 open Xunit
 open Domain.Workflows
 open Telegram.Workflows
+open otsom.fs.Bot
 
 let getPreset =
   fun presetId ->
@@ -18,25 +19,27 @@ let getPreset =
 
 [<Fact>]
 let ``list should send targeted playlists`` () =
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard
-      |> Seq.length
-      |> should equal 2
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 2
 
-      Task.FromResult()
+            Task.FromResult() }
 
-  let sut = TargetedPlaylist.list getPreset editMessageButtons
+  let sut = TargetedPlaylist.list getPreset botMessageCtx
 
   sut Mocks.presetId (Page 0)
 
 [<Fact>]
 let ``show should send targeted playlist details`` () =
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 3
 
-      Task.FromResult()
+            Task.FromResult() }
 
   let countPlaylistTracks =
     fun playlistId ->
@@ -45,7 +48,7 @@ let ``show should send targeted playlist details`` () =
 
       0L |> Task.FromResult
 
-  let sut = TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+  let sut = TargetedPlaylist.show botMessageCtx getPreset countPlaylistTracks
 
   sut Mocks.presetId Mocks.targetedPlaylist.Id
 
@@ -57,14 +60,17 @@ let ``remove should delete playlist and show targeted playlists`` () =
       playlistId |> should equal Mocks.targetedPlaylist.Id
       Task.FromResult()
 
-  let showNotification =
-    fun _ -> Task.FromResult()
+  let showNotification = fun _ -> Task.FromResult()
 
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
-      Task.FromResult()
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 2
 
-  let sut = TargetedPlaylist.remove getPreset editMessageButtons removePlaylist showNotification
+            Task.FromResult() }
+
+  let sut =
+    TargetedPlaylist.remove getPreset botMessageCtx removePlaylist showNotification
 
   sut Mocks.presetId Mocks.targetedPlaylist.Id

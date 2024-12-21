@@ -71,9 +71,9 @@ let private getPresetMessage =
 
       let keyboard =
         seq {
-          InlineKeyboardButton.WithCallbackData(likedTracksButtonText, likedTracksButtonData)
-          InlineKeyboardButton.WithCallbackData(uniqueArtistsButtonText, uniqueArtistsButtonData)
-          InlineKeyboardButton.WithCallbackData(recommendationsButtonText, recommendationsButtonData)
+          MessageButton(likedTracksButtonText, likedTracksButtonData)
+          MessageButton(uniqueArtistsButtonText, uniqueArtistsButtonData)
+          MessageButton(recommendationsButtonText, recommendationsButtonData)
         }
 
       return (text, keyboard)
@@ -91,17 +91,17 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
 
   let presetId = presetId |> PresetId.value
 
-  let backButton = InlineKeyboardButton.WithCallbackData("<< Back >>", $"p|{presetId}|i")
+  let backButton = MessageButton("<< Back >>", $"p|{presetId}|i")
 
   let prevButton =
     if page > 0 then
-      Some(InlineKeyboardButton.WithCallbackData("<< Prev", $"p|{presetId}|ip|{page - 1}"))
+      Some(MessageButton("<< Prev", $"p|{presetId}|ip|{page - 1}"))
     else
       None
 
   let nextButton =
     if remainingPlaylists.Length > buttonsPerPage then
-      Some(InlineKeyboardButton.WithCallbackData("Next >>", $"p|{presetId}|ip|{page + 1}"))
+      Some(MessageButton("Next >>", $"p|{presetId}|ip|{page + 1}"))
     else
       None
 
@@ -112,7 +112,7 @@ let internal createPlaylistsPage page (playlists: 'a list) playlistToButton pres
     | Some pb, None -> [ pb; backButton ]
     | _ -> [ backButton ]
 
-  Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton) |> InlineKeyboardMarkup
+  Seq.append playlistsButtons (serviceButtons |> Seq.ofList |> Seq.singleton)
 
 let private getPlaylistButtons presetId playlistId playlistType enabled specificButtons =
   let presetId = presetId |> PresetId.value
@@ -129,13 +129,12 @@ let private getPlaylistButtons presetId playlistId playlistType enabled specific
     yield specificButtons
 
     yield seq {
-      InlineKeyboardButton.WithCallbackData(enableDisableButtonText, enableDisableButtonData)
-      InlineKeyboardButton.WithCallbackData("Remove", buttonDataTemplate "rm")
+      MessageButton(enableDisableButtonText, enableDisableButtonData)
+      MessageButton("Remove", buttonDataTemplate "rm")
     }
 
-    yield seq { InlineKeyboardButton.WithCallbackData("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
+    yield seq { MessageButton("<< Back >>", sprintf "p|%s|%s|%i" presetId playlistType 0) }
   }
-  |> InlineKeyboardMarkup
 
 let sendLoginMessage (initAuth: Auth.Init) (sendLink: SendLink) : SendLoginMessage =
   fun userId ->
@@ -148,10 +147,10 @@ let sendLoginMessage (initAuth: Auth.Init) (sendLink: SendLink) : SendLoginMessa
 
 [<RequireQualifiedAccess>]
 module IncludedPlaylist =
-  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : IncludedPlaylist.List =
+  let list (getPreset: Preset.Get) (botMessageCtx: #IEditMessageButtons) : IncludedPlaylist.List =
     let createButtonFromPlaylist presetId =
       fun (playlist: IncludedPlaylist) ->
-        InlineKeyboardButton.WithCallbackData(
+        MessageButton(
           playlist.Name,
           sprintf "p|%s|ip|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
         )
@@ -165,11 +164,11 @@ module IncludedPlaylist =
         let replyMarkup =
           createPlaylistsPage page preset.IncludedPlaylists createButtonFromPlaylist preset.Id
 
-        return! editMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
+        return! botMessageCtx.EditMessageButtons $"Preset *{preset.Name}* has the next included playlists:" replyMarkup
       }
 
   let show
-    (editMessageButtons: EditMessageButtons)
+    (chatCtx: #IEditMessageButtons)
     (getPreset: Preset.Get)
     (countPlaylistTracks: Playlist.CountTracks)
     : IncludedPlaylist.Show =
@@ -187,7 +186,7 @@ module IncludedPlaylist =
 
         let buttons = getPlaylistButtons presetId (playlistId |> ReadablePlaylistId.value) "ip" includedPlaylist.Enabled Seq.empty
 
-        return! editMessageButtons messageText buttons
+        return! chatCtx.EditMessageButtons messageText buttons
       }
 
   let enable
@@ -219,7 +218,7 @@ module IncludedPlaylist =
       }
 
   let remove
-    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get) (botMessageCtx: #IEditMessageButtons)
     (removeIncludedPlaylist: Domain.Core.IncludedPlaylist.Remove)
     (showNotification: ShowNotification)
     : IncludedPlaylist.Remove =
@@ -228,15 +227,15 @@ module IncludedPlaylist =
         do! removeIncludedPlaylist presetId playlistId
         do! showNotification "Included playlist successfully removed"
 
-        return! list getPreset editMessageButtons presetId (Page 0)
+        return! list getPreset botMessageCtx presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]
 module ExcludedPlaylist =
-  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : ExcludedPlaylist.List =
+  let list (getPreset: Preset.Get) (botMessageCtx: #IEditMessageButtons) : ExcludedPlaylist.List =
     let createButtonFromPlaylist presetId =
       fun (playlist: ExcludedPlaylist) ->
-        InlineKeyboardButton.WithCallbackData(
+        MessageButton(
           playlist.Name,
           sprintf "p|%s|ep|%s|i" (presetId |> PresetId.value) (playlist.Id |> ReadablePlaylistId.value |> PlaylistId.value)
         )
@@ -250,11 +249,11 @@ module ExcludedPlaylist =
         let replyMarkup =
           createPlaylistsPage page preset.ExcludedPlaylists createButtonFromPlaylist preset.Id
 
-        return! editMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
+        return! botMessageCtx.EditMessageButtons $"Preset *{preset.Name}* has the next excluded playlists:" replyMarkup
       }
 
   let show
-    (editMessageButtons: EditMessageButtons)
+    (botMessageCtx: #IEditMessageButtons)
     (getPreset: Preset.Get)
     (countPlaylistTracks: Playlist.CountTracks)
     : ExcludedPlaylist.Show =
@@ -272,7 +271,7 @@ module ExcludedPlaylist =
 
         let buttons = getPlaylistButtons presetId (playlistId |> ReadablePlaylistId.value) "ep" excludedPlaylist.Enabled Seq.empty
 
-        return! editMessageButtons messageText buttons
+        return! botMessageCtx.EditMessageButtons messageText buttons
       }
 
   let enable
@@ -304,7 +303,7 @@ module ExcludedPlaylist =
       }
 
   let remove
-    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get) botMessageCtx
     (removeExcludedPlaylist: Domain.Core.ExcludedPlaylist.Remove)
     (showNotification: ShowNotification)
     : ExcludedPlaylist.Remove =
@@ -313,15 +312,15 @@ module ExcludedPlaylist =
         do! removeExcludedPlaylist presetId playlistId
         do! showNotification "Excluded playlist successfully removed"
 
-        return! list getPreset editMessageButtons presetId (Page 0)
+        return! list getPreset botMessageCtx presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]
 module TargetedPlaylist =
-  let list (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons) : TargetedPlaylist.List =
+  let list (getPreset: Preset.Get) (botMessageCtx: #IEditMessageButtons) : TargetedPlaylist.List =
     let createButtonFromPlaylist presetId =
       fun (playlist: TargetedPlaylist) ->
-        InlineKeyboardButton.WithCallbackData(
+        MessageButton(
           playlist.Name,
           sprintf "p|%s|tp|%s|i" (presetId |> PresetId.value) (playlist.Id |> WritablePlaylistId.value |> PlaylistId.value)
         )
@@ -335,11 +334,11 @@ module TargetedPlaylist =
         let replyMarkup =
           createPlaylistsPage page preset.TargetedPlaylists createButtonFromPlaylist preset.Id
 
-        return! editMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
+        return! botMessageCtx.EditMessageButtons $"Preset *{preset.Name}* has the next targeted playlists:" replyMarkup
       }
 
   let show
-    (editMessageButtons: EditMessageButtons)
+    (chatCtx: #IEditMessageButtons)
     (getPreset: Preset.Get)
     (countPlaylistTracks: Playlist.CountTracks)
     : TargetedPlaylist.Show =
@@ -363,14 +362,14 @@ module TargetedPlaylist =
 
         let buttonData = buttonDataBuilder presetId' playlistId'
 
-        let additionalButtons = Seq.singleton (InlineKeyboardButton.WithCallbackData(buttonText, buttonData))
+        let additionalButtons = Seq.singleton (MessageButton(buttonText, buttonData))
 
         let buttons = getPlaylistButtons presetId (playlistId |> WritablePlaylistId.value) "tp" targetPlaylist.Enabled additionalButtons
 
         let messageText =
           sprintf "*Name:* %s\n*Tracks count:* %i\n*Overwrite?:* %b" targetPlaylist.Name playlistTracksCount targetPlaylist.Overwrite
 
-        return! editMessageButtons messageText buttons
+        return! chatCtx.EditMessageButtons messageText buttons
       }
 
   let appendTracks
@@ -400,7 +399,7 @@ module TargetedPlaylist =
       }
 
   let remove
-    (getPreset: Preset.Get) (editMessageButtons: EditMessageButtons)
+    (getPreset: Preset.Get) botMessageCtx
     (removeTargetedPlaylist: Domain.Core.TargetedPlaylist.Remove)
     (showNotification: ShowNotification)
     : TargetedPlaylist.Remove =
@@ -409,7 +408,7 @@ module TargetedPlaylist =
         do! removeTargetedPlaylist presetId playlistId
         do! showNotification "Target playlist successfully removed"
 
-        return! list getPreset editMessageButtons presetId (Page 0)
+        return! list getPreset botMessageCtx presetId (Page 0)
       }
 
 [<RequireQualifiedAccess>]
@@ -424,28 +423,28 @@ module Preset =
         let keyboardMarkup =
           seq {
             seq {
-              InlineKeyboardButton.WithCallbackData("Included playlists", $"p|%s{presetId}|ip|0")
-              InlineKeyboardButton.WithCallbackData("Excluded playlists", $"p|%s{presetId}|ep|0")
-              InlineKeyboardButton.WithCallbackData("Target playlists", $"p|%s{presetId}|tp|0")
+              MessageButton("Included playlists", $"p|%s{presetId}|ip|0")
+              MessageButton("Excluded playlists", $"p|%s{presetId}|ep|0")
+              MessageButton("Target playlists", $"p|%s{presetId}|tp|0")
             }
 
             keyboard
 
-            seq { InlineKeyboardButton.WithCallbackData("Run", $"p|%s{presetId}|r") }
+            seq { MessageButton("Run", $"p|%s{presetId}|r") }
 
-            seq { InlineKeyboardButton.WithCallbackData("Set as current", $"p|%s{presetId}|c") }
+            seq { MessageButton("Set as current", $"p|%s{presetId}|c") }
 
-            seq { InlineKeyboardButton.WithCallbackData("Remove", sprintf "p|%s|rm" presetId) }
+            seq { MessageButton("Remove", sprintf "p|%s|rm" presetId) }
 
-            seq { InlineKeyboardButton.WithCallbackData("<< Back >>", "p") }
+            seq { MessageButton("<< Back >>", "p") }
           }
 
-        do! showButtons text (keyboardMarkup |> InlineKeyboardMarkup)
+        do! showButtons text keyboardMarkup
       }
 
-  let show (getPreset: Preset.Get) (editMessage: EditMessageButtons) : Preset.Show =
+  let show (getPreset: Preset.Get) (botMessageCtx: #IEditMessageButtons) : Preset.Show =
     getPreset
-    >> Task.bind (show' editMessage)
+    >> Task.bind (show' botMessageCtx.EditMessageButtons)
 
   let queueRun
     (chatCtx: #ISendMessage)
@@ -587,18 +586,23 @@ module User =
 
         let keyboardMarkup =
           user.Presets
-          |> Seq.map (fun p -> InlineKeyboardButton.WithCallbackData(p.Name, $"p|{p.Id |> PresetId.value}|i"))
+          |> Seq.map (fun p -> MessageButton(p.Name, $"p|{p.Id |> PresetId.value}|i"))
           |> Seq.singleton
-          |> InlineKeyboardMarkup
 
         do! sendOrEditButtons "Your presets" keyboardMarkup
       }
 
   let sendPresets (sendMessageButtons: SendMessageButtons) loadUser : User.SendPresets =
-    showPresets' sendMessageButtons loadUser
+    let wrapper actual =
+      fun text (buttons: MessageButtons) ->
+        let markup = buttons |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData) |> InlineKeyboardMarkup
 
-  let showPresets (editMessageButtons: EditMessageButtons) loadUser : User.ShowPresets =
-    showPresets' editMessageButtons loadUser
+        actual text markup
+
+    showPresets' (wrapper sendMessageButtons) loadUser
+
+  let showPresets (botMessageCtx: #IEditMessageButtons) loadUser : User.ShowPresets =
+    showPresets' botMessageCtx.EditMessageButtons loadUser
 
   let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPreset =
     fun userId ->
@@ -642,12 +646,12 @@ module User =
         return! chatCtx.SendKeyboard text buttons &|> ignore
       }
 
-  let removePreset editMessageButtons loadUser (removePreset: User.RemovePreset) : User.RemovePreset =
+  let removePreset (botMessageCtx: #IEditMessageButtons) loadUser (removePreset: User.RemovePreset) : User.RemovePreset =
     fun userId presetId ->
       task {
         do! removePreset userId presetId
 
-        return! showPresets' editMessageButtons loadUser userId
+        return! showPresets' botMessageCtx.EditMessageButtons loadUser userId
       }
 
   let setCurrentPresetSize
@@ -692,15 +696,21 @@ module User =
       &|&> (Preset.queueRun chatCtx queueRun answerCallbackQuery)
 
   let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
+    let wrapper actual =
+      fun text (buttons: MessageButtons) ->
+        let markup = buttons |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData) |> InlineKeyboardMarkup
+
+        actual text markup
+
     fun userId name ->
       createPreset userId name
-      &|&> Preset.show' sendMessageButtons
+      &|&> Preset.show' (wrapper sendMessageButtons)
 
 [<RequireQualifiedAccess>]
 module PresetSettings =
   let enableUniqueArtists
     (getPreset: Preset.Get)
-    (editMessage: EditMessageButtons)
+    botMessageCtx
     (enableUniqueArtists: PresetSettings.EnableUniqueArtists)
     (showNotification: ShowNotification)
     : PresetSettings.EnableUniqueArtists =
@@ -710,12 +720,12 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! Preset.show getPreset editMessage presetId
+        return! Preset.show getPreset botMessageCtx presetId
       }
 
   let disableUniqueArtists
     (getPreset: Preset.Get)
-    (editMessage: EditMessageButtons)
+    botMessageCtx
     (disableUniqueArtists: PresetSettings.DisableUniqueArtists)
     (showNotification: ShowNotification)
     : PresetSettings.DisableUniqueArtists =
@@ -725,12 +735,12 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! Preset.show getPreset editMessage presetId
+        return! Preset.show getPreset botMessageCtx presetId
       }
 
   let enableRecommendations
     (getPreset: Preset.Get)
-    (editMessage: EditMessageButtons)
+    botMessageCtx
     (enableRecommendations: PresetSettings.EnableRecommendations)
     (showNotification: ShowNotification)
     : PresetSettings.EnableRecommendations =
@@ -740,12 +750,12 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! Preset.show getPreset editMessage presetId
+        return! Preset.show getPreset botMessageCtx presetId
       }
 
   let disableRecommendations
     (getPreset: Preset.Get)
-    (editMessage: EditMessageButtons)
+    botMessageCtx
     (disableRecommendations: PresetSettings.DisableRecommendations)
     (showNotification: ShowNotification)
     : PresetSettings.DisableRecommendations =
@@ -755,27 +765,27 @@ module PresetSettings =
 
         do! showNotification Messages.Updated
 
-        return! Preset.show getPreset editMessage presetId
+        return! Preset.show getPreset botMessageCtx presetId
       }
 
-  let private setLikedTracksHandling (getPreset: Preset.Get) (editMessage: EditMessageButtons) (showNotification: ShowNotification) setLikedTracksHandling =
+  let private setLikedTracksHandling (getPreset: Preset.Get) botMessageCtx (showNotification: ShowNotification) setLikedTracksHandling =
     fun presetId ->
       task {
         do! setLikedTracksHandling presetId
 
         do! showNotification Messages.Updated
 
-        return! Preset.show getPreset editMessage presetId
+        return! Preset.show getPreset botMessageCtx presetId
       }
 
-  let includeLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
-    setLikedTracksHandling getPreset editMessage showNotification includeLikedTracks
+  let includeLikedTracks (getPreset: Preset.Get) botMessageCtx showNotification (includeLikedTracks: PresetSettings.IncludeLikedTracks) : PresetSettings.IncludeLikedTracks =
+    setLikedTracksHandling getPreset botMessageCtx showNotification includeLikedTracks
 
-  let excludeLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
-    setLikedTracksHandling getPreset editMessage showNotification excludeLikedTracks
+  let excludeLikedTracks (getPreset: Preset.Get) botMessageCtx showNotification (excludeLikedTracks: PresetSettings.ExcludeLikedTracks) : PresetSettings.ExcludeLikedTracks =
+    setLikedTracksHandling getPreset botMessageCtx showNotification excludeLikedTracks
 
-  let ignoreLikedTracks (getPreset: Preset.Get) (editMessage: EditMessageButtons) showNotification (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
-    setLikedTracksHandling getPreset editMessage showNotification ignoreLikedTracks
+  let ignoreLikedTracks (getPreset: Preset.Get) botMessageCtx showNotification (ignoreLikedTracks: PresetSettings.IgnoreLikedTracks) : PresetSettings.IgnoreLikedTracks =
+    setLikedTracksHandling getPreset botMessageCtx showNotification ignoreLikedTracks
 
 let faqMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHandlerMatcher =
   let handler =

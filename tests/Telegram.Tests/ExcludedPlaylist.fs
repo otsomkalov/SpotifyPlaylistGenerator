@@ -9,6 +9,7 @@ open FsUnit.Xunit
 open Xunit
 open Domain.Workflows
 open Telegram.Workflows
+open otsom.fs.Bot
 
 let getPreset =
   fun presetId ->
@@ -18,24 +19,27 @@ let getPreset =
 
 [<Fact>]
 let ``list should send excluded playlists`` () =
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard
-      |> Seq.length
-      |> should equal 2
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 2
 
-      Task.FromResult()
+            Task.FromResult() }
 
-  let sut = ExcludedPlaylist.list getPreset editMessageButtons
+  let sut = ExcludedPlaylist.list getPreset botMessageCtx
 
   sut Mocks.preset.Id (Page 0)
 
 [<Fact>]
 let ``show should send excluded playlist details`` () =
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 3
-      Task.FromResult()
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 3
+
+            Task.FromResult() }
 
   let countPlaylistTracks =
     fun playlistId ->
@@ -44,7 +48,7 @@ let ``show should send excluded playlist details`` () =
 
       0L |> Task.FromResult
 
-  let sut = ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+  let sut = ExcludedPlaylist.show botMessageCtx getPreset countPlaylistTracks
 
   sut Mocks.presetId Mocks.excludedPlaylist.Id
 
@@ -56,14 +60,17 @@ let ``remove should delete playlist and show excluded playlists`` () =
       playlistId |> should equal Mocks.excludedPlaylist.Id
       Task.FromResult()
 
-  let editMessageButtons =
-    fun text (replyMarkup: InlineKeyboardMarkup) ->
-      replyMarkup.InlineKeyboard |> Seq.length |> should equal 2
-      Task.FromResult()
+  let botMessageCtx =
+    { new IEditMessageButtons with
+        member this.EditMessageButtons =
+          fun text buttons ->
+            buttons |> Seq.length |> should equal 2
 
-  let showNotification =
-    fun _ -> Task.FromResult()
+            Task.FromResult() }
 
-  let sut = ExcludedPlaylist.remove getPreset editMessageButtons removePlaylist showNotification
+  let showNotification = fun _ -> Task.FromResult()
+
+  let sut =
+    ExcludedPlaylist.remove getPreset botMessageCtx removePlaylist showNotification
 
   sut Mocks.presetId Mocks.excludedPlaylist.Id
