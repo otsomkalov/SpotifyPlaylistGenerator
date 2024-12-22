@@ -822,3 +822,24 @@ let helpMessageHandlerMatcher (buildChatContext: BuildChatContext) : MessageHand
     match message.Text with
     | Equals "/help" -> Some(handler)
     | _ -> None
+
+let settingsMessageHandlerMatcher
+  (buildChatContext: BuildChatContext)
+  (loadChat: ChatRepo.Load)
+  (getPreset: Preset.Get)
+  (getUser: User.Get)
+  : MessageHandlerMatcher =
+  let handler =
+    fun message -> task {
+      let chatCtx = buildChatContext message.ChatId
+
+      let! chat = loadChat message.ChatId
+
+      return! User.sendCurrentPresetSettings chatCtx getUser getPreset chat.UserId
+    }
+
+  fun message ->
+    match message.Text with
+    | Equals "/settings" -> Some(handler)
+    | Equals Buttons.Settings -> Some(handler)
+    | _ -> None

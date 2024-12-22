@@ -136,3 +136,5 @@ type Message = {
 type MessageHandler = Message -> Task<unit>
 
 type MessageHandlerMatcher = Message -> MessageHandler option
+
+type Chat = {Id: ChatId; UserId: UserId}
