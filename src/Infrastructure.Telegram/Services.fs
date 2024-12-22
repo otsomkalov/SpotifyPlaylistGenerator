@@ -133,7 +133,7 @@ type MessageService
                 | Equals Messages.SendPresetName ->
                   let createPreset =
                     ((User.createPreset savePreset loadUser updateUser)
-                     |> Telegram.Workflows.User.createPreset sendButtons)
+                     |> Telegram.Workflows.User.createPreset chatCtx)
 
                   createPreset userId message.Text
               | _ ->
@@ -186,7 +186,7 @@ type MessageService
                 | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
                 | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
                 | Equals Buttons.MyPresets ->
-                  let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
+                  let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
                 | Equals Buttons.Settings -> sendSettingsMessage userId
                 | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
@@ -215,7 +215,7 @@ type MessageService
                 | Equals Messages.SendPresetName ->
                   let createPreset =
                     ((User.createPreset savePreset loadUser updateUser)
-                     |> Telegram.Workflows.User.createPreset sendButtons)
+                     |> Telegram.Workflows.User.createPreset chatCtx)
 
                   createPreset userId message.Text
                 | _ -> replyToMessage "Unknown command" |> Task.ignore
@@ -253,7 +253,7 @@ type MessageService
                 | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
                 | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
                 | Equals Buttons.MyPresets ->
-                  let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
+                  let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
                 | Equals Buttons.Settings -> sendSettingsMessage userId
                 | Equals "Back" -> sendCurrentPreset userId
