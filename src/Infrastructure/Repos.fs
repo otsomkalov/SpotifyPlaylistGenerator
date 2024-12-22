@@ -20,25 +20,19 @@ open MusicPlatform.Spotify
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
-  let internal load (db: IMongoDatabase) : PresetRepo.Load =
-    fun presetId ->
+  let internal load (collection: IMongoCollection<Entities.Preset>) =
+    fun (PresetId presetId) ->
       task {
-        let collection = db.GetCollection "presets"
-
-        let id = presetId |> PresetId.value
-
-        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), id)
+        let presetsFilter = Builders<Entities.Preset>.Filter.Eq((fun u -> u.Id), presetId)
 
         let! dbPreset = collection.Find(presetsFilter).SingleOrDefaultAsync()
 
         return dbPreset |> Preset.fromDb
       }
 
-  let internal save (db: IMongoDatabase) : PresetRepo.Save =
+  let internal save (collection: IMongoCollection<Entities.Preset>) =
     fun preset ->
       task {
-        let collection = db.GetCollection "presets"
-
         let dbPreset = preset |> Preset.toDb
 
         let id = preset.Id |> PresetId.value
@@ -162,3 +156,12 @@ module PlaylistRepo =
           listSpotifyPlaylistTracks playlistId
           |> Task.taskTap (cachePlaylistTracks playlistId)
         | tracks -> Task.FromResult tracks)
+
+type PresetRepo(db: IMongoDatabase) =
+  let collection = db.GetCollection<Entities.Preset> "presets"
+
+  interface IPresetRepo with
+    member this.LoadPreset(presetId) =
+      PresetRepo.load collection presetId
+    member this.SavePreset(preset) =
+      PresetRepo.save collection preset

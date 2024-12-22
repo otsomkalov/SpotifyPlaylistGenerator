@@ -2,85 +2,86 @@
 
 open System.Threading.Tasks
 open Domain.Core
+open Domain.Repos
 open Domain.Workflows
+open Moq
 open Xunit
 open FsUnit.Xunit
 
 [<Fact>]
 let ``enable should enable disabled playlist`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           ExcludedPlaylists =
             [ { Mocks.excludedPlaylist with
                   Enabled = false } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            ExcludedPlaylists =
-              [ { Mocks.excludedPlaylist with
-                    Enabled = true } ] }
+  let expected =
+    { Mocks.preset with
+        ExcludedPlaylists =
+          [ { Mocks.excludedPlaylist with
+                Enabled = true } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = ExcludedPlaylist.enable loadPreset updatePreset
+  let sut = ExcludedPlaylist.enable mock.Object
 
-  sut Mocks.presetId Mocks.excludedPlaylist.Id
+  task {
+    do! sut Mocks.presetId Mocks.excludedPlaylist.Id
 
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``disable should disable enabled playlist`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           ExcludedPlaylists =
             [ { Mocks.excludedPlaylist with
                   Enabled = true } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            ExcludedPlaylists =
-              [ { Mocks.excludedPlaylist with
-                    Enabled = false } ] }
+  let expected =
+    { Mocks.preset with
+        ExcludedPlaylists =
+          [ { Mocks.excludedPlaylist with
+                Enabled = false } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = ExcludedPlaylist.disable loadPreset updatePreset
+  let sut = ExcludedPlaylist.disable mock.Object
 
-  sut Mocks.presetId Mocks.excludedPlaylist.Id
+  task {
+    do! sut Mocks.presetId Mocks.excludedPlaylist.Id
+
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``remove should remove playlist from preset`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
-      Mocks.preset |> Task.FromResult
+  mock.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            ExcludedPlaylists = [] }
+  let expected =
+    { Mocks.preset with
+        ExcludedPlaylists = [] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = ExcludedPlaylist.remove loadPreset updatePreset
+  let sut = ExcludedPlaylist.remove mock.Object
 
-  sut Mocks.presetId Mocks.excludedPlaylist.Id
+  task {
+    do! sut Mocks.presetId Mocks.excludedPlaylist.Id
+
+    mock.VerifyAll()
+  }

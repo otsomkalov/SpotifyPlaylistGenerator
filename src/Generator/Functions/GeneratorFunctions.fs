@@ -32,11 +32,10 @@ type GeneratorFunctions
     _bot: ITelegramBotClient,
     _logger: ILogger<GeneratorFunctions>,
     connectionMultiplexer: IConnectionMultiplexer,
-    sendUserMessage: SendUserMessage,
     telemetryClient: TelemetryClient,
     getSpotifyClient: GetClient,
-    getPreset: Preset.Get,
-    buildChatContext: BuildChatContext
+    buildChatContext: BuildChatContext,
+    presetRepo: IPresetRepo
   ) =
 
   [<Function("GenerateAsync")>]
@@ -62,7 +61,6 @@ type GeneratorFunctions
 
       let listExcludedTracks = PresetRepo.listExcludedTracks _logger listTracks
 
-      let sendMessage = sendUserMessage userId
       let getRecommendations = Track.getRecommendations client
 
       let appendTracks =
@@ -76,7 +74,6 @@ type GeneratorFunctions
 
       let io: Domain.Workflows.Preset.RunIO =
         { ListExcludedTracks = listExcludedTracks
-          LoadPreset = getPreset
           AppendTracks = appendTracks
           ReplaceTracks = replaceTracks
           GetRecommendations = getRecommendations
@@ -84,7 +81,7 @@ type GeneratorFunctions
 
       let env = RunEnv(telemetryClient, connectionMultiplexer, client, _logger, userId)
 
-      let runPreset = Domain.Workflows.Preset.run env io
+      let runPreset = Domain.Workflows.Preset.run presetRepo env io
       let runPreset = Telegram.Workflows.Preset.run chatCtx runPreset
 
       do! runPreset command.PresetId

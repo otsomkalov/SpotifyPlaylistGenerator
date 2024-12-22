@@ -14,6 +14,13 @@ module Run =
     inherit IListPlaylistTracks
     inherit IListLikedTracks
 
+  let getPresetRepo () =
+    let repoMock = Mock<IPresetRepo>()
+
+    repoMock.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
+
+    repoMock
+
   let getEnv () =
     let envMock = Mock<IRunEnv>()
 
@@ -31,11 +38,6 @@ module Run =
           playlists |> should equivalent [ Mocks.excludedPlaylist ]
           [ Mocks.excludedTrack ] |> Task.FromResult
 
-      LoadPreset =
-        fun presetId ->
-          presetId |> should equal Mocks.presetId
-
-          Mocks.preset |> Task.FromResult
       AppendTracks = fun _ _ -> Task.FromResult()
       ReplaceTracks = fun _ _ -> Task.FromResult()
       GetRecommendations =
@@ -56,7 +58,6 @@ module Run =
 
     let io =
       { io with
-          LoadPreset = fun _ -> preset |> Task.FromResult
           ReplaceTracks =
             fun id tracks ->
               id |> should equal Mocks.targetedPlaylistId
@@ -71,7 +72,8 @@ module Run =
 
     env.Setup(fun m -> m.ListLikedTracks()).ReturnsAsync([ Mocks.includedTrack ])
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -100,7 +102,9 @@ module Run =
 
     env.Setup(fun m -> m.ListLikedTracks()).ReturnsAsync([ Mocks.includedTrack ])
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -122,7 +126,9 @@ module Run =
 
     let env = getEnv ()
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -141,7 +147,6 @@ module Run =
 
     let io =
       { io with
-          LoadPreset = fun _ -> preset |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
               tracks |> should equalSeq [ Mocks.includedTrack; Mocks.likedTrack ]
@@ -153,7 +158,9 @@ module Run =
 
     let env = getEnv ()
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -178,7 +185,9 @@ module Run =
 
     let env = getEnv ()
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -203,7 +212,9 @@ module Run =
 
     let env = getEnv ()
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -223,7 +234,6 @@ module Run =
 
     let io =
       { io with
-          LoadPreset = fun _ -> preset |> Task.FromResult
           AppendTracks =
             fun _ tracks ->
               tracks |> should equalSeq [ Mocks.recommendedTrack; Mocks.includedTrack ]
@@ -235,7 +245,8 @@ module Run =
 
     let env = getEnv ()
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -256,7 +267,6 @@ module Run =
 
     let io =
       { io with
-          LoadPreset = fun _ -> preset |> Task.FromResult
           GetRecommendations =
             fun tracks ->
               tracks |> should equivalent [ Mocks.likedTrack.Id ]
@@ -276,7 +286,9 @@ module Run =
       .Setup(fun m -> m.ListPlaylistTracks(It.Is(fun id -> id = (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value))))
       .ReturnsAsync([])
 
-    let sut = Preset.run env.Object io
+    let presetRepo = getPresetRepo ()
+
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
@@ -297,7 +309,6 @@ module Run =
 
     let io =
       { io with
-          LoadPreset = fun _ -> preset |> Task.FromResult
           GetRecommendations =
             fun tracks ->
               tracks |> should equivalent [ Mocks.includedTrack.Id ]
@@ -312,8 +323,9 @@ module Run =
               Task.FromResult() }
 
     let env = getEnv ()
+    let presetRepo = getPresetRepo ()
 
-    let sut = Preset.run env.Object io
+    let sut = Preset.run presetRepo.Object env.Object io
 
     task {
       let! result = sut Mocks.presetId
