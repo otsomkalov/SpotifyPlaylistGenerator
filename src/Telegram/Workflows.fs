@@ -592,14 +592,8 @@ module User =
         do! sendOrEditButtons "Your presets" keyboardMarkup
       }
 
-  let sendPresets (sendMessageButtons: SendMessageButtons) loadUser : User.SendPresets =
-    let wrapper actual =
-      fun text (buttons: MessageButtons) ->
-        let markup = buttons |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData) |> InlineKeyboardMarkup
-
-        actual text markup
-
-    showPresets' (wrapper sendMessageButtons) loadUser
+  let sendPresets (chatCtx: #ISendMessageButtons) loadUser : User.SendPresets =
+    showPresets' (fun text buttons -> chatCtx.SendMessageButtons text buttons |> Task.map ignore) loadUser
 
   let showPresets (botMessageCtx: #IEditMessageButtons) loadUser : User.ShowPresets =
     showPresets' botMessageCtx.EditMessageButtons loadUser
@@ -695,16 +689,10 @@ module User =
       &|> (fun u -> u.CurrentPresetId |> Option.get)
       &|&> (Preset.queueRun chatCtx queueRun answerCallbackQuery)
 
-  let createPreset (sendMessageButtons: SendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
-    let wrapper actual =
-      fun text (buttons: MessageButtons) ->
-        let markup = buttons |> Seq.map (Seq.map InlineKeyboardButton.WithCallbackData) |> InlineKeyboardMarkup
-
-        actual text markup
-
+  let createPreset (chatCtx: #ISendMessageButtons) (createPreset: Domain.Core.User.CreatePreset) : User.CreatePreset =
     fun userId name ->
       createPreset userId name
-      &|&> Preset.show' (wrapper sendMessageButtons)
+      &|&> Preset.show' (fun text buttons -> chatCtx.SendMessageButtons text buttons &|> ignore)
 
 [<RequireQualifiedAccess>]
 module PresetSettings =
