@@ -6,6 +6,7 @@ open FsUnit.Xunit
 open Telegram.Bot.Types.ReplyMarkups
 open Xunit
 open Telegram.Workflows
+open otsom.fs.Bot
 
 let getPreset =
   fun presetId ->
@@ -13,11 +14,13 @@ let getPreset =
 
     Mocks.preset |> Task.FromResult
 
-let editMessageButtons =
-  fun text (replyMarkup: InlineKeyboardMarkup) ->
-    replyMarkup.InlineKeyboard |> Seq.length |> should equal 6
+let botMessageCtx =
+  { new IEditMessageButtons with
+      member this.EditMessageButtons =
+        fun text buttons ->
+          buttons |> Seq.length |> should equal 6
 
-    Task.FromResult()
+          Task.FromResult() }
 
 [<Fact>]
 let ``enableUniqueArtists should update preset and show updated`` () =
@@ -30,7 +33,7 @@ let ``enableUniqueArtists should update preset and show updated`` () =
   let showNotification = fun _ -> Task.FromResult()
 
   let sut =
-    PresetSettings.enableUniqueArtists getPreset editMessageButtons disableUniqueArtists showNotification
+    PresetSettings.enableUniqueArtists getPreset botMessageCtx disableUniqueArtists showNotification
 
   sut Mocks.presetId
 
@@ -51,6 +54,6 @@ let ``disableUniqueArtists should update preset and show updated`` () =
       Task.FromResult()
 
   let sut =
-    PresetSettings.disableUniqueArtists getPreset editMessageButtons disableUniqueArtists showNotification
+    PresetSettings.disableUniqueArtists getPreset botMessageCtx disableUniqueArtists showNotification
 
   sut Mocks.presetId

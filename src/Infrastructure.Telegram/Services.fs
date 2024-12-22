@@ -253,7 +253,7 @@ type MessageService
                 | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
                 | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
                 | Equals Buttons.MyPresets ->
-                  let sendUserPresets = Telegram.Workflows.User.showPresets sendButtons getUser
+                  let sendUserPresets = Telegram.Workflows.User.sendPresets sendButtons getUser
                   sendUserPresets (message.From.Id |> UserId)
                 | Equals Buttons.Settings -> sendSettingsMessage userId
                 | Equals "Back" -> sendCurrentPreset userId
@@ -291,7 +291,6 @@ type CallbackQueryService
     _queueClient: QueueClient,
     _connectionMultiplexer: IConnectionMultiplexer,
     _database: IMongoDatabase,
-    editBotMessageButtons: EditBotMessageButtons,
     telemetryClient: TelemetryClient,
     getPreset: Preset.Get,
     loadUser: UserRepo.Load,
@@ -307,7 +306,6 @@ type CallbackQueryService
       callbackQuery.Message.MessageId |> otsom.fs.Telegram.Bot.Core.BotMessageId
 
     let updateUser = UserRepo.update _database
-    let editMessageButtons = editBotMessageButtons userId botMessageId
     let showNotification = Workflows.showNotification _bot callbackQuery.Id
 
     let countPlaylistTracks =
@@ -315,22 +313,23 @@ type CallbackQueryService
 
     let getUser = User.get loadUser
 
+    let chatCtx = buildChatContext chatId
+    let botMessageCtx = chatCtx.BuildBotMessageContext (callbackQuery.Message.MessageId |> BotMessageId)
+
     let showIncludedPlaylist =
-      Workflows.IncludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+      Workflows.IncludedPlaylist.show botMessageCtx getPreset countPlaylistTracks
 
     let showExcludedPlaylist =
-      Workflows.ExcludedPlaylist.show editMessageButtons getPreset countPlaylistTracks
+      Workflows.ExcludedPlaylist.show botMessageCtx getPreset countPlaylistTracks
 
     let showTargetedPlaylist =
-      Workflows.TargetedPlaylist.show editMessageButtons getPreset countPlaylistTracks
-
-    let chatCtx = buildChatContext chatId
+      Workflows.TargetedPlaylist.show botMessageCtx getPreset countPlaylistTracks
 
     match callbackQuery.Data |> Workflows.parseAction with
     | Action.Preset presetAction ->
       match presetAction with
       | PresetActions.Show presetId ->
-        let sendPresetInfo = Workflows.Preset.show getPreset editMessageButtons
+        let sendPresetInfo = Workflows.Preset.show getPreset botMessageCtx
 
         sendPresetInfo presetId
       | PresetActions.Run presetId ->
@@ -356,13 +355,13 @@ type CallbackQueryService
         Domain.Workflows.User.removePreset getUser removePreset updateUser
 
       let removeUserPreset =
-        Telegram.Workflows.User.removePreset editMessageButtons loadUser removeUserPreset
+        Telegram.Workflows.User.removePreset botMessageCtx loadUser removeUserPreset
 
       removeUserPreset userId presetId
     | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId
     | Action.IncludedPlaylist(IncludedPlaylistActions.List(presetId, page)) ->
       let listIncludedPlaylists =
-        Workflows.IncludedPlaylist.list getPreset editMessageButtons
+        Workflows.IncludedPlaylist.list getPreset botMessageCtx
       listIncludedPlaylists presetId page
     | Action.EnableIncludedPlaylist(presetId, playlistId) ->
       let enableIncludedPlaylist = IncludedPlaylist.enable getPreset updatePreset
@@ -382,12 +381,12 @@ type CallbackQueryService
       let removeIncludedPlaylist = IncludedPlaylist.remove getPreset updatePreset
 
       let removeIncludedPlaylist =
-        Workflows.IncludedPlaylist.remove getPreset editMessageButtons removeIncludedPlaylist showNotification
+        Workflows.IncludedPlaylist.remove getPreset botMessageCtx removeIncludedPlaylist showNotification
 
       removeIncludedPlaylist presetId playlistId
     | Action.ExcludedPlaylist(ExcludedPlaylistActions.List(presetId, page)) ->
       let listExcludedPlaylists =
-        Workflows.ExcludedPlaylist.list getPreset editMessageButtons
+        Workflows.ExcludedPlaylist.list getPreset botMessageCtx
       listExcludedPlaylists presetId page
     | Action.ExcludedPlaylist(ExcludedPlaylistActions.Show(presetId, playlistId)) -> showExcludedPlaylist presetId playlistId
     | Action.EnableExcludedPlaylist(presetId, playlistId) ->
@@ -408,12 +407,12 @@ type CallbackQueryService
       let removeExcludedPlaylist = ExcludedPlaylist.remove getPreset updatePreset
 
       let removeExcludedPlaylist =
-        Workflows.ExcludedPlaylist.remove getPreset editMessageButtons removeExcludedPlaylist showNotification
+        Workflows.ExcludedPlaylist.remove getPreset botMessageCtx removeExcludedPlaylist showNotification
 
       removeExcludedPlaylist presetId playlistId
     | Action.TargetedPlaylist(TargetedPlaylistActions.List(presetId, page)) ->
       let listTargetedPlaylists =
-        Workflows.TargetedPlaylist.list getPreset editMessageButtons
+        Workflows.TargetedPlaylist.list getPreset botMessageCtx
       listTargetedPlaylists presetId page
     | Action.TargetedPlaylist(TargetedPlaylistActions.Show(presetId, playlistId)) -> showTargetedPlaylist presetId playlistId
     | Action.AppendToTargetedPlaylist(presetId, playlistId) ->
@@ -435,28 +434,28 @@ type CallbackQueryService
       let removeTargetedPlaylist = TargetedPlaylist.remove getPreset updatePreset
 
       let removeTargetedPlaylist =
-        Workflows.TargetedPlaylist.remove getPreset editMessageButtons removeTargetedPlaylist showNotification
+        Workflows.TargetedPlaylist.remove getPreset botMessageCtx removeTargetedPlaylist showNotification
 
       removeTargetedPlaylist presetId playlistId
     | Action.PresetSettings(PresetSettingsActions.IncludeLikedTracks presetId) ->
       let includeLikedTracks = PresetSettings.includeLikedTracks getPreset updatePreset
 
       let includeLikedTracks =
-        Workflows.PresetSettings.includeLikedTracks getPreset editMessageButtons showNotification includeLikedTracks
+        Workflows.PresetSettings.includeLikedTracks getPreset botMessageCtx showNotification includeLikedTracks
 
       includeLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.ExcludeLikedTracks presetId) ->
       let excludeLikedTracks = PresetSettings.excludeLikedTracks getPreset updatePreset
 
       let excludeLikedTracks =
-        Workflows.PresetSettings.excludeLikedTracks getPreset editMessageButtons showNotification excludeLikedTracks
+        Workflows.PresetSettings.excludeLikedTracks getPreset botMessageCtx showNotification excludeLikedTracks
 
       excludeLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.IgnoreLikedTracks presetId) ->
       let ignoreLikedTracks = PresetSettings.ignoreLikedTracks getPreset updatePreset
 
       let ignoreLikedTracks =
-        Workflows.PresetSettings.ignoreLikedTracks getPreset editMessageButtons showNotification ignoreLikedTracks
+        Workflows.PresetSettings.ignoreLikedTracks getPreset botMessageCtx showNotification ignoreLikedTracks
 
       ignoreLikedTracks presetId
     | Action.PresetSettings(PresetSettingsActions.EnableRecommendations presetId) ->
@@ -464,7 +463,7 @@ type CallbackQueryService
         PresetSettings.enableRecommendations getPreset updatePreset
 
       let enableRecommendations =
-        Workflows.PresetSettings.enableRecommendations getPreset editMessageButtons enableRecommendations showNotification
+        Workflows.PresetSettings.enableRecommendations getPreset botMessageCtx enableRecommendations showNotification
 
       enableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.DisableRecommendations presetId) ->
@@ -472,14 +471,14 @@ type CallbackQueryService
         PresetSettings.disableRecommendations getPreset updatePreset
 
       let disableRecommendations =
-        Workflows.PresetSettings.disableRecommendations getPreset editMessageButtons disableRecommendations showNotification
+        Workflows.PresetSettings.disableRecommendations getPreset botMessageCtx disableRecommendations showNotification
 
       disableRecommendations presetId
     | Action.PresetSettings(PresetSettingsActions.EnableUniqueArtists(presetId)) ->
       let enableUniqueArtists = PresetSettings.enableUniqueArtists getPreset updatePreset
 
       let enableUniqueArtists =
-        Workflows.PresetSettings.enableUniqueArtists getPreset editMessageButtons enableUniqueArtists showNotification
+        Workflows.PresetSettings.enableUniqueArtists getPreset botMessageCtx enableUniqueArtists showNotification
 
       enableUniqueArtists presetId
     | Action.PresetSettings(PresetSettingsActions.DisableUniqueArtists(presetId)) ->
@@ -487,9 +486,9 @@ type CallbackQueryService
         PresetSettings.disableUniqueArtists getPreset updatePreset
 
       let disableUniqueArtists =
-        Workflows.PresetSettings.disableUniqueArtists getPreset editMessageButtons disableUniqueArtists showNotification
+        Workflows.PresetSettings.disableUniqueArtists getPreset botMessageCtx disableUniqueArtists showNotification
 
       disableUniqueArtists presetId
     | Action.User(UserActions.ListPresets()) ->
-      let listUserPresets = Workflows.User.showPresets editMessageButtons getUser
+      let listUserPresets = Workflows.User.showPresets botMessageCtx getUser
       listUserPresets userId
