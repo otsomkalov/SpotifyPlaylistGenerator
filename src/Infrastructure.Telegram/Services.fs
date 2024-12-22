@@ -53,7 +53,6 @@ type MessageService
     validatePreset: Preset.Validate,
     loadUser: UserRepo.Load,
     savePreset: PresetRepo.Save,
-    sendCurrentPreset: User.SendCurrentPreset,
     parsePlaylistId: Playlist.ParseId,
     buildMusicPlatform: BuildMusicPlatform,
     buildChatContext: BuildChatContext,
@@ -134,7 +133,8 @@ type MessageService
                   createPreset userId message.Text
               | _ ->
                 match message.Text with
-                | Equals "/start" -> sendCurrentPreset userId
+                | Equals "/start" ->
+                  Workflows.User.sendCurrentPreset getUser getPreset chatCtx userId
                 | CommandWithData "/start" state ->
                   let processSuccessfulLogin =
                     let create = UserRepo.create _database
@@ -143,7 +143,7 @@ type MessageService
 
                     fun () -> task {
                       do! createUserIfNotExists userId
-                      do! sendCurrentPreset userId
+                      do! Workflows.User.sendCurrentPreset getUser getPreset chatCtx userId
                     }
 
                   let sendErrorMessage =
@@ -187,7 +187,6 @@ type MessageService
                 | Equals Buttons.IncludePlaylist -> chatCtx.AskForReply Messages.SendIncludedPlaylist
                 | Equals Buttons.ExcludePlaylist -> chatCtx.AskForReply Messages.SendExcludedPlaylist
                 | Equals Buttons.TargetPlaylist -> chatCtx.AskForReply Messages.SendTargetedPlaylist
-                | Equals "Back" -> sendCurrentPreset userId
 
                 | _ -> replyToMessage "Unknown command" |> Task.ignore
             | None ->
@@ -234,7 +233,7 @@ type MessageService
 
                     fun () -> task {
                       do! createUserIfNotExists userId
-                      do! sendCurrentPreset userId
+                      do! Workflows.User.sendCurrentPreset getUser getPreset chatCtx userId
                     }
 
                   let sendErrorMessage =
@@ -250,7 +249,6 @@ type MessageService
                 | Equals Buttons.MyPresets ->
                   let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
-                | Equals "Back" -> sendCurrentPreset userId
 
                 | _ -> replyToMessage "Unknown command" |> Task.ignore)
       }

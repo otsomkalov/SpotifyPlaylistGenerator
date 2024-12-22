@@ -60,6 +60,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ⬅️ Back.
+        /// </summary>
+        public static string Back {
+            get {
+                return ResourceManager.GetString("Back", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ➕ Create preset.
         /// </summary>
         public static string CreatePreset {

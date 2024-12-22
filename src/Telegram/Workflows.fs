@@ -598,34 +598,30 @@ module User =
   let showPresets (botMessageCtx: #IEditMessageButtons) loadUser : User.ShowPresets =
     showPresets' botMessageCtx.EditMessageButtons loadUser
 
-  let sendCurrentPreset (loadUser: User.Get) (getPreset: Preset.Get) (sendUserKeyboard: SendUserKeyboard) : User.SendCurrentPreset =
+  let sendCurrentPreset (getUser: User.Get) (getPreset: Preset.Get) (chatCtx: #ISendKeyboard) : User.SendCurrentPreset =
     fun userId ->
-      let sendKeyboard = sendUserKeyboard userId
-
-      userId |> loadUser &|> _.CurrentPresetId
+      userId |> getUser &|> _.CurrentPresetId
       &|&> (function
       | Some presetId -> task {
           let! preset = getPreset presetId
           let! text, _ = getPresetMessage preset
 
-          let buttons =
-            [| [| Buttons.RunPreset |]
-               [| Buttons.MyPresets |]
-               [| Buttons.CreatePreset |]
+          let buttons : Keyboard =
+            [| [| KeyboardButton(Buttons.RunPreset) |]
+               [| KeyboardButton(Buttons.MyPresets) |]
+               [| KeyboardButton(Buttons.CreatePreset) |]
 
-               [| Buttons.IncludePlaylist; Buttons.ExcludePlaylist; Buttons.TargetPlaylist |]
+               [| KeyboardButton(Buttons.IncludePlaylist); KeyboardButton(Buttons.ExcludePlaylist); KeyboardButton(Buttons.TargetPlaylist) |]
 
-               [| Buttons.Settings |] |]
-            |> ReplyKeyboardMarkup.op_Implicit
+               [| KeyboardButton(Buttons.Settings) |] |]
 
-          return! sendKeyboard text buttons
+          return! chatCtx.SendKeyboard text buttons
         }
       | None ->
-        let buttons =
-          [| [| Buttons.MyPresets |]; [| Buttons.CreatePreset |] |]
-          |> ReplyKeyboardMarkup.op_Implicit
+        let buttons : Keyboard =
+          [| [| KeyboardButton(Buttons.MyPresets) |]; [| KeyboardButton(Buttons.CreatePreset) |] |]
 
-        sendKeyboard "You did not select current preset" buttons)
+        chatCtx.SendKeyboard "You did not select current preset" buttons) &|> ignore
 
   let sendCurrentPresetSettings (chatCtx: #ISendKeyboard) (loadUser: User.Get) (getPreset: Preset.Get) : User.SendCurrentPresetSettings =
     fun userId ->
@@ -842,4 +838,18 @@ let settingsMessageHandlerMatcher
     match message.Text with
     | Equals "/settings" -> Some(handler)
     | Equals Buttons.Settings -> Some(handler)
+    | _ -> None
+
+let backMessageHandlerMatcher (buildChatContext: BuildChatContext) (loadChat: ChatRepo.Load) (getUser: User.Get) (getPreset: Preset.Get) : MessageHandlerMatcher =
+  let handler =
+    fun message -> task {
+        let chatCtx = buildChatContext message.ChatId
+        let! chat = loadChat message.ChatId
+
+        return! User.sendCurrentPreset getUser getPreset chatCtx chat.UserId
+    }
+
+  fun message ->
+    match message.Text with
+    | Equals Buttons.Back -> Some(handler)
     | _ -> None
