@@ -48,8 +48,6 @@ type MessageService
     completeAuth: Auth.Complete,
     sendUserMessage: SendUserMessage,
     replyToUserMessage: ReplyToUserMessage,
-    sendUserMessageButtons: SendUserMessageButtons,
-    askUserForReply: AskUserForReply,
     getSpotifyClient: GetClient,
     getPreset: Preset.Get,
     validatePreset: Preset.Validate,
@@ -68,8 +66,6 @@ type MessageService
     let musicPlatformUserId = message.From.Id |> string |> MusicPlatform.UserId
 
     let replyToMessage = replyToUserMessage userId message.MessageId
-    let sendButtons = sendUserMessageButtons userId
-    let askForReply = askUserForReply userId message.MessageId
     let updateUser = UserRepo.update _database
     let getUser = User.get loadUser
     let sendLink = Repos.sendLink _bot userId
@@ -182,16 +178,16 @@ type MessageService
                     replyToMessage "You have entered empty playlist url" |> Task.ignore
                   else
                     targetPlaylist userId (rawPlaylistId |> Playlist.RawPlaylistId)
-                | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
-                | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
+                | Equals Buttons.SetPresetSize -> chatCtx.AskForReply Messages.SendPresetSize
+                | Equals Buttons.CreatePreset -> chatCtx.AskForReply Messages.SendPresetName
                 | Equals Buttons.RunPreset -> queueCurrentPresetRun userId (ChatMessageId message.MessageId)
                 | Equals Buttons.MyPresets ->
                   let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
                 | Equals Buttons.Settings -> sendSettingsMessage userId
-                | Equals Buttons.IncludePlaylist -> askForReply Messages.SendIncludedPlaylist
-                | Equals Buttons.ExcludePlaylist -> askForReply Messages.SendExcludedPlaylist
-                | Equals Buttons.TargetPlaylist -> askForReply Messages.SendTargetedPlaylist
+                | Equals Buttons.IncludePlaylist -> chatCtx.AskForReply Messages.SendIncludedPlaylist
+                | Equals Buttons.ExcludePlaylist -> chatCtx.AskForReply Messages.SendExcludedPlaylist
+                | Equals Buttons.TargetPlaylist -> chatCtx.AskForReply Messages.SendTargetedPlaylist
                 | Equals "Back" -> sendCurrentPreset userId
 
                 | _ -> replyToMessage "Unknown command" |> Task.ignore
@@ -250,8 +246,8 @@ type MessageService
 
                   completeAuth userId state
                   |> TaskResult.taskEither processSuccessfulLogin (sendErrorMessage >> Task.ignore)
-                | Equals Buttons.SetPresetSize -> askForReply Messages.SendPresetSize
-                | Equals Buttons.CreatePreset -> askForReply Messages.SendPresetName
+                | Equals Buttons.SetPresetSize -> chatCtx.AskForReply Messages.SendPresetSize
+                | Equals Buttons.CreatePreset -> chatCtx.AskForReply Messages.SendPresetName
                 | Equals Buttons.MyPresets ->
                   let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
