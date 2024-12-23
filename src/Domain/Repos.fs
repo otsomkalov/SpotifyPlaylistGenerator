@@ -7,9 +7,6 @@ open otsom.fs.Core
 
 [<RequireQualifiedAccess>]
 module PresetRepo =
-  type Load = PresetId -> Task<Preset>
-
-  type Save = Preset -> Task<unit>
   type Remove = PresetId -> Task<unit>
 
   type ListExcludedTracks = ExcludedPlaylist list -> Task<Track list>
@@ -30,3 +27,10 @@ type IListPlaylistTracks =
 
 type IListLikedTracks =
   abstract member ListLikedTracks : unit -> Task<Track list>
+
+type ILoadPreset = abstract LoadPreset: presetId: PresetId -> Task<Preset>
+type ISavePreset = abstract SavePreset: preset: Preset -> Task<unit>
+
+type IPresetRepo =
+  inherit ILoadPreset
+  inherit ISavePreset

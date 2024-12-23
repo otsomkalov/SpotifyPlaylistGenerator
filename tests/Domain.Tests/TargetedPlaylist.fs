@@ -2,142 +2,148 @@
 
 open System.Threading.Tasks
 open Domain.Core
+open Domain.Repos
 open Domain.Workflows
+open Moq
 open Xunit
 open FsUnit.Xunit
 
 [<Fact>]
 let ``enable should enable disabled playlist`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           TargetedPlaylists =
             [ { Mocks.targetedPlaylist with
                   Enabled = false } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            TargetedPlaylists =
-              [ { Mocks.targetedPlaylist with
-                    Enabled = true } ] }
+  let expected =
+    { Mocks.preset with
+        TargetedPlaylists =
+          [ { Mocks.targetedPlaylist with
+                Enabled = true } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = TargetedPlaylist.enable loadPreset updatePreset
+  let sut = TargetedPlaylist.enable mock.Object
 
-  sut Mocks.presetId Mocks.targetedPlaylist.Id
+  task {
+    do! sut Mocks.presetId Mocks.targetedPlaylist.Id
 
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``disable should disable enabled playlist`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           TargetedPlaylists =
             [ { Mocks.targetedPlaylist with
                   Enabled = true } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            TargetedPlaylists =
-              [ { Mocks.targetedPlaylist with
-                    Enabled = false } ] }
+  let expected =
+    { Mocks.preset with
+        TargetedPlaylists =
+          [ { Mocks.targetedPlaylist with
+                Enabled = false } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = TargetedPlaylist.disable loadPreset updatePreset
 
-  sut Mocks.presetId Mocks.targetedPlaylist.Id
+  let sut = TargetedPlaylist.disable mock.Object
+
+  task {
+    do! sut Mocks.presetId Mocks.targetedPlaylist.Id
+
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``appendTracks should disable playlist overwriting`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           TargetedPlaylists =
             [ { Mocks.targetedPlaylist with
                   Overwrite = true } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            TargetedPlaylists =
-              [ { Mocks.targetedPlaylist with
-                    Overwrite = false } ] }
+  let expected =
+    { Mocks.preset with
+        TargetedPlaylists =
+          [ { Mocks.targetedPlaylist with
+                Overwrite = false } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = TargetedPlaylist.appendTracks loadPreset updatePreset
 
-  sut Mocks.presetId Mocks.targetedPlaylist.Id
+  let sut = TargetedPlaylist.appendTracks mock.Object
+
+  task {
+    do! sut Mocks.presetId Mocks.targetedPlaylist.Id
+
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``overwriteTracks should enable playlist overwriting`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
+  mock
+    .Setup(fun m -> m.LoadPreset(Mocks.presetId))
+    .ReturnsAsync(
       { Mocks.preset with
           TargetedPlaylists =
             [ { Mocks.targetedPlaylist with
                   Overwrite = false } ] }
-      |> Task.FromResult
+    )
 
-  let updatePreset =
-    fun preset ->
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            TargetedPlaylists =
-              [ { Mocks.targetedPlaylist with
-                    Overwrite = true } ] }
+  let expected =
+    { Mocks.preset with
+        TargetedPlaylists =
+          [ { Mocks.targetedPlaylist with
+                Overwrite = true } ] }
 
-      Task.FromResult()
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-  let sut = TargetedPlaylist.overwriteTracks loadPreset updatePreset
 
-  sut Mocks.presetId Mocks.targetedPlaylist.Id
+  let sut = TargetedPlaylist.overwriteTracks mock.Object
+
+  task {
+    do! sut Mocks.presetId Mocks.targetedPlaylist.Id
+
+    mock.VerifyAll()
+  }
 
 [<Fact>]
 let ``remove should remove playlist from preset`` () =
-  let loadPreset =
-    fun presetId ->
-      presetId |> should equal Mocks.presetId
+  let mock = Mock<IPresetRepo>()
 
-      Mocks.preset |> Task.FromResult
+  mock.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
-  let updatePreset =
-    fun preset ->
+  let expected =
+    { Mocks.preset with
+        TargetedPlaylists = [] }
 
-      preset
-      |> should
-        equal
-        { Mocks.preset with
-            TargetedPlaylists = [] }
+  mock.Setup(fun m -> m.SavePreset(expected)).ReturnsAsync(())
 
-      Task.FromResult()
 
-  let sut = TargetedPlaylist.remove loadPreset updatePreset
+  let sut = TargetedPlaylist.remove mock.Object
 
-  sut Mocks.presetId Mocks.targetedPlaylist.Id
+  task {
+    do! sut Mocks.presetId Mocks.targetedPlaylist.Id
+
+    mock.VerifyAll()
+  }
