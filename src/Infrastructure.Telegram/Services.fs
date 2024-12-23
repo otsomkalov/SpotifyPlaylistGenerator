@@ -51,14 +51,15 @@ type MessageService
     getSpotifyClient: GetClient,
     getPreset: Preset.Get,
     validatePreset: Preset.Validate,
-    loadUser: UserRepo.Load,
     sendCurrentPreset: User.SendCurrentPreset,
     parsePlaylistId: Playlist.ParseId,
     buildMusicPlatform: BuildMusicPlatform,
     buildChatContext: BuildChatContext,
     matchers: MessageHandlerMatcher seq,
     logger: ILogger<MessageService>,
-    presetRepo: IPresetRepo
+    presetRepo: IPresetRepo,
+    userRepo: IUserRepo,
+    getUser: User.Get
   ) =
 
   let defaultMessageHandler (message: Telegram.Bot.Types.Message) : MessageHandler =
@@ -66,8 +67,6 @@ type MessageService
     let musicPlatformUserId = message.From.Id |> string |> MusicPlatform.UserId
 
     let replyToMessage = replyToUserMessage userId message.MessageId
-    let updateUser = UserRepo.update _database
-    let getUser = User.get loadUser
     let sendLink = Repos.sendLink _bot userId
     let sendLoginMessage = Telegram.Workflows.sendLoginMessage initAuth sendLink
 
@@ -109,7 +108,7 @@ type MessageService
                 Domain.Workflows.Preset.queueRun getPreset validatePreset queuePresetRun
 
               let queueCurrentPresetRun =
-                Workflows.User.queueCurrentPresetRun chatCtx queuePresetRun loadUser (fun _ -> Task.FromResult())
+                Workflows.User.queueCurrentPresetRun chatCtx queuePresetRun getUser (fun _ -> Task.FromResult())
 
               match isNull message.ReplyToMessage with
               | false ->
@@ -117,7 +116,7 @@ type MessageService
                 | Equals Messages.SendPresetSize ->
                   let setTargetPresetSize = PresetSettings.setPresetSize presetRepo
 
-                  let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
+                  let setCurrentPresetSize = User.setCurrentPresetSize userRepo setTargetPresetSize
 
                   let setTargetPresetSize =
                     Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
@@ -128,7 +127,7 @@ type MessageService
                 | Equals Messages.SendTargetedPlaylist -> targetPlaylist userId (Playlist.RawPlaylistId message.Text)
                 | Equals Messages.SendPresetName ->
                   let createPreset =
-                    ((User.createPreset presetRepo loadUser updateUser)
+                    ((User.createPreset presetRepo userRepo)
                      |> Telegram.Workflows.User.createPreset chatCtx)
 
                   createPreset userId message.Text
@@ -202,7 +201,7 @@ type MessageService
                 | Equals Messages.SendPresetSize ->
                   let setTargetPresetSize = PresetSettings.setPresetSize presetRepo
 
-                  let setCurrentPresetSize = User.setCurrentPresetSize getUser setTargetPresetSize
+                  let setCurrentPresetSize = User.setCurrentPresetSize userRepo setTargetPresetSize
 
                   let setTargetPresetSize =
                     Workflows.User.setCurrentPresetSize sendUserMessage sendSettingsMessage setCurrentPresetSize
@@ -210,7 +209,7 @@ type MessageService
                   setTargetPresetSize userId (PresetSettings.RawPresetSize message.Text)
                 | Equals Messages.SendPresetName ->
                   let createPreset =
-                    ((User.createPreset presetRepo loadUser updateUser)
+                    ((User.createPreset presetRepo userRepo)
                      |> Telegram.Workflows.User.createPreset chatCtx)
 
                   createPreset userId message.Text
@@ -289,9 +288,10 @@ type CallbackQueryService
     _database: IMongoDatabase,
     telemetryClient: TelemetryClient,
     getPreset: Preset.Get,
-    loadUser: UserRepo.Load,
     buildChatContext: BuildChatContext,
-    presetRepo: IPresetRepo
+    presetRepo: IPresetRepo,
+    getUser: User.Get,
+    userRepo: IUserRepo
   ) =
 
   member this.ProcessAsync(callbackQuery: CallbackQuery) =
@@ -301,13 +301,10 @@ type CallbackQueryService
     let botMessageId =
       callbackQuery.Message.MessageId |> otsom.fs.Telegram.Bot.Core.BotMessageId
 
-    let updateUser = UserRepo.update _database
     let showNotification = Workflows.showNotification _bot callbackQuery.Id
 
     let countPlaylistTracks =
       Playlist.countTracks telemetryClient _connectionMultiplexer
-
-    let getUser = User.get loadUser
 
     let chatCtx = buildChatContext chatId
     let botMessageCtx = chatCtx.BuildBotMessageContext (callbackQuery.Message.MessageId |> BotMessageId)
@@ -338,7 +335,7 @@ type CallbackQueryService
         queuePresetRun presetId
 
     | Action.SetCurrentPreset presetId ->
-      let setCurrentPreset = Domain.Workflows.User.setCurrentPreset getUser updateUser
+      let setCurrentPreset = Domain.Workflows.User.setCurrentPreset userRepo
 
       let setCurrentPreset =
         Workflows.User.setCurrentPreset showNotification setCurrentPreset
@@ -348,10 +345,10 @@ type CallbackQueryService
       let removePreset = PresetRepo.remove _database
 
       let removeUserPreset =
-        Domain.Workflows.User.removePreset getUser removePreset updateUser
+        Domain.Workflows.User.removePreset userRepo removePreset
 
       let removeUserPreset =
-        Telegram.Workflows.User.removePreset botMessageCtx loadUser removeUserPreset
+        Telegram.Workflows.User.removePreset botMessageCtx getUser removeUserPreset
 
       removeUserPreset userId presetId
     | Action.IncludedPlaylist(IncludedPlaylistActions.Show(presetId, playlistId)) -> showIncludedPlaylist presetId playlistId

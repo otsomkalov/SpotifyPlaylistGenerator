@@ -55,3 +55,14 @@ let preset =
     ExcludedPlaylists = [ excludedPlaylist ]
     TargetedPlaylists = [ targetedPlaylist ]
     Settings = presetSettingsMock }
+
+let userPreset : SimplePreset =
+  { Id = presetId
+    Name = "user-preset-name" }
+
+let userId = otsom.fs.Core.UserId(1)
+
+let user : User =
+  { Id = userId
+    CurrentPresetId = Some presetId
+    Presets = [ userPreset ] }

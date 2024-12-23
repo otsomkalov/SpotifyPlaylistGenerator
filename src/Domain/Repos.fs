@@ -15,8 +15,6 @@ module PresetRepo =
 
 [<RequireQualifiedAccess>]
 module UserRepo =
-  type Load = UserId -> Task<User>
-  type Update = User -> Task<unit>
   type Exists = UserId -> Task<bool>
   type Create = User -> Task<unit>
 
@@ -34,3 +32,10 @@ type ISavePreset = abstract SavePreset: preset: Preset -> Task<unit>
 type IPresetRepo =
   inherit ILoadPreset
   inherit ISavePreset
+
+type ILoadUser = abstract LoadUser: userId: UserId -> Task<User>
+type ISaveUser = abstract SaveUser: user: User -> Task<unit>
+
+type IUserRepo =
+  inherit ILoadUser
+  inherit ISaveUser

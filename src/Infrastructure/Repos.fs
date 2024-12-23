@@ -77,18 +77,14 @@ module PresetRepo =
 
 [<RequireQualifiedAccess>]
 module UserRepo =
-  let load (db: IMongoDatabase) : UserRepo.Load =
-    fun userId ->
-      let collection = db.GetCollection "users"
-      let id = userId |> UserId.value
-
-      let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
+  let internal load (collection: IMongoCollection<Entities.User>) =
+    fun (UserId userId) ->
+      let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), userId)
 
       collection.Find(usersFilter).SingleOrDefaultAsync() |> Task.map User.fromDb
 
-  let update (db: IMongoDatabase) : UserRepo.Update =
-    fun user ->
-      let collection = db.GetCollection "users"
+  let internal save (collection: IMongoCollection<Entities.User>) =
+    fun (user: User) ->
       let id = user.Id |> UserId.value
 
       let usersFilter = Builders<Entities.User>.Filter.Eq((fun u -> u.Id), id)
@@ -165,3 +161,12 @@ type PresetRepo(db: IMongoDatabase) =
       PresetRepo.load collection presetId
     member this.SavePreset(preset) =
       PresetRepo.save collection preset
+
+type UserRepo(db: IMongoDatabase) =
+  let collection = db.GetCollection<Entities.User> "users"
+
+  interface IUserRepo with
+    member this.LoadUser(userId) =
+      UserRepo.load collection userId
+    member this.SaveUser(user) =
+      UserRepo.save collection user
