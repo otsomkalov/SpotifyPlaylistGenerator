@@ -10,7 +10,7 @@ open otsom.fs.Bot
 
 let getPreset =
   fun presetId ->
-    presetId |> should equal User.userPresetMock.Id
+    presetId |> should equal Mocks.presetId
 
     Mocks.preset |> Task.FromResult
 

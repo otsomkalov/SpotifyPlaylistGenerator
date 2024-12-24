@@ -13,9 +13,9 @@ open Telegram.Workflows
 let ``sendCurrentPreset should show current preset details with actions keyboard if current preset is set`` () =
   let loadUser =
     fun userId ->
-      userId |> should equal User.mock.Id
+      userId |> should equal Mocks.userId
 
-      { User.mock with
+      { Mocks.user with
           CurrentPresetId = Some Mocks.presetId }
       |> Task.FromResult
 
@@ -26,29 +26,32 @@ let ``sendCurrentPreset should show current preset details with actions keyboard
 
   let sendUserKeyboard =
     fun userId text (keyboard: ReplyKeyboardMarkup) ->
-      userId |> should equal User.mock.Id
+      userId |> should equal Mocks.userId
       keyboard.Keyboard |> Seq.length |> should equal 5
       Task.FromResult()
 
   let sut = User.sendCurrentPreset loadUser getPreset sendUserKeyboard
 
-  sut User.mock.Id
+  sut Mocks.userId
 
 [<Fact>]
 let ``sendCurrentPreset should send "create preset" button if current preset is not set`` () =
   let loadUser =
     fun userId ->
-      userId |> should equal User.mock.Id
-      User.mock |> Task.FromResult
+      userId |> should equal Mocks.userId
+
+      { Mocks.user with
+          CurrentPresetId = None }
+      |> Task.FromResult
 
   let getPreset = fun _ -> failwith "todo"
 
   let sendUserKeyboard =
     fun userId text (keyboard: ReplyKeyboardMarkup) ->
-      userId |> should equal User.mock.Id
+      userId |> should equal Mocks.userId
       keyboard.Keyboard |> Seq.length |> should equal 2
       Task.FromResult()
 
   let sut = User.sendCurrentPreset loadUser getPreset sendUserKeyboard
 
-  sut User.mock.Id
+  sut Mocks.userId

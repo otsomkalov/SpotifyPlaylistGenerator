@@ -2,6 +2,8 @@
 
 open System
 open System.Threading.Tasks
+open Domain.Repos
+open Moq
 open Xunit
 open Domain.Core
 open Domain.Workflows
@@ -9,82 +11,82 @@ open FsUnit.Xunit
 open otsom.fs.Core
 open otsom.fs.Extensions
 
-let userPresetMock =
-  { Id = Mocks.presetId
-    Name = "user-preset-name" }
-
-let mock =
-  { Id = UserId(1)
-    CurrentPresetId = None
-    Presets = [ userPresetMock ] }
-
-let loadUser =
-  fun userId ->
-    userId |> should equal mock.Id
-    mock |> Task.FromResult
-
 [<Fact>]
 let ``setCurrentPreset updates User.CurrentPresetId`` () =
+  let repo = Mock<IUserRepo>()
+
+  repo
+    .Setup(fun m -> m.LoadUser(Mocks.userId))
+    .ReturnsAsync(
+      { Mocks.user with
+          CurrentPresetId = None }
+    )
+
   let expectedUser =
-    { mock with
-        CurrentPresetId = Some userPresetMock.Id }
+    { Mocks.user with
+        CurrentPresetId = Some Mocks.presetId }
 
-  let updateUser =
-    fun user ->
-      user |> should equal expectedUser
-      Task.FromResult()
+  repo.Setup(fun m -> m.SaveUser(expectedUser)).ReturnsAsync(())
 
-  let sut = User.setCurrentPreset loadUser updateUser
+  let sut = User.setCurrentPreset repo.Object
 
-  sut mock.Id userPresetMock.Id
+  task {
+    do! sut Mocks.userId Mocks.presetId
+
+    repo.VerifyAll()
+  }
 
 [<Fact>]
 let ``removePreset removes preset`` () =
-  let loadUser =
-    loadUser
-    >> Task.map (fun u ->
-      { u with
-          CurrentPresetId = Some userPresetMock.Id })
+  let repo = Mock<IUserRepo>()
+
+  repo
+    .Setup(fun m -> m.LoadUser(Mocks.userId))
+    .ReturnsAsync(
+      { Mocks.user with
+          CurrentPresetId = None }
+    )
 
   let expectedUser =
-    { mock with
+    { Mocks.user with
         Presets = []
         CurrentPresetId = None }
 
-  let updateUser =
-    fun user ->
-      user |> should equal expectedUser
-      Task.FromResult()
+  repo.Setup(fun m -> m.SaveUser(expectedUser)).ReturnsAsync(())
 
   let removePreset =
     fun presetId ->
-      presetId |> should equal userPresetMock.Id
+      presetId |> should equal Mocks.presetId
       Task.FromResult()
 
-  let sut = User.removePreset loadUser removePreset updateUser
+  let sut = User.removePreset repo.Object removePreset
 
-  sut mock.Id userPresetMock.Id
+  task {
+    do! sut Mocks.userId Mocks.presetId
+
+    repo.VerifyAll()
+  }
 
 [<Fact>]
 let ``createIfNotExists doesn't create attempt to create user if it already exists`` () =
 
   let exists =
     fun userId ->
-      userId |> should equal mock.Id
+      userId |> should equal Mocks.userId
       Task.FromResult true
 
   let create = fun _ -> raise (NotImplementedException())
 
   let sut = User.createIfNotExists exists create
 
-  sut mock.Id
+  sut Mocks.userId
 
 [<Fact>]
 let ``createIfNotExists creates user if it does not exist`` () =
 
   let exists =
     fun userId ->
-      userId |> should equal mock.Id
+      userId |> should equal Mocks.userId
       Task.FromResult true
 
   let create =
@@ -92,7 +94,7 @@ let ``createIfNotExists creates user if it does not exist`` () =
       user
       |> should
         equal
-        { Id = mock.Id
+        { Id = Mocks.userId
           Presets = []
           CurrentPresetId = None }
 
@@ -100,4 +102,4 @@ let ``createIfNotExists creates user if it does not exist`` () =
 
   let sut = User.createIfNotExists exists create
 
-  sut mock.Id
+  sut Mocks.userId

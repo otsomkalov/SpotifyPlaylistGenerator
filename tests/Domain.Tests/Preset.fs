@@ -14,13 +14,6 @@ module Run =
     inherit IListPlaylistTracks
     inherit IListLikedTracks
 
-  let getPresetRepo () =
-    let repoMock = Mock<IPresetRepo>()
-
-    repoMock.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
-
-    repoMock
-
   let getEnv () =
     let envMock = Mock<IRunEnv>()
 
@@ -72,7 +65,10 @@ module Run =
 
     env.Setup(fun m -> m.ListLikedTracks()).ReturnsAsync([ Mocks.includedTrack ])
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(preset)
+
     let sut = Preset.run presetRepo.Object env.Object io
 
     task {
@@ -102,7 +98,9 @@ module Run =
 
     env.Setup(fun m -> m.ListLikedTracks()).ReturnsAsync([ Mocks.includedTrack ])
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -126,7 +124,9 @@ module Run =
 
     let env = getEnv ()
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -158,7 +158,9 @@ module Run =
 
     let env = getEnv ()
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -185,7 +187,9 @@ module Run =
 
     let env = getEnv ()
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -212,7 +216,9 @@ module Run =
 
     let env = getEnv ()
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(Mocks.preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -245,7 +251,9 @@ module Run =
 
     let env = getEnv ()
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(preset)
     let sut = Preset.run presetRepo.Object env.Object io
 
     task {
@@ -286,7 +294,9 @@ module Run =
       .Setup(fun m -> m.ListPlaylistTracks(It.Is(fun id -> id = (Mocks.includedPlaylist.Id |> ReadablePlaylistId.value))))
       .ReturnsAsync([])
 
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 
@@ -323,7 +333,9 @@ module Run =
               Task.FromResult() }
 
     let env = getEnv ()
-    let presetRepo = getPresetRepo ()
+    let presetRepo = Mock<IPresetRepo>()
+
+    presetRepo.Setup(fun m -> m.LoadPreset(Mocks.presetId)).ReturnsAsync(preset)
 
     let sut = Preset.run presetRepo.Object env.Object io
 

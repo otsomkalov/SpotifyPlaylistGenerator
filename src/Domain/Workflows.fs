@@ -306,26 +306,26 @@ module Preset =
 
 [<RequireQualifiedAccess>]
 module User =
-  let get (load: UserRepo.Load) : User.Get = load
+  let get (userRepo: #ILoadUser) : User.Get = userRepo.LoadUser
 
-  let setCurrentPreset (load: UserRepo.Load) (update: UserRepo.Update) : User.SetCurrentPreset =
+  let setCurrentPreset (userRepo: #ILoadUser & #ISaveUser) : User.SetCurrentPreset =
     fun userId presetId ->
       userId
-      |> load
+      |> userRepo.LoadUser
       |> Task.map (fun u ->
         { u with
             CurrentPresetId = Some presetId })
-      |> Task.bind update
+      |> Task.bind userRepo.SaveUser
 
-  let removePreset (load: UserRepo.Load) (removePreset: Preset.Remove) (update: UserRepo.Update) : User.RemovePreset =
+  let removePreset (userRepo: #ILoadUser & #ISaveUser) (removePreset: Preset.Remove) : User.RemovePreset =
     fun userId presetId ->
       userId
-      |> load
+      |> userRepo.LoadUser
       |> Task.map (fun u ->
         { u with
             Presets = u.Presets |> List.filter (fun p -> p.Id <> presetId)
             CurrentPresetId = if u.CurrentPresetId = Some presetId then None else u.CurrentPresetId })
-      |> Task.bind update
+      |> Task.bind userRepo.SaveUser
       |> Task.bind (fun _ -> removePreset presetId)
 
   let createIfNotExists (exists: UserRepo.Exists) (create: UserRepo.Create) : User.CreateIfNotExists =
@@ -335,16 +335,16 @@ module User =
         | true -> Task.FromResult()
         | false -> User.create userId |> create)
 
-  let setCurrentPresetSize (load: UserRepo.Load) (setPresetSize: PresetSettings.SetPresetSize) : User.SetCurrentPresetSize =
+  let setCurrentPresetSize (userRepo: #ILoadUser) (setPresetSize: PresetSettings.SetPresetSize) : User.SetCurrentPresetSize =
     fun userId size ->
       userId
-      |> load
+      |> userRepo.LoadUser
       |> Task.map (fun u -> u.CurrentPresetId |> Option.get)
       |> Task.bind (fun presetId -> setPresetSize presetId size)
 
-  let createPreset (presetRepo: #ISavePreset) (loadUser: UserRepo.Load) (updateUser: UserRepo.Update) : User.CreatePreset =
+  let createPreset (presetRepo: #ISavePreset) (userRepo: #ILoadUser & #ISaveUser) : User.CreatePreset =
     fun userId name -> task {
-      let! user = loadUser userId
+      let! user = userRepo.LoadUser userId
 
       let! newPreset = Preset.create presetRepo name
 
@@ -352,7 +352,7 @@ module User =
         { user with
             Presets = SimplePreset.fromPreset newPreset :: user.Presets}
 
-      do! updateUser updatedUser
+      do! userRepo.SaveUser updatedUser
 
       return newPreset
     }
