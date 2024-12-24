@@ -183,7 +183,6 @@ type MessageService
                 | Equals Buttons.MyPresets ->
                   let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
-                | Equals Buttons.Settings -> sendSettingsMessage userId
                 | Equals Buttons.IncludePlaylist -> chatCtx.AskForReply Messages.SendIncludedPlaylist
                 | Equals Buttons.ExcludePlaylist -> chatCtx.AskForReply Messages.SendExcludedPlaylist
                 | Equals Buttons.TargetPlaylist -> chatCtx.AskForReply Messages.SendTargetedPlaylist
@@ -250,7 +249,6 @@ type MessageService
                 | Equals Buttons.MyPresets ->
                   let sendUserPresets = Telegram.Workflows.User.sendPresets chatCtx getUser
                   sendUserPresets (message.From.Id |> UserId)
-                | Equals Buttons.Settings -> sendSettingsMessage userId
                 | Equals "Back" -> sendCurrentPreset userId
 
                 | _ -> replyToMessage "Unknown command" |> Task.ignore)
